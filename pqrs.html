@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PQRS — Acabados y Diseños 1A</title>
+  <meta name="description" content="Peticiones, Quejas, Reclamos y Sugerencias. Estamos aquí para escucharte y mejorar continuamente.">
+
+  <!-- Swiper CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <!-- Remix Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="main.css">
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       ESTILOS ESPECÍFICOS — PQRS.HTML
+       ═══════════════════════════════════════════════ */
+
+    /* ── PAGE HERO ──────────────────────────────────── */
+    .page-hero {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+      padding: 120px 0 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1400&q=60') center/cover no-repeat;
+      opacity: 0.07;
+    }
+    .page-hero-inner {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .page-hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(192,57,43,0.15);
+      border: 1px solid rgba(192,57,43,0.3);
+      padding: 6px 18px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+    .page-hero-eyebrow i { color: var(--primary); font-size: 0.9rem; }
+    .page-hero-eyebrow span {
+      font-family: var(--font-main);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .page-hero-title {
+      font-family: var(--font-main);
+      font-weight: 900;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      color: white;
+      margin-bottom: 14px;
+      line-height: 1.15;
+    }
+    .page-hero-title span { color: var(--primary); }
+    .page-hero-subtitle {
+      color: rgba(255,255,255,0.65);
+      font-size: 1rem;
+      max-width: 520px;
+      margin: 0 auto 28px;
+      line-height: 1.7;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.45);
+    }
+    .breadcrumb a { color: rgba(255,255,255,0.6); }
+    .breadcrumb a:hover { color: var(--primary); }
+    .breadcrumb i { font-size: 0.7rem; }
+
+    /* ── TIPOS DE PQRS ──────────────────────────────── */
+    .pqrs-types-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 0;
+    }
+    .pqrs-type-card {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .pqrs-type-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--primary);
+      transform: scaleX(0);
+      transition: var(--transition);
+    }
+    .pqrs-type-card:hover,
+    .pqrs-type-card.active {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-red);
+      transform: translateY(-3px);
+    }
+    .pqrs-type-card:hover::before,
+    .pqrs-type-card.active::before { transform: scaleX(1); }
+    .pqrs-type-icon {
+      width: 56px; height: 56px;
+      background: rgba(192,57,43,0.08);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 1.5rem;
+      margin: 0 auto 14px;
+      transition: var(--transition);
+    }
+    .pqrs-type-card:hover .pqrs-type-icon,
+    .pqrs-type-card.active .pqrs-type-icon {
+      background: var(--primary);
+      color: white;
+    }
+    .pqrs-type-name {
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--secondary);
+      margin-bottom: 6px;
+    }
+    .pqrs-type-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── MAIN LAYOUT ────────────────────────────────── */
+    .pqrs-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ── FORM CARD ──────────────────────────────────── */
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-title {
+      font-family: var(--font-main);
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--secondary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-title i { color: var(--primary); }
+    .card-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+    .card-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+
+    /* ── FORM ───────────────────────────────────────── */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── TIPO RADIO BUTTONS ─────────────────────────── */
+    .tipo-radio-group {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 0;
+    }
+    .tipo-radio-label {
+      position: relative;
+      cursor: pointer;
+    }
+    .tipo-radio-label input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .tipo-radio-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      transition: var(--transition);
+      font-family: var(--font-main);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-light);
+      background: var(--off-white);
+      text-align: center;
+    }
+    .tipo-radio-btn i { font-size: 1.3rem; }
+    .tipo-radio-label input:checked + .tipo-radio-btn {
+      border-color: var(--primary);
+      background: rgba(192,57,43,0.06);
+      color: var(--primary);
+    }
+    .tipo-radio-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* ── FILE UPLOAD ────────────────────────────────── */
+    .file-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      transition: var(--transition);
+      cursor: pointer;
+      background: var(--off-white);
+    }
+    .file-upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(192,57,43,0.03);
+    }
+    .file-upload-icon {
+      font-size: 2rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .file-upload-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .file-upload-text strong { color: var(--primary); cursor: pointer; }
+    .file-upload-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── SIDEBAR INFO ───────────────────────────────── */
+    .info-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+    .info-card-header {
+      padding: 20px 24px;
+      background: var(--secondary);
+      color: white;
+    }
+    .info-card-header h4 {
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+    .info-card-header p {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.55);
+    }
+    .info-card-body { padding: 20px 24px; }
+
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-item-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: rgba(192,57,43,0.08);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 1rem;
+    }
+    .info-item-label {
+      font-family: var(--font-main);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .info-item-value {
+      font-size: 0.85rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ── ESTADO BADGE ───────────────────────────────── */
+    .status-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .status-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .status-step-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .status-dot {
+      width: 28px; height: 28px; flex-shrink: 0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--border);
+      color: var(--text-muted);
+    }
+    .status-dot.done { background: var(--success); color: white; }
+    .status-dot.active { background: var(--primary); color: white; }
+    .status-connector {
+      width: 2px;
+      height: 28px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+    .status-connector.done { background: var(--success); }
+    .status-step-content { padding: 3px 0 24px; }
+    .status-step-title {
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.83rem;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .status-step-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ── CONSULTA PQRS ──────────────────────────────── */
+    .pqrs-table-wrapper {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .pqrs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .pqrs-table th {
+      background: var(--secondary);
+      color: rgba(255,255,255,0.75);
+      font-family: var(--font-main);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 16px;
+      text-align: left;
+    }
+    .pqrs-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .pqrs-table tr:last-child td { border-bottom: none; }
+    .pqrs-table tr:hover td { background: var(--off-white); }
+
+    .badge-tipo {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-family: var(--font-main);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-peticion { background: rgba(41,128,185,0.12); color: #2980B9; }
+    .badge-queja    { background: rgba(192,57,43,0.12);  color: var(--primary); }
+    .badge-reclamo  { background: rgba(243,156,18,0.15); color: #d68910; }
+    .badge-sugerencia { background: rgba(39,174,96,0.12); color: var(--success); }
+
+    .badge-estado {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-family: var(--font-main);
+      font-weight: 700;
+    }
+    .badge-recibida   { background: rgba(41,128,185,0.1);  color: #2980B9; }
+    .badge-en_proceso { background: rgba(243,156,18,0.15); color: #d68910; }
+    .badge-resuelta   { background: rgba(39,174,96,0.12);  color: var(--success); }
+    .badge-cerrada    { background: rgba(108,108,108,0.12); color: var(--text-muted); }
+
+    .badge-prioridad-alta   { background: rgba(192,57,43,0.1); color: var(--primary); }
+    .badge-prioridad-media  { background: rgba(243,156,18,0.12); color: #d68910; }
+    .badge-prioridad-baja   { background: rgba(39,174,96,0.1); color: var(--success); }
+
+    /* ── TABS ───────────────────────────────────────── */
+    .pqrs-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .pqrs-tab {
+      padding: 12px 24px;
+      font-family: var(--font-main);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pqrs-tab:hover { color: var(--primary); }
+    .pqrs-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .pqrs-tab-content { display: none; }
+    .pqrs-tab-content.active { display: block; }
+
+    /* ── ALERT ──────────────────────────────────────── */
+    .alert {
+      display: flex;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .alert i { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .alert-info { background: rgba(41,128,185,0.08); color: #2471a3; border: 1px solid rgba(41,128,185,0.2); }
+    .alert-success { background: rgba(39,174,96,0.08); color: #1e8449; border: 1px solid rgba(39,174,96,0.2); }
+
+    /* ── RESPONSIVE ─────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .pqrs-layout { grid-template-columns: 1fr; }
+      .pqrs-layout .sidebar-col { order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .pqrs-layout .sidebar-col .info-card { margin-bottom: 0; }
+    }
+    @media (max-width: 900px) {
+      .pqrs-types-grid { grid-template-columns: repeat(2, 1fr); }
+      .tipo-radio-group { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .card { padding: 24px 18px; }
+      .form-row, .form-row-3 { grid-template-columns: 1fr; }
+      .pqrs-types-grid { grid-template-columns: repeat(2, 1fr); }
+      .pqrs-layout .sidebar-col { grid-template-columns: 1fr; }
+      .pqrs-tabs { overflow-x: auto; }
+      .pqrs-tab { white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PAGE LOADER ───────────────────────────────────────── -->
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- ── NAVBAR ────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+
+    <div class="navbar-nav">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html">Productos</a>
+      <a href="servicios.html">Servicios</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="promociones.html">Promociones</a>
+      <a href="pqrs.html" class="active">PQRS</a>
+      <a href="contacto.html">Contacto</a>
+    </div>
+
+    <div class="navbar-actions" id="navbar-actions">
+      <!-- Rendered by JS -->
+    </div>
+
+    <button class="hamburger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── MOBILE MENU ────────────────────────────────────────── -->
+<div class="mobile-menu" role="navigation" aria-label="Menú móvil">
+  <nav class="mobile-menu-nav">
+    <a href="index.html"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="servicios.html"><i class="ri-tools-line"></i> Servicios</a>
+    <a href="cotizaciones.html"><i class="ri-file-list-line"></i> Cotizaciones</a>
+    <a href="promociones.html"><i class="ri-price-tag-3-line"></i> Promociones</a>
+    <a href="pqrs.html" class="active"><i class="ri-customer-service-line"></i> PQRS</a>
+    <a href="contacto.html"><i class="ri-map-pin-line"></i> Contacto</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+    <a href="login.html"><i class="ri-user-line"></i> Iniciar Sesión</a>
+  </nav>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- ── PAGE HERO ────────────────────────────────────────── -->
+  <section class="page-hero">
+    <div class="container">
+      <div class="page-hero-inner">
+        <div class="page-hero-eyebrow">
+          <i class="ri-customer-service-line"></i>
+          <span>Atención al cliente</span>
+        </div>
+        <h1 class="page-hero-title">
+          Peticiones, Quejas,<br>
+          <span>Reclamos y Sugerencias</span>
+        </h1>
+        <p class="page-hero-subtitle">
+          Tu opinión es importante para nosotros. Cuéntanos cómo podemos mejorar y nos comprometemos a responderte en menos de 48 horas.
+        </p>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="index.html">Inicio</a>
+          <i class="ri-arrow-right-s-line"></i>
+          <span style="color:rgba(255,255,255,0.75)">PQRS</span>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TIPOS DE PQRS ────────────────────────────────────── -->
+  <section class="section-sm" style="background:var(--off-white);">
+    <div class="container">
+      <div class="pqrs-types-grid" data-aos="fade-up">
+        <div class="pqrs-type-card" onclick="setTipo('peticion')" id="tipo-card-peticion">
+          <div class="pqrs-type-icon"><i class="ri-file-list-3-line"></i></div>
+          <div class="pqrs-type-name">Petición</div>
+          <div class="pqrs-type-desc">Solicitud de información, documentos o acciones a la empresa</div>
+        </div>
+        <div class="pqrs-type-card" onclick="setTipo('queja')" id="tipo-card-queja">
+          <div class="pqrs-type-icon"><i class="ri-emotion-unhappy-line"></i></div>
+          <div class="pqrs-type-name">Queja</div>
+          <div class="pqrs-type-desc">Inconformidad sobre la calidad del servicio o atención</div>
+        </div>
+        <div class="pqrs-type-card" onclick="setTipo('reclamo')" id="tipo-card-reclamo">
+          <div class="pqrs-type-icon"><i class="ri-error-warning-line"></i></div>
+          <div class="pqrs-type-name">Reclamo</div>
+          <div class="pqrs-type-desc">Exigencia de reconocimiento o compensación por un daño</div>
+        </div>
+        <div class="pqrs-type-card" onclick="setTipo('sugerencia')" id="tipo-card-sugerencia">
+          <div class="pqrs-type-icon"><i class="ri-lightbulb-line"></i></div>
+          <div class="pqrs-type-name">Sugerencia</div>
+          <div class="pqrs-type-desc">Ideas o propuestas para mejorar nuestros productos y servicios</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONTENIDO PRINCIPAL ─────────────────────────────── -->
+  <section class="section" style="background:white;">
+    <div class="container">
+
+      <!-- TABS -->
+      <div class="pqrs-tabs" data-aos="fade-up">
+        <button class="pqrs-tab active" onclick="switchTab('nueva')" id="tab-nueva">
+          <i class="ri-add-circle-line"></i> Radicar PQRS
+        </button>
+        <button class="pqrs-tab" onclick="switchTab('consultar')" id="tab-consultar">
+          <i class="ri-search-line"></i> Consultar estado
+        </button>
+        <button class="pqrs-tab" onclick="switchTab('historial')" id="tab-historial">
+          <i class="ri-history-line"></i> Historial
+        </button>
+      </div>
+
+      <!-- ── TAB: NUEVA PQRS ─────────────────────────────── -->
+      <div class="pqrs-tab-content active" id="content-nueva">
+        <div class="pqrs-layout">
+
+          <!-- FORMULARIO -->
+          <div>
+            <div class="card" data-aos="fade-up">
+              <h2 class="card-title"><i class="ri-edit-line"></i> Radicar nueva PQRS</h2>
+              <p class="card-subtitle">Completa el formulario con todos los detalles para que podamos atenderte correctamente.</p>
+
+              <form id="pqrs-form" onsubmit="submitPQRS(event)">
+
+                <!-- TIPO (radio visual) -->
+                <div class="form-group">
+                  <label class="form-label required">Tipo de solicitud</label>
+                  <div class="tipo-radio-group">
+                    <label class="tipo-radio-label">
+                      <input type="radio" name="tipo" value="peticion" id="radio-peticion">
+                      <div class="tipo-radio-btn"><i class="ri-file-list-3-line"></i> Petición</div>
+                    </label>
+                    <label class="tipo-radio-label">
+                      <input type="radio" name="tipo" value="queja" id="radio-queja">
+                      <div class="tipo-radio-btn"><i class="ri-emotion-unhappy-line"></i> Queja</div>
+                    </label>
+                    <label class="tipo-radio-label">
+                      <input type="radio" name="tipo" value="reclamo" id="radio-reclamo">
+                      <div class="tipo-radio-btn"><i class="ri-error-warning-line"></i> Reclamo</div>
+                    </label>
+                    <label class="tipo-radio-label">
+                      <input type="radio" name="tipo" value="sugerencia" id="radio-sugerencia">
+                      <div class="tipo-radio-btn"><i class="ri-lightbulb-line"></i> Sugerencia</div>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- DATOS PERSONALES -->
+                <div class="form-group mb-0">
+                  <p style="font-family:var(--font-main);font-weight:700;font-size:0.82rem;color:var(--secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">
+                    <i class="ri-user-line" style="color:var(--primary);margin-right:6px;"></i>Datos personales
+                  </p>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required">Nombre completo</label>
+                    <input type="text" class="form-control" id="pqrs-nombre" placeholder="Tu nombre completo" required autocomplete="name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label required">Número de identificación</label>
+                    <input type="text" class="form-control" id="pqrs-cedula" placeholder="Cédula o NIT" required>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label required">Correo electrónico</label>
+                    <input type="email" class="form-control" id="pqrs-email" placeholder="correo@ejemplo.com" required autocomplete="email">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label required">Teléfono de contacto</label>
+                    <input type="tel" class="form-control" id="pqrs-telefono" placeholder="310 000 0000" required autocomplete="tel">
+                  </div>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- DETALLE SOLICITUD -->
+                <div class="form-group mb-0">
+                  <p style="font-family:var(--font-main);font-weight:700;font-size:0.82rem;color:var(--secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">
+                    <i class="ri-clipboard-line" style="color:var(--primary);margin-right:6px;"></i>Detalle de la solicitud
+                  </p>
+                </div>
+                <div class="form-group">
+                  <label class="form-label required">Asunto</label>
+                  <input type="text" class="form-control" id="pqrs-asunto" placeholder="Resumen breve del motivo de tu PQRS" required maxlength="150">
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Producto o servicio relacionado</label>
+                    <select class="form-control" id="pqrs-producto">
+                      <option value="">— No aplica —</option>
+                      <option value="pinturas">Pinturas y Vinilos</option>
+                      <option value="acabados">Materiales de Acabado</option>
+                      <option value="pegantes">Pegantes y Adhesivos</option>
+                      <option value="drywall">Drywall y PVC</option>
+                      <option value="herramientas">Herramientas</option>
+                      <option value="servicio">Servicio de instalación</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">N.° de pedido (si aplica)</label>
+                    <input type="text" class="form-control" id="pqrs-pedido" placeholder="Ej: PED-2026-001">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label required">Descripción detallada</label>
+                  <textarea class="form-control" id="pqrs-descripcion" rows="5"
+                    placeholder="Describe con detalle tu petición, queja, reclamo o sugerencia. Incluye fechas, hechos y cualquier información relevante..." required
+                    maxlength="1500"></textarea>
+                  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;text-align:right;" id="pqrs-char-count">0 / 1500 caracteres</div>
+                </div>
+
+                <!-- ADJUNTAR ARCHIVO -->
+                <div class="form-group">
+                  <label class="form-label">Adjuntar evidencia (opcional)</label>
+                  <div class="file-upload-area" onclick="document.getElementById('pqrs-archivo').click()">
+                    <div class="file-upload-icon"><i class="ri-upload-cloud-2-line"></i></div>
+                    <div class="file-upload-text">
+                      <strong>Haz clic para subir</strong> o arrastra el archivo aquí
+                    </div>
+                    <div class="file-upload-hint">PNG, JPG, PDF hasta 5 MB</div>
+                    <div id="file-name-display" style="margin-top:8px;font-size:0.8rem;color:var(--primary);display:none;"></div>
+                  </div>
+                  <input type="file" id="pqrs-archivo" accept=".jpg,.jpeg,.png,.pdf" style="display:none;" onchange="showFileName(this)">
+                </div>
+
+                <div class="alert alert-info" style="margin-bottom:20px;">
+                  <i class="ri-information-line"></i>
+                  <span>Al radicar tu PQRS, recibirás un número de radicado en tu correo electrónico para hacer seguimiento. Tiempo de respuesta máximo: <strong>48 horas hábiles</strong>.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="font-size:0.95rem;padding:14px;">
+                  <i class="ri-send-plane-fill"></i> Radicar PQRS
+                </button>
+
+              </form>
+            </div>
+          </div>
+
+          <!-- SIDEBAR -->
+          <div class="sidebar-col">
+            <!-- Información del proceso -->
+            <div class="info-card" data-aos="fade-up" data-aos-delay="100">
+              <div class="info-card-header">
+                <h4><i class="ri-roadmap-line" style="margin-right:6px;color:var(--primary);"></i>¿Cómo funciona?</h4>
+                <p>Tu solicitud en 4 pasos</p>
+              </div>
+              <div class="info-card-body">
+                <div class="status-steps">
+                  <div class="status-step">
+                    <div class="status-step-line">
+                      <div class="status-dot done"><i class="ri-check-line" style="font-size:0.8rem;"></i></div>
+                      <div class="status-connector done"></div>
+                    </div>
+                    <div class="status-step-content">
+                      <div class="status-step-title">Radicas tu PQRS</div>
+                      <div class="status-step-desc">Diligencia el formulario con todos los detalles.</div>
+                    </div>
+                  </div>
+                  <div class="status-step">
+                    <div class="status-step-line">
+                      <div class="status-dot done"><i class="ri-check-line" style="font-size:0.8rem;"></i></div>
+                      <div class="status-connector done"></div>
+                    </div>
+                    <div class="status-step-content">
+                      <div class="status-step-title">Confirmación de recibido</div>
+                      <div class="status-step-desc">Recibes tu número de radicado por correo.</div>
+                    </div>
+                  </div>
+                  <div class="status-step">
+                    <div class="status-step-line">
+                      <div class="status-dot active">3</div>
+                      <div class="status-connector"></div>
+                    </div>
+                    <div class="status-step-content">
+                      <div class="status-step-title">Análisis y gestión</div>
+                      <div class="status-step-desc">Nuestro equipo revisa y gestiona tu solicitud.</div>
+                    </div>
+                  </div>
+                  <div class="status-step">
+                    <div class="status-step-line">
+                      <div class="status-dot">4</div>
+                    </div>
+                    <div class="status-step-content" style="padding-bottom:0;">
+                      <div class="status-step-title">Respuesta final</div>
+                      <div class="status-step-desc">Recibes la respuesta en máx. 48 horas hábiles.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contacto directo -->
+            <div class="info-card" data-aos="fade-up" data-aos-delay="150">
+              <div class="info-card-header">
+                <h4><i class="ri-phone-line" style="margin-right:6px;color:var(--primary);"></i>Contacto directo</h4>
+                <p>¿Prefieres hablar con nosotros?</p>
+              </div>
+              <div class="info-card-body">
+                <div class="info-item">
+                  <div class="info-item-icon"><i class="ri-whatsapp-line"></i></div>
+                  <div>
+                    <div class="info-item-label">WhatsApp</div>
+                    <div class="info-item-value">310 123 4567</div>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-item-icon"><i class="ri-mail-line"></i></div>
+                  <div>
+                    <div class="info-item-label">Email</div>
+                    <div class="info-item-value">info@acabados1a.com</div>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-item-icon"><i class="ri-time-line"></i></div>
+                  <div>
+                    <div class="info-item-label">Horario de atención</div>
+                    <div class="info-item-value">Lun – Sáb: 8:00am – 6:00pm</div>
+                  </div>
+                </div>
+                <a href="https://wa.me/573101234567?text=Hola!%20Quiero%20radicar%20una%20PQRS"
+                   target="_blank" rel="noopener"
+                   class="btn btn-success btn-block" style="margin-top:16px;">
+                  <i class="ri-whatsapp-line"></i> Escribir por WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- /TAB NUEVA -->
+
+      <!-- ── TAB: CONSULTAR ESTADO ───────────────────────── -->
+      <div class="pqrs-tab-content" id="content-consultar">
+        <div style="max-width:560px;margin:0 auto;">
+          <div class="card" data-aos="fade-up">
+            <h2 class="card-title"><i class="ri-search-line"></i> Consultar estado de PQRS</h2>
+            <p class="card-subtitle">Ingresa el número de radicado que recibiste en tu correo para ver el estado de tu solicitud.</p>
+            <div style="display:flex;gap:12px;align-items:flex-end;">
+              <div class="form-group" style="flex:1;margin-bottom:0;">
+                <label class="form-label required">Número de radicado</label>
+                <input type="text" class="form-control" id="consulta-radicado" placeholder="Ej: PQRS-2026-001" style="font-family:var(--font-main);font-weight:600;letter-spacing:1px;">
+              </div>
+              <button class="btn btn-primary" onclick="consultarPQRS()" style="padding:12px 24px;flex-shrink:0;">
+                <i class="ri-search-line"></i> Buscar
+              </button>
+            </div>
+
+            <div id="consulta-result" style="margin-top:24px;display:none;">
+              <!-- Resultado dinámico -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /TAB CONSULTAR -->
+
+      <!-- ── TAB: HISTORIAL ──────────────────────────────── -->
+      <div class="pqrs-tab-content" id="content-historial">
+        <div class="card" data-aos="fade-up">
+          <h2 class="card-title"><i class="ri-history-line"></i> Historial de PQRS</h2>
+          <p class="card-subtitle">Registro de todas las solicitudes radicadas.</p>
+          <div class="pqrs-table-wrapper">
+            <table class="pqrs-table" id="pqrs-historial-table">
+              <thead>
+                <tr>
+                  <th>Radicado</th>
+                  <th>Tipo</th>
+                  <th>Asunto</th>
+                  <th>Estado</th>
+                  <th>Prioridad</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="pqrs-tbody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- /TAB HISTORIAL -->
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">ACABADOS <span>1A</span></div>
+        <p class="footer-desc">Empresa especializada en materiales de acabados, pinturas y servicios de instalación para hogares y empresas del Huila.</p>
+        <p class="footer-desc" style="margin-bottom:16px;font-style:italic;">"Calidad y servicio en cada proyecto"</p>
+        <div class="footer-socials">
+          <a href="https://facebook.com/acabados1a" target="_blank" rel="noopener" class="footer-social" aria-label="Facebook"><i class="ri-facebook-line"></i></a>
+          <a href="https://instagram.com/acabados1a" target="_blank" rel="noopener" class="footer-social" aria-label="Instagram"><i class="ri-instagram-line"></i></a>
+          <a href="https://wa.me/573101234567" target="_blank" rel="noopener" class="footer-social" aria-label="WhatsApp"><i class="ri-whatsapp-line"></i></a>
+          <a href="mailto:info@acabados1a.com" class="footer-social" aria-label="Email"><i class="ri-mail-line"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Productos</h4>
+        <div class="footer-links">
+          <a href="productos.html?cat=1">Pinturas y Vinilos</a>
+          <a href="productos.html?cat=2">Materiales de Acabado</a>
+          <a href="productos.html?cat=3">Pegantes y Adhesivos</a>
+          <a href="productos.html?cat=4">Drywall y PVC</a>
+          <a href="productos.html?cat=5">Herramientas</a>
+          <a href="promociones.html">Ofertas</a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Mi Cuenta</h4>
+        <div class="footer-links">
+          <a href="login.html">Iniciar Sesión</a>
+          <a href="registro.html">Registrarse</a>
+          <a href="perfil.html">Mi Perfil</a>
+          <a href="pedidos.html">Mis Pedidos</a>
+          <a href="cotizaciones.html">Cotizaciones</a>
+          <a href="historial-compras.html">Historial</a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Contacto</h4>
+        <div class="footer-contact-item"><i class="ri-map-pin-line"></i> Calle 5 #10-20, Tesalia, Huila</div>
+        <div class="footer-contact-item"><i class="ri-phone-line"></i> 310 123 4567</div>
+        <div class="footer-contact-item"><i class="ri-mail-line"></i> info@acabados1a.com</div>
+        <div class="footer-contact-item"><i class="ri-time-line"></i> Lun-Sáb: 8am–6pm</div>
+        <a href="pqrs.html" class="btn btn-outline-red btn-sm" style="width:100%;justify-content:center;display:flex;margin-top:16px;">
+          <i class="ri-customer-service-line"></i> Atención PQRS
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Acabados y Diseños 1A — Todos los derechos reservados | NIT: 1079409325-1 |
+         Desarrollado por Juliana Trujillo &amp; Jose Miguel Martínez — SENA ADSO Ficha 3151895</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ── FLOATING BUTTONS ───────────────────────────────────── -->
+<a href="https://wa.me/573101234567?text=Hola!%20Quiero%20más%20información"
+   target="_blank" rel="noopener" id="whatsapp-float" title="Contáctanos por WhatsApp" aria-label="Contactar por WhatsApp">
+  <i class="ri-whatsapp-line"></i>
+</a>
+<button id="back-to-top" title="Volver arriba" aria-label="Volver al inicio">
+  <i class="ri-arrow-up-line"></i>
+</button>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   PQRS PAGE JS
+   ═══════════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderPQRSHistorial();
+  initCharCounter();
+  prefillFromUser();
+});
+
+/* ── PRE-FILL FORM IF USER LOGGED ─────────────────── */
+function prefillFromUser() {
+  const user = Auth.getCurrentUser();
+  if (!user) return;
+  const nombre = document.getElementById('pqrs-nombre');
+  const email  = document.getElementById('pqrs-email');
+  const tel    = document.getElementById('pqrs-telefono');
+  const cedula = document.getElementById('pqrs-cedula');
+  if (nombre) nombre.value = `${user.nombre} ${user.apellido}`;
+  if (email)  email.value  = user.email;
+  if (tel)    tel.value    = user.telefono;
+  if (cedula) cedula.value = user.numero_identificacion;
+}
+
+/* ── SET TIPO FROM CARDS ───────────────────────────── */
+function setTipo(tipo) {
+  // Highlight card
+  document.querySelectorAll('.pqrs-type-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('tipo-card-' + tipo);
+  if (card) card.classList.add('active');
+  // Check radio
+  const radio = document.getElementById('radio-' + tipo);
+  if (radio) radio.checked = true;
+  // Scroll to form
+  document.getElementById('content-nueva').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  switchTab('nueva');
+}
+
+/* ── TABS ─────────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.pqrs-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.pqrs-tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('content-' + tab).classList.add('active');
+}
+
+/* ── CHAR COUNTER ─────────────────────────────────── */
+function initCharCounter() {
+  const desc = document.getElementById('pqrs-descripcion');
+  const counter = document.getElementById('pqrs-char-count');
+  if (!desc || !counter) return;
+  desc.addEventListener('input', () => {
+    counter.textContent = `${desc.value.length} / 1500 caracteres`;
+    counter.style.color = desc.value.length > 1400 ? 'var(--primary)' : 'var(--text-muted)';
+  });
+}
+
+/* ── FILE NAME DISPLAY ────────────────────────────── */
+function showFileName(input) {
+  const display = document.getElementById('file-name-display');
+  if (!display) return;
+  if (input.files && input.files[0]) {
+    display.textContent = '📎 ' + input.files[0].name;
+    display.style.display = 'block';
+  }
+}
+
+/* ── SUBMIT PQRS ──────────────────────────────────── */
+function submitPQRS(e) {
+  e.preventDefault();
+  const tipo = document.querySelector('input[name="tipo"]:checked');
+  if (!tipo) {
+    showToast('Por favor selecciona el tipo de PQRS', 'warning');
+    return;
+  }
+  const radicado = generarRadicado();
+  Swal.fire({
+    icon: 'success',
+    title: '¡PQRS radicada exitosamente!',
+    html: `
+      <p style="margin-bottom:12px;">Tu solicitud ha sido registrada con el número:</p>
+      <div style="background:#f8f9fa;border:2px dashed #C0392B;border-radius:8px;padding:12px 20px;margin:0 auto 16px;display:inline-block;">
+        <strong style="font-size:1.2rem;font-family:Montserrat,sans-serif;color:#C0392B;letter-spacing:2px;">${radicado}</strong>
+      </div>
+      <p style="font-size:0.85rem;color:#6c6c6c;">Recibirás una confirmación en tu correo electrónico. Tiempo de respuesta: <strong>máximo 48 horas hábiles</strong>.</p>
+    `,
+    confirmButtonColor: '#C0392B',
+    confirmButtonText: 'Entendido',
+    showCloseButton: true,
+  });
+  e.target.reset();
+  document.getElementById('file-name-display').style.display = 'none';
+  document.getElementById('pqrs-char-count').textContent = '0 / 1500 caracteres';
+  document.querySelectorAll('.pqrs-type-card').forEach(c => c.classList.remove('active'));
+}
+
+/* ── GENERAR RADICADO ─────────────────────────────── */
+function generarRadicado() {
+  const now = new Date();
+  const seq = String(MockData.pqrs.length + 1 + Math.floor(Math.random() * 10)).padStart(3, '0');
+  return `PQRS-${now.getFullYear()}-${seq}`;
+}
+
+/* ── CONSULTAR PQRS ───────────────────────────────── */
+function consultarPQRS() {
+  const val = (document.getElementById('consulta-radicado').value || '').trim().toUpperCase();
+  const result = document.getElementById('consulta-result');
+  if (!val) {
+    showToast('Ingresa un número de radicado', 'warning');
+    return;
+  }
+  const pqrs = MockData.pqrs.find(p => p.numero_pqrs === val);
+  result.style.display = 'block';
+
+  if (!pqrs) {
+    result.innerHTML = `
+      <div class="alert" style="background:rgba(192,57,43,0.07);border:1px solid rgba(192,57,43,0.2);color:var(--primary);">
+        <i class="ri-error-warning-line"></i>
+        <span>No encontramos ninguna PQRS con el número <strong>${val}</strong>. Verifica el radicado e intenta de nuevo.</span>
+      </div>`;
+    return;
+  }
+
+  const usuario = MockData.usuarios.find(u => u.id_usuario === pqrs.id_usuario);
+  const nombre = usuario ? `${usuario.nombre} ${usuario.apellido}` : 'N/A';
+  const estadoMap = { recibida: 'Recibida', en_proceso: 'En proceso', resuelta: 'Resuelta', cerrada: 'Cerrada' };
+  const tipoMap = { peticion: 'Petición', queja: 'Queja', reclamo: 'Reclamo', sugerencia: 'Sugerencia' };
+
+  result.innerHTML = `
+    <div class="alert alert-success" style="margin-bottom:16px;">
+      <i class="ri-checkbox-circle-line"></i>
+      <span>PQRS encontrada. A continuación el estado de tu solicitud.</span>
+    </div>
+    <div style="background:var(--off-white);border-radius:var(--radius);padding:20px;border:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;">
+        <div>
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Radicado</div>
+          <div style="font-family:var(--font-main);font-weight:700;color:var(--primary);letter-spacing:1px;">${pqrs.numero_pqrs}</div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Estado</div>
+          <span class="badge-estado badge-${pqrs.estado}">${estadoMap[pqrs.estado] || pqrs.estado}</span>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Tipo</div>
+          <span class="badge-tipo badge-${pqrs.tipo}">${tipoMap[pqrs.tipo] || pqrs.tipo}</span>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Fecha</div>
+          <div style="font-size:0.85rem;color:var(--text);">${Helpers.formatDate(pqrs.fecha_creacion)}</div>
+        </div>
+        <div style="grid-column:1/-1;">
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Asunto</div>
+          <div style="font-size:0.88rem;color:var(--text);font-weight:500;">${pqrs.asunto}</div>
+        </div>
+        <div style="grid-column:1/-1;">
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Descripción</div>
+          <div style="font-size:0.85rem;color:var(--text-light);line-height:1.6;">${pqrs.descripcion}</div>
+        </div>
+        ${pqrs.respuesta ? `
+        <div style="grid-column:1/-1;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:14px;">
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;"><i class="ri-reply-line" style="margin-right:4px;"></i>Respuesta del equipo</div>
+          <div style="font-size:0.85rem;color:#1e8449;line-height:1.6;">${pqrs.respuesta}</div>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+/* ── RENDER HISTORIAL TABLE ───────────────────────── */
+function renderPQRSHistorial() {
+  const tbody = document.getElementById('pqrs-tbody');
+  if (!tbody) return;
+
+  const estadoMap = { recibida: 'Recibida', en_proceso: 'En proceso', resuelta: 'Resuelta', cerrada: 'Cerrada' };
+  const tipoMap   = { peticion: 'Petición', queja: 'Queja', reclamo: 'Reclamo', sugerencia: 'Sugerencia' };
+  const prioMap   = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+
+  tbody.innerHTML = MockData.pqrs.map(p => `
+    <tr>
+      <td>
+        <span style="font-family:var(--font-main);font-size:0.78rem;font-weight:700;color:var(--secondary);letter-spacing:0.5px;">${p.numero_pqrs}</span>
+      </td>
+      <td><span class="badge-tipo badge-${p.tipo}">${tipoMap[p.tipo] || p.tipo}</span></td>
+      <td style="max-width:220px;">
+        <div style="font-weight:500;font-size:0.85rem;color:var(--text);">${p.asunto}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${Helpers.getUserName(p.id_usuario)}</div>
+      </td>
+      <td><span class="badge-estado badge-${p.estado}">${estadoMap[p.estado] || p.estado}</span></td>
+      <td><span class="badge-tipo badge-prioridad-${p.prioridad}">${prioMap[p.prioridad] || p.prioridad}</span></td>
+      <td style="font-size:0.82rem;color:var(--text-light);white-space:nowrap;">${Helpers.formatDate(p.fecha_creacion)}</td>
+      <td>
+        <button class="btn btn-outline-red btn-sm"
+          onclick="verDetallePQRS(${p.id_pqrs})"
+          style="padding:5px 12px;font-size:0.75rem;">
+          <i class="ri-eye-line"></i> Ver
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+/* ── VER DETALLE MODAL ────────────────────────────── */
+function verDetallePQRS(id) {
+  const p = MockData.pqrs.find(x => x.id_pqrs === id);
+  if (!p) return;
+  const estadoMap = { recibida: 'Recibida', en_proceso: 'En proceso', resuelta: 'Resuelta', cerrada: 'Cerrada' };
+  const tipoMap   = { peticion: 'Petición', queja: 'Queja', reclamo: 'Reclamo', sugerencia: 'Sugerencia' };
+
+  Swal.fire({
+    title: `<span style="font-family:Montserrat,sans-serif;font-size:1rem;color:#C0392B;letter-spacing:1px;">${p.numero_pqrs}</span>`,
+    html: `
+      <div style="text-align:left;font-size:0.9rem;line-height:1.7;">
+        <div style="margin-bottom:10px;"><strong>Tipo:</strong> ${tipoMap[p.tipo] || p.tipo}</div>
+        <div style="margin-bottom:10px;"><strong>Estado:</strong> ${estadoMap[p.estado] || p.estado}</div>
+        <div style="margin-bottom:10px;"><strong>Asunto:</strong> ${p.asunto}</div>
+        <div style="margin-bottom:10px;"><strong>Descripción:</strong><br><span style="color:#6c6c6c;">${p.descripcion}</span></div>
+        <div style="margin-bottom:10px;"><strong>Fecha:</strong> ${Helpers.formatDate(p.fecha_creacion)}</div>
+        ${p.respuesta ? `<div style="background:rgba(39,174,96,0.08);border-radius:8px;padding:12px;margin-top:8px;"><strong style="color:#27AE60;">Respuesta:</strong><br><span style="color:#1e8449;">${p.respuesta}</span></div>` : ''}
+      </div>
+    `,
+    confirmButtonColor: '#C0392B',
+    confirmButtonText: 'Cerrar',
+    width: '520px',
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Pedidos — Acabados y Diseños 1A</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    .orders-page { background: var(--off-white); min-height: 100vh; }
+
+    /* Topbar */
+    .orders-topbar { background: white; border-bottom: 1px solid var(--border); padding: 14px 0; position: sticky; top: var(--navbar-height); z-index: 90; box-shadow: var(--shadow-sm); }
+    .orders-topbar-inner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    /* Stats row */
+    .orders-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+    .order-stat-card { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; display: flex; align-items: center; gap: 16px; transition: var(--transition); }
+    .order-stat-card:hover { box-shadow: var(--shadow); }
+    .order-stat-icon { width: 48px; height: 48px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+    .order-stat-icon.red { background: rgba(192,57,43,0.1); color: var(--primary); }
+    .order-stat-icon.green { background: rgba(39,174,96,0.1); color: var(--success); }
+    .order-stat-icon.blue { background: rgba(41,128,185,0.1); color: var(--info); }
+    .order-stat-icon.yellow { background: rgba(243,156,18,0.1); color: var(--warning); }
+    .order-stat-val { font-family: var(--font-main); font-weight: 800; font-size: 1.6rem; color: var(--secondary); }
+    .order-stat-lab { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Order card */
+    .order-card { background: white; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden; transition: var(--transition); }
+    .order-card:hover { box-shadow: var(--shadow); }
+    .order-card-header { padding: 16px 24px; background: var(--off-white); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .order-num { font-family: var(--font-main); font-weight: 800; font-size: 1rem; color: var(--secondary); display: flex; align-items: center; gap: 8px; }
+    .order-date { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .order-card-body { padding: 20px 24px; }
+    .order-items-mini { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .order-item-chip { display: flex; align-items: center; gap: 8px; background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; font-size: 0.8rem; }
+    .order-item-chip img { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; }
+    .order-meta-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .order-meta-label { font-size: 0.68rem; font-family: var(--font-main); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
+    .order-meta-value { font-size: 0.88rem; font-weight: 600; color: var(--secondary); }
+    .order-meta-value.price { color: var(--primary); font-family: var(--font-main); font-size: 1rem; font-weight: 800; }
+    .order-card-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--off-white); }
+
+    /* Status badge */
+    .status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; font-family: var(--font-main); }
+    .status-pendiente { background: rgba(243,156,18,0.12); color: var(--warning); }
+    .status-en_proceso { background: rgba(41,128,185,0.12); color: var(--info); }
+    .status-completada { background: rgba(39,174,96,0.12); color: var(--success); }
+    .status-cancelada { background: rgba(192,57,43,0.12); color: var(--danger); }
+    .status-enviado { background: rgba(142,68,173,0.12); color: #8e44ad; }
+
+    /* Tracking */
+    .tracking-bar { display: flex; align-items: center; margin: 8px 0; }
+    .tracking-step { display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .tracking-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 2px solid var(--border); background: white; color: var(--text-muted); transition: var(--transition); }
+    .tracking-dot.done { background: var(--success); color: white; border-color: var(--success); }
+    .tracking-dot.active { background: var(--primary); color: white; border-color: var(--primary); animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.4); } 50% { box-shadow: 0 0 0 6px rgba(192,57,43,0); } }
+    .tracking-label { font-size: 0.65rem; font-family: var(--font-main); font-weight: 600; color: var(--text-muted); text-align: center; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .tracking-line { flex: 1; height: 2px; background: var(--border); max-width: 100%; margin: 0 2px; position: relative; bottom: 10px; }
+    .tracking-line.done { background: var(--success); }
+
+    /* Filters */
+    .status-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sft { padding: 7px 16px; border-radius: 20px; font-family: var(--font-main); font-size: 0.78rem; font-weight: 600; border: 1.5px solid var(--border); cursor: pointer; transition: var(--transition); color: var(--text-muted); background: white; }
+    .sft:hover { border-color: var(--primary); color: var(--primary); }
+    .sft.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Empty */
+    .empty-orders { text-align: center; padding: 80px 20px; }
+    .empty-orders i { font-size: 4rem; color: var(--border); display: block; margin-bottom: 20px; }
+    .empty-orders h3 { font-family: var(--font-main); font-weight: 700; font-size: 1.3rem; color: var(--text-light); margin-bottom: 10px; }
+
+    /* Order detail modal */
+    .order-detail-header { background: var(--secondary); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .order-detail-section { margin-bottom: 20px; }
+    .order-detail-section-title { font-family: var(--font-main); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .order-product-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .order-product-row:last-child { border-bottom: none; }
+    .order-product-row img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+
+    @media (max-width: 768px) {
+      .orders-stats { grid-template-columns: 1fr 1fr; }
+      .order-meta-row { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .orders-stats { grid-template-columns: 1fr; }
+      .order-meta-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+    <div class="navbar-nav">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html">Productos</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="pedidos.html" class="active">Pedidos</a>
+      <a href="historial-compras.html">Historial</a>
+      <a href="pqrs.html">PQRS</a>
+    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
+    <button class="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <nav class="mobile-menu-nav">
+    <a href="index.html"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="pedidos.html"><i class="ri-shopping-bag-line"></i> Pedidos</a>
+    <a href="historial-compras.html"><i class="ri-history-line"></i> Historial</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+  </nav>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="order-detail-modal">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="od-modal-title">Detalle del pedido</span>
+      <button class="modal-close" onclick="closeModal('order-detail-modal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body" id="od-modal-body" style="padding:0;"></div>
+    <div class="modal-footer" id="od-modal-footer"></div>
+  </div>
+</div>
+
+<main class="main-content orders-page">
+
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <div class="breadcrumb-item"><a href="index.html">Inicio</a></div>
+        <div class="breadcrumb-sep"><i class="ri-arrow-right-s-line"></i></div>
+        <div class="breadcrumb-item active">Mis Pedidos</div>
+      </div>
+      <h1 class="page-header-title">Mis Pedidos</h1>
+      <p class="page-header-sub">Consulta el estado y seguimiento de todos tus pedidos</p>
+    </div>
+  </div>
+
+  <!-- Topbar -->
+  <div class="orders-topbar">
+    <div class="container">
+      <div class="orders-topbar-inner">
+        <div class="status-filter-tabs" id="status-tabs">
+          <button class="sft active" data-status="" onclick="filterOrders('',this)">Todos</button>
+          <button class="sft" data-status="pendiente" onclick="filterOrders('pendiente',this)">Pendientes</button>
+          <button class="sft" data-status="en_proceso" onclick="filterOrders('en_proceso',this)">En proceso</button>
+          <button class="sft" data-status="completada" onclick="filterOrders('completada',this)">Completados</button>
+          <button class="sft" data-status="cancelada" onclick="filterOrders('cancelada',this)">Cancelados</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;">
+          <div class="search-bar" style="max-width:200px;">
+            <input type="text" id="order-search" placeholder="Buscar pedido..." oninput="renderOrders()">
+            <button><i class="ri-search-line"></i></button>
+          </div>
+          <select class="sort-select" id="order-sort" onchange="renderOrders()">
+            <option value="newest">Más reciente</option>
+            <option value="oldest">Más antiguo</option>
+            <option value="total-desc">Mayor monto</option>
+            <option value="total-asc">Menor monto</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top:28px;padding-bottom:60px;">
+
+    <!-- Stats -->
+    <div class="orders-stats" id="orders-stats"><!-- JS --></div>
+
+    <!-- Orders list -->
+    <div id="orders-container"><!-- JS --></div>
+    <div class="pagination" id="orders-pagination"></div>
+
+  </div>
+</main>
+
+<a href="https://wa.me/573101234567" target="_blank" id="whatsapp-float"><i class="ri-whatsapp-line"></i></a>
+<button id="back-to-top"><i class="ri-arrow-up-line"></i></button>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div><div class="footer-brand">ACABADOS <span>1A</span></div><p class="footer-desc">Materiales de acabados y servicios de instalación.</p></div>
+      <div><h4 class="footer-title">Mi Cuenta</h4><div class="footer-links"><a href="perfil.html">Mi Perfil</a><a href="pedidos.html">Mis Pedidos</a><a href="historial-compras.html">Historial</a><a href="cotizaciones.html">Cotizaciones</a></div></div>
+      <div><h4 class="footer-title">Comprar</h4><div class="footer-links"><a href="productos.html">Catálogo</a><a href="carrito.html">Carrito</a><a href="promociones.html">Ofertas</a></div></div>
+      <div><h4 class="footer-title">Contacto</h4><div class="footer-contact-item"><i class="ri-phone-line"></i> 310 123 4567</div><div class="footer-contact-item"><i class="ri-mail-line"></i> info@acabados1a.com</div></div>
+    </div>
+    <div class="footer-bottom">© 2026 Acabados y Diseños 1A</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+let currentUser = null;
+let userOrders = [];
+let activeStatus = '';
+const PAGE_SIZE = 5;
+let ordersPage = 1;
+
+const trackingSteps = {
+  pendiente:    [1,0,0,0],
+  en_proceso:   [1,1,0,0],
+  enviado:      [1,1,1,0],
+  completada:   [1,1,1,1],
+  cancelada:    [0,0,0,0],
+};
+const paymentLabels = { tarjeta:'Tarjeta', nequi:'Nequi', transferencia:'Transferencia', efectivo:'Efectivo' };
+
+document.addEventListener('DOMContentLoaded', () => {
+  currentUser = Auth.getCurrentUser();
+  if (!currentUser) { window.location.href = 'login.html'; return; }
+
+  // Load user orders (real + simulate extras)
+  userOrders = MockData.ventas.filter(v => v.id_usuario === currentUser.id_usuario);
+
+  // If no orders, show some demo data
+  if (userOrders.length === 0) {
+    userOrders = MockData.ventas.slice(0, 3).map(v => ({...v, id_usuario: currentUser.id_usuario}));
+  }
+
+  renderStats();
+  renderOrders();
+});
+
+// ── STATS ─────────────────────────────────────────────────
+function renderStats() {
+  const total = userOrders.length;
+  const pending = userOrders.filter(o => o.estado === 'pendiente').length;
+  const inProcess = userOrders.filter(o => o.estado === 'en_proceso').length;
+  const completed = userOrders.filter(o => o.estado === 'completada').length;
+  const spent = userOrders.filter(o => o.estado === 'completada').reduce((s,o) => s + (o.total||0), 0);
+
+  document.getElementById('orders-stats').innerHTML = `
+    <div class="order-stat-card">
+      <div class="order-stat-icon red"><i class="ri-shopping-bag-line"></i></div>
+      <div><div class="order-stat-val">${total}</div><div class="order-stat-lab">Total pedidos</div></div>
+    </div>
+    <div class="order-stat-card">
+      <div class="order-stat-icon yellow"><i class="ri-time-line"></i></div>
+      <div><div class="order-stat-val">${pending + inProcess}</div><div class="order-stat-lab">En progreso</div></div>
+    </div>
+    <div class="order-stat-card">
+      <div class="order-stat-icon green"><i class="ri-checkbox-circle-line"></i></div>
+      <div><div class="order-stat-val">${completed}</div><div class="order-stat-lab">Completados</div></div>
+    </div>
+    <div class="order-stat-card">
+      <div class="order-stat-icon blue"><i class="ri-money-dollar-circle-line"></i></div>
+      <div><div class="order-stat-val">${formatCOP(spent)}</div><div class="order-stat-lab">Total gastado</div></div>
+    </div>`;
+}
+
+// ── RENDER ORDERS ─────────────────────────────────────────
+function renderOrders() {
+  const search = document.getElementById('order-search').value.toLowerCase();
+  const sort = document.getElementById('order-sort').value;
+
+  let orders = [...userOrders].filter(o => {
+    const matchStatus = !activeStatus || o.estado === activeStatus;
+    const matchSearch = !search || o.numero_venta.toLowerCase().includes(search);
+    return matchStatus && matchSearch;
+  });
+
+  orders.sort((a,b) => {
+    if (sort === 'newest') return new Date(b.fecha) - new Date(a.fecha);
+    if (sort === 'oldest') return new Date(a.fecha) - new Date(b.fecha);
+    if (sort === 'total-desc') return (b.total||0) - (a.total||0);
+    if (sort === 'total-asc') return (a.total||0) - (b.total||0);
+    return 0;
+  });
+
+  const container = document.getElementById('orders-container');
+
+  if (orders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-orders">
+        <i class="ri-shopping-bag-line"></i>
+        <h3>${activeStatus ? 'No hay pedidos con este estado' : 'No tienes pedidos aún'}</h3>
+        <p>Cuando realices una compra, aquí podrás hacer seguimiento de tus pedidos</p>
+        <a href="productos.html" class="btn btn-primary" style="margin-top:16px;"><i class="ri-store-line"></i> Ir al catálogo</a>
+      </div>`;
+    document.getElementById('orders-pagination').innerHTML = '';
+    return;
+  }
+
+  const paged = orders.slice((ordersPage-1)*PAGE_SIZE, ordersPage*PAGE_SIZE);
+  container.innerHTML = paged.map(o => renderOrderCard(o)).join('');
+  renderOrdersPagination(orders.length);
+}
+
+function renderOrderCard(o) {
+  const details = MockData.detalle_ventas ? MockData.detalle_ventas.filter(d => d.id_venta === o.id_venta) : [];
+  const steps = trackingSteps[o.estado] || [0,0,0,0];
+  const stepLabels = ['Recibido','Preparando','Enviado','Entregado'];
+
+  const itemsHtml = details.slice(0,3).map(d => {
+    const prod = MockData.productos.find(p => p.id_producto === d.id_producto);
+    if (!prod) return '';
+    return `<div class="order-item-chip">
+      <img src="${prod.imagen_url}" alt="${prod.nombre}">
+      <span>${prod.nombre.length > 20 ? prod.nombre.slice(0,20)+'...' : prod.nombre}</span>
+      <span style="color:var(--text-muted);">x${d.cantidad}</span>
+    </div>`;
+  }).join('');
+
+  const moreItems = details.length > 3 ? `<div class="order-item-chip" style="background:var(--primary);color:white;border-color:var(--primary);">+${details.length-3} más</div>` : '';
+
+  // Cancelled shows different tracking
+  const trackingHtml = o.estado === 'cancelada'
+    ? `<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--danger);padding:8px 0;"><i class="ri-close-circle-line"></i> Pedido cancelado</div>`
+    : `<div class="tracking-bar">
+        ${stepLabels.map((label, i) => {
+          const dotClass = steps[i] > 1 ? 'done' : steps[i] === 1 ? 'active' : '';
+          const prevDone = i > 0 && steps[i-1] >= 1;
+          return `
+            ${i > 0 ? `<div class="tracking-line ${prevDone ? 'done' : ''}"></div>` : ''}
+            <div class="tracking-step">
+              <div class="tracking-dot ${dotClass}">${steps[i] >= 1 ? '<i class="ri-check-line" style="font-size:0.75rem;"></i>' : i+1}</div>
+              <div class="tracking-label">${label}</div>
+            </div>`;
+        }).join('')}
+      </div>`;
+
+  return `
+    <div class="order-card">
+      <div class="order-card-header">
+        <div>
+          <div class="order-num"><i class="ri-shopping-bag-line" style="color:var(--primary);"></i>${o.numero_venta}</div>
+          <div class="order-date">${Helpers.formatDate(o.fecha)}</div>
+        </div>
+        <span class="status status-${o.estado}">${{pendiente:'⏳ Pendiente',en_proceso:'🔄 En proceso',completada:'✅ Completado',cancelada:'❌ Cancelado',enviado:'🚚 Enviado'}[o.estado] || o.estado}</span>
+      </div>
+
+      <div class="order-card-body">
+        ${details.length > 0 ? `<div class="order-items-mini">${itemsHtml}${moreItems}</div>` : '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">Sin detalles de productos</div>'}
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.7rem;font-family:var(--font-main);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:8px;">Seguimiento del pedido</div>
+          ${trackingHtml}
+        </div>
+
+        <div class="order-meta-row">
+          <div>
+            <div class="order-meta-label">Pago</div>
+            <div class="order-meta-value">${paymentLabels[o.metodo_pago] || o.metodo_pago || '—'}</div>
+          </div>
+          <div>
+            <div class="order-meta-label">Productos</div>
+            <div class="order-meta-value">${details.length} artículo${details.length !== 1 ? 's' : ''}</div>
+          </div>
+          <div>
+            <div class="order-meta-label">Entrega estimada</div>
+            <div class="order-meta-value">${o.fecha_entrega_real ? Helpers.formatDate(o.fecha_entrega_real) : '24–48 h'}</div>
+          </div>
+          <div>
+            <div class="order-meta-label">Total</div>
+            <div class="order-meta-value price">${formatCOP(o.total)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-card-footer">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline-red btn-sm" onclick="viewOrderDetail(${o.id_venta})">
+            <i class="ri-eye-line"></i> Ver detalle
+          </button>
+          ${o.estado === 'pendiente' ? `<button class="btn btn-sm" style="background:var(--off-white);color:var(--text);" onclick="cancelOrder(${o.id_venta})"><i class="ri-close-line"></i> Cancelar</button>` : ''}
+          ${o.estado === 'completada' ? `<button class="btn btn-sm" style="background:rgba(39,174,96,0.08);color:var(--success);" onclick="reorder(${o.id_venta})"><i class="ri-refresh-line"></i> Repetir pedido</button>` : ''}
+          <button class="btn btn-sm" style="background:var(--off-white);color:var(--text-muted);" onclick="downloadInvoice(${o.id_venta})"><i class="ri-file-pdf-line"></i> Factura</button>
+        </div>
+        ${o.estado !== 'cancelada' && o.estado !== 'completada' ? `
+          <a href="https://wa.me/573101234567?text=Consulta por pedido ${o.numero_venta}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;">
+            <i class="ri-whatsapp-line"></i> Consultar estado
+          </a>` : ''}
+      </div>
+    </div>`;
+}
+
+// ── PAGINATION ────────────────────────────────────────────
+function renderOrdersPagination(total) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const pag = document.getElementById('orders-pagination');
+  if (pages <= 1) { pag.innerHTML = ''; return; }
+  let html = '';
+  if (ordersPage > 1) html += `<button class="page-btn" onclick="goOrdersPage(${ordersPage-1})"><i class="ri-arrow-left-s-line"></i></button>`;
+  for (let i = 1; i <= pages; i++) html += `<button class="page-btn ${i===ordersPage?'active':''}" onclick="goOrdersPage(${i})">${i}</button>`;
+  if (ordersPage < pages) html += `<button class="page-btn" onclick="goOrdersPage(${ordersPage+1})"><i class="ri-arrow-right-s-line"></i></button>`;
+  pag.innerHTML = html;
+}
+function goOrdersPage(p) { ordersPage = p; renderOrders(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── FILTER ────────────────────────────────────────────────
+function filterOrders(status, btn) {
+  activeStatus = status;
+  ordersPage = 1;
+  document.querySelectorAll('.sft').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+// ── ORDER DETAIL ──────────────────────────────────────────
+function viewOrderDetail(id) {
+  const o = userOrders.find(v => v.id_venta === id) || MockData.ventas.find(v => v.id_venta === id);
+  if (!o) return;
+  const details = MockData.detalle_ventas ? MockData.detalle_ventas.filter(d => d.id_venta === id) : [];
+
+  document.getElementById('od-modal-title').textContent = `Pedido ${o.numero_venta}`;
+  document.getElementById('od-modal-body').innerHTML = `
+    <div style="background:var(--secondary);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div><div style="font-family:var(--font-main);font-weight:800;font-size:1rem;color:white;">${o.numero_venta}</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.5);">${Helpers.formatDate(o.fecha)}</div></div>
+      <span class="status status-${o.estado}">${{pendiente:'⏳ Pendiente',en_proceso:'🔄 En proceso',completada:'✅ Completado',cancelada:'❌ Cancelado'}[o.estado]||o.estado}</span>
+    </div>
+    <div style="padding:24px;">
+      <div class="order-detail-section">
+        <div class="order-detail-section-title">Productos del pedido</div>
+        ${details.length > 0 ? details.map(d => {
+          const prod = MockData.productos.find(p => p.id_producto === d.id_producto);
+          return prod ? `
+            <div class="order-product-row">
+              <img src="${prod.imagen_url}" alt="${prod.nombre}">
+              <div style="flex:1;">
+                <div style="font-family:var(--font-main);font-weight:700;font-size:0.9rem;color:var(--secondary);">${prod.nombre}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">${Helpers.getCategoryName(prod.id_categoria)} · x${d.cantidad}</div>
+              </div>
+              <div style="font-family:var(--font-main);font-weight:800;color:var(--primary);">${formatCOP(d.subtotal)}</div>
+            </div>` : '';
+        }).join('') : '<div style="font-size:0.85rem;color:var(--text-muted);">Sin detalles de productos registrados</div>'}
+      </div>
+      <div class="order-detail-section">
+        <div class="order-detail-section-title">Resumen del pago</div>
+        <div style="background:var(--off-white);border-radius:var(--radius-sm);padding:16px;">
+          ${o.subtotal ? `<div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:8px;"><span style="color:var(--text-muted);">Subtotal</span><span>${formatCOP(o.subtotal)}</span></div>` : ''}
+          ${o.descuento ? `<div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:8px;color:var(--success);"><span>Descuento</span><span>-${formatCOP(o.descuento)}</span></div>` : ''}
+          ${o.iva_total ? `<div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:8px;"><span style="color:var(--text-muted);">IVA</span><span>${formatCOP(o.iva_total)}</span></div>` : ''}
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-main);font-weight:800;font-size:1.05rem;padding-top:10px;border-top:1px solid var(--border);"><span>Total</span><span style="color:var(--primary);">${formatCOP(o.total)}</span></div>
+        </div>
+      </div>
+      <div class="order-detail-section" style="margin-bottom:0;">
+        <div class="order-detail-section-title">Información del pedido</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.85rem;">
+          <div style="background:var(--off-white);padding:10px 14px;border-radius:var(--radius-sm);">
+            <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Método de pago</div>
+            <strong>${paymentLabels[o.metodo_pago] || o.metodo_pago || '—'}</strong>
+          </div>
+          <div style="background:var(--off-white);padding:10px 14px;border-radius:var(--radius-sm);">
+            <div style="font-size:0.68px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Entrega</div>
+            <strong>${o.fecha_entrega_real ? Helpers.formatDate(o.fecha_entrega_real) : 'Pendiente'}</strong>
+          </div>
+          ${o.notas_cliente ? `<div style="background:var(--off-white);padding:10px 14px;border-radius:var(--radius-sm);grid-column:1/-1;"><div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Notas</div><strong>${o.notas_cliente}</strong></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('od-modal-footer').innerHTML = `
+    <button class="btn btn-outline-red" onclick="closeModal('order-detail-modal')">Cerrar</button>
+    <button class="btn btn-dark btn-sm" onclick="downloadInvoice(${id})"><i class="ri-file-pdf-line"></i> Descargar factura</button>
+    <a href="https://wa.me/573101234567?text=Consulta pedido ${o.numero_venta}" target="_blank" class="btn" style="background:#25D366;color:white;"><i class="ri-whatsapp-line"></i> Consultar</a>`;
+
+  openModal('order-detail-modal');
+}
+
+// ── ACTIONS ───────────────────────────────────────────────
+function cancelOrder(id) {
+  Swal.fire({
+    icon:'question', title:'¿Cancelar pedido?',
+    text:'Esta acción no se puede deshacer.',
+    showCancelButton:true, confirmButtonText:'Sí, cancelar',
+    cancelButtonText:'No, mantener', confirmButtonColor:'#C0392B'
+  }).then(r => {
+    if (r.isConfirmed) {
+      const o = userOrders.find(v => v.id_venta === id);
+      if (o) o.estado = 'cancelada';
+      renderOrders();
+      renderStats();
+      showToast('Pedido cancelado', 'info');
+    }
+  });
+}
+
+function reorder(id) {
+  const details = MockData.detalle_ventas ? MockData.detalle_ventas.filter(d => d.id_venta === id) : [];
+  if (details.length === 0) { showToast('No hay productos para repetir','warning'); return; }
+  details.forEach(d => {
+    const prod = MockData.productos.find(p => p.id_producto === d.id_producto);
+    if (prod) CartManager.addItem(prod, d.cantidad);
+  });
+  Swal.fire({
+    icon:'success', title:'¡Productos agregados!',
+    text:'Los productos del pedido fueron añadidos a tu carrito.',
+    showCancelButton:true, confirmButtonText:'Ver carrito',
+    cancelButtonText:'Seguir aquí', confirmButtonColor:'#C0392B'
+  }).then(r => { if (r.isConfirmed) window.location.href = 'carrito.html'; });
+}
+
+function downloadInvoice(id) {
+  const o = userOrders.find(v => v.id_venta === id) || MockData.ventas.find(v => v.id_venta === id);
+  Swal.fire({
+    icon:'success', title:'Descargando factura',
+    html:`Factura del pedido <strong>${o?.numero_venta}</strong> generada en PDF.<br><small style="color:var(--text-muted);">En producción esto generaría el PDF real.</small>`,
+    confirmButtonColor:'#C0392B'
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión — Acabados y Diseños 1A</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    /* ── LOGIN SPECIFIC ──────────────────────────────────── */
+    body { overflow-x: hidden; }
+
+    .auth-page { min-height: 100vh; display: flex; }
+
+    /* Visual Panel */
+    .auth-visual {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 56px 60px; background: var(--secondary);
+    }
+    .auth-visual-bg {
+      position: absolute; inset: 0; z-index: 0;
+    }
+    .auth-visual-bg img {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0.18;
+    }
+    .auth-visual-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #1A1A2E 0%, rgba(192,57,43,0.25) 100%);
+    }
+    .auth-visual-content { position: relative; z-index: 1; }
+    .auth-visual-logo {
+      position: absolute; top: 48px; left: 60px; z-index: 2;
+      font-family: var(--font-main); font-weight: 900; font-size: 1.5rem;
+      color: white; display: flex; align-items: center; gap: 10px;
+    }
+    .auth-visual-logo .logo-icon {
+      width: 40px; height: 40px; background: var(--primary); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .auth-visual-logo span { color: var(--primary); }
+    .auth-visual-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(192,57,43,0.2); border: 1px solid rgba(192,57,43,0.35);
+      padding: 6px 14px; border-radius: 30px; margin-bottom: 20px;
+    }
+    .auth-visual-eyebrow span {
+      color: #f1948a; font-family: var(--font-main); font-size: 0.75rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .auth-visual-title {
+      font-family: var(--font-main); font-weight: 900;
+      font-size: clamp(2rem, 3.5vw, 3rem); color: white; line-height: 1.15; margin-bottom: 16px;
+    }
+    .auth-visual-title em { color: var(--primary); font-style: normal; }
+    .auth-visual-desc {
+      color: rgba(255,255,255,0.55); font-size: 0.95rem; line-height: 1.7;
+      max-width: 420px; margin-bottom: 36px;
+    }
+    .auth-visual-features { display: flex; flex-direction: column; gap: 12px; }
+    .auth-feat {
+      display: flex; align-items: center; gap: 12px;
+      color: rgba(255,255,255,0.7); font-size: 0.88rem;
+    }
+    .auth-feat i {
+      width: 32px; height: 32px; background: rgba(192,57,43,0.2);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 0.9rem; flex-shrink: 0;
+    }
+
+    /* Form Panel */
+    .auth-form-panel {
+      width: 500px; flex-shrink: 0; background: white;
+      padding: 60px 52px; overflow-y: auto;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .form-top { margin-bottom: 40px; }
+    .form-top h1 {
+      font-family: var(--font-main); font-weight: 800; font-size: 1.9rem;
+      color: var(--secondary); margin-bottom: 8px;
+    }
+    .form-top p { color: var(--text-muted); font-size: 0.92rem; }
+
+    /* Social login buttons */
+    .social-login { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    .btn-social {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 600; font-family: var(--font-main);
+      color: var(--text); cursor: pointer; transition: var(--transition); background: white;
+    }
+    .btn-social:hover { border-color: var(--text-light); background: var(--off-white); }
+    .btn-social img { width: 18px; height: 18px; }
+
+    /* Divider */
+    .divider { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .divider span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; font-family: var(--font-main); }
+
+    /* Password toggle */
+    .password-wrapper { position: relative; }
+    .password-wrapper .form-control { padding-right: 46px; }
+    .toggle-pass {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); cursor: pointer; font-size: 1.1rem;
+      transition: var(--transition);
+    }
+    .toggle-pass:hover { color: var(--primary); }
+
+    /* Remember + forgot */
+    .form-row-extra {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 28px;
+    }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      font-size: 0.85rem; color: var(--text);
+    }
+    .checkbox-label input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; }
+    .forgot-link { font-size: 0.85rem; color: var(--primary); font-weight: 600; }
+    .forgot-link:hover { color: var(--primary-dark); text-decoration: underline; }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%; padding: 14px; background: var(--primary); color: white;
+      border: none; border-radius: var(--radius-sm); font-family: var(--font-main);
+      font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      letter-spacing: 0.5px;
+    }
+    .btn-submit:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-red); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit .btn-spinner {
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-submit.loading .btn-text { display: none; }
+    .btn-submit.loading .btn-spinner { display: block; }
+
+    /* Register link */
+    .register-prompt {
+      text-align: center; margin-top: 28px; font-size: 0.88rem; color: var(--text-muted);
+    }
+    .register-prompt a { color: var(--primary); font-weight: 700; }
+    .register-prompt a:hover { text-decoration: underline; }
+
+    /* Demo credentials box */
+    .demo-box {
+      background: rgba(192,57,43,0.04); border: 1.5px dashed rgba(192,57,43,0.3);
+      border-radius: var(--radius-sm); padding: 16px; margin-top: 24px;
+    }
+    .demo-box-title {
+      font-family: var(--font-main); font-weight: 700; font-size: 0.78rem;
+      color: var(--primary); text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .demo-cred { display: flex; flex-direction: column; gap: 8px; }
+    .demo-item {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.8rem; color: var(--text-light);
+    }
+    .demo-item span:last-child { font-family: monospace; background: var(--light); padding: 2px 8px; border-radius: 4px; color: var(--text); cursor: pointer; }
+    .demo-item span:last-child:hover { background: var(--primary); color: white; }
+    .demo-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .demo-tab {
+      flex: 1; padding: 6px; text-align: center; border-radius: var(--radius-sm);
+      font-family: var(--font-main); font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      border: 1.5px solid var(--border); color: var(--text-muted); transition: var(--transition);
+    }
+    .demo-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Input validation states */
+    .form-control.valid { border-color: var(--success); }
+    .form-control.invalid { border-color: var(--danger); }
+    .field-error { font-size: 0.76rem; color: var(--danger); margin-top: 4px; display: none; }
+    .field-error.show { display: block; }
+
+    @media (max-width: 992px) {
+      .auth-visual { display: none; }
+      .auth-form-panel { width: 100%; padding: 40px 28px; }
+    }
+    @media (max-width: 480px) {
+      .auth-form-panel { padding: 32px 20px; }
+      .social-login { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PAGE LOADER ──────────────────────────────────────── -->
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- ── AUTH PAGE ────────────────────────────────────────── -->
+<div class="auth-page">
+
+  <!-- Visual Panel -->
+  <div class="auth-visual">
+    <div class="auth-visual-bg">
+      <img src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=80" alt="Acabados">
+      <div class="auth-visual-overlay"></div>
+    </div>
+
+    <a href="index.html" class="auth-visual-logo">
+      <div class="logo-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span>1A</span>
+    </a>
+
+    <div class="auth-visual-content">
+      <div class="auth-visual-eyebrow">
+        <i class="ri-shield-check-line" style="color:#f1948a;font-size:0.8rem;"></i>
+        <span>Plataforma segura y confiable</span>
+      </div>
+      <h2 class="auth-visual-title">
+        Accede a tu cuenta<br>
+        y <em>transforma</em><br>
+        tus espacios
+      </h2>
+      <p class="auth-visual-desc">
+        Gestiona tus pedidos, cotizaciones e historial de compras desde tu panel personal. Todo en un solo lugar.
+      </p>
+      <div class="auth-visual-features">
+        <div class="auth-feat"><i class="ri-shopping-bag-line"></i> Historial completo de compras y pedidos</div>
+        <div class="auth-feat"><i class="ri-file-list-3-line"></i> Crea y gestiona cotizaciones fácilmente</div>
+        <div class="auth-feat"><i class="ri-notification-3-line"></i> Notificaciones de estado de pedidos</div>
+        <div class="auth-feat"><i class="ri-price-tag-3-line"></i> Acceso a descuentos exclusivos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="auth-form-panel">
+    <div class="form-top">
+      <h1>Bienvenido de nuevo</h1>
+      <p>Ingresa tus credenciales para acceder a tu cuenta</p>
+    </div>
+
+    <!-- Social Login (decorativo) -->
+    <div class="social-login">
+      <button class="btn-social" onclick="socialLoginInfo()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Google
+      </button>
+      <button class="btn-social" onclick="socialLoginInfo()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </button>
+    </div>
+
+    <div class="divider"><span>o inicia sesión con tu correo</span></div>
+
+    <!-- Login Form -->
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label class="form-label required">Correo electrónico</label>
+        <div class="input-group">
+          <i class="ri-mail-line input-icon"></i>
+          <input
+            type="email"
+            id="login-email"
+            class="form-control"
+            placeholder="correo@ejemplo.com"
+            autocomplete="email"
+          >
+        </div>
+        <p class="field-error" id="email-error">Ingresa un correo válido</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required">Contraseña</label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="login-password"
+            class="form-control"
+            placeholder="Tu contraseña"
+            autocomplete="current-password"
+          >
+          <i class="ri-eye-off-line toggle-pass" id="toggle-pass" onclick="togglePassword()"></i>
+        </div>
+        <p class="field-error" id="pass-error">La contraseña es requerida</p>
+      </div>
+
+      <div class="form-row-extra">
+        <label class="checkbox-label">
+          <input type="checkbox" id="remember-me"> Recordarme
+        </label>
+        <a href="recuperar-password.html" class="forgot-link">¿Olvidaste tu contraseña?</a>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">
+        <div class="btn-spinner"></div>
+        <span class="btn-text"><i class="ri-login-box-line"></i>&nbsp; Iniciar Sesión</span>
+      </button>
+
+      <div class="register-prompt">
+        ¿No tienes cuenta? <a href="registro.html">Regístrate gratis</a>
+      </div>
+    </form>
+
+    <!-- Demo Credentials Box -->
+    <div class="demo-box">
+      <div class="demo-box-title">
+        <i class="ri-test-tube-line"></i> Credenciales de prueba
+      </div>
+      <div class="demo-tabs">
+        <div class="demo-tab active" onclick="setDemoTab(this, 'admin')">Administrador</div>
+        <div class="demo-tab" onclick="setDemoTab(this, 'cliente')">Cliente</div>
+      </div>
+      <div class="demo-cred" id="demo-creds">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+
+const demoAccounts = {
+  admin: { email: 'josemiguel@acabados1a.com', password: 'admin2026', role: 'Administrador' },
+  cliente: { email: 'carlos.gomez@gmail.com', password: 'cliente123', role: 'Cliente' }
+};
+
+let currentDemoType = 'admin';
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) {
+    window.location.href = Auth.isAdmin() ? 'dashboard.html' : 'index.html';
+    return;
+  }
+  renderDemoCreds('admin');
+});
+
+// ── DEMO TABS ─────────────────────────────────────────────
+function setDemoTab(el, type) {
+  currentDemoType = type;
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderDemoCreds(type);
+}
+
+function renderDemoCreds(type) {
+  const acc = demoAccounts[type];
+  const box = document.getElementById('demo-creds');
+  box.innerHTML = `
+    <div class="demo-item">
+      <span>📧 Email:</span>
+      <span onclick="fillEmail('${acc.email}')" title="Click para rellenar">${acc.email}</span>
+    </div>
+    <div class="demo-item">
+      <span>🔑 Contraseña:</span>
+      <span onclick="fillPassword('${acc.password}')" title="Click para rellenar">${acc.password}</span>
+    </div>
+    <div class="demo-item">
+      <span>👤 Rol:</span>
+      <span>${acc.role}</span>
+    </div>
+    <button onclick="autofillDemo('${type}')" class="btn btn-primary btn-sm w-100 mt-20" style="margin-top:10px;">
+      <i class="ri-magic-line"></i> Rellenar automáticamente
+    </button>
+  `;
+}
+
+function fillEmail(val) {
+  document.getElementById('login-email').value = val;
+  document.getElementById('login-email').classList.add('valid');
+}
+function fillPassword(val) {
+  document.getElementById('login-password').value = val;
+  document.getElementById('login-password').classList.add('valid');
+}
+function autofillDemo(type) {
+  const acc = demoAccounts[type];
+  fillEmail(acc.email);
+  fillPassword(acc.password);
+  showToast('Credenciales rellenadas. Haz clic en Iniciar Sesión.', 'info');
+}
+
+// ── TOGGLE PASSWORD ───────────────────────────────────────
+function togglePassword() {
+  const input = document.getElementById('login-password');
+  const icon = document.getElementById('toggle-pass');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+  }
+}
+
+// ── REAL-TIME VALIDATION ──────────────────────────────────
+document.getElementById('login-email').addEventListener('blur', function() {
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value);
+  this.classList.toggle('valid', isValid && this.value !== '');
+  this.classList.toggle('invalid', !isValid && this.value !== '');
+  document.getElementById('email-error').classList.toggle('show', !isValid && this.value !== '');
+});
+
+document.getElementById('login-password').addEventListener('input', function() {
+  if (this.value.length > 0) {
+    this.classList.add('valid');
+    this.classList.remove('invalid');
+    document.getElementById('pass-error').classList.remove('show');
+  }
+});
+
+// ── FORM SUBMIT ───────────────────────────────────────────
+document.getElementById('login-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('submit-btn');
+
+  // Validate
+  let hasError = false;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('login-email').classList.add('invalid');
+    document.getElementById('email-error').classList.add('show');
+    hasError = true;
+  }
+  if (!password) {
+    document.getElementById('login-password').classList.add('invalid');
+    document.getElementById('pass-error').classList.add('show');
+    hasError = true;
+  }
+  if (hasError) return;
+
+  // Loading state
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  // Simulate network delay
+  setTimeout(() => {
+    const user = Auth.login(email, password);
+    btn.classList.remove('loading');
+    btn.disabled = false;
+
+    if (user) {
+      const isAdmin = user.id_rol === 1;
+      Swal.fire({
+        icon: 'success',
+        title: `¡Bienvenido, ${user.nombre}!`,
+        text: isAdmin ? 'Accediendo al panel de administración...' : 'Redirigiendo al inicio...',
+        timer: 1800,
+        showConfirmButton: false,
+        timerProgressBar: true,
+        iconColor: '#C0392B',
+        confirmButtonColor: '#C0392B'
+      }).then(() => {
+        window.location.href = isAdmin ? 'dashboard.html' : 'index.html';
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Credenciales incorrectas',
+        text: 'El correo o la contraseña son incorrectos. Verifica tus datos e intenta de nuevo.',
+        confirmButtonColor: '#C0392B',
+        confirmButtonText: 'Intentar de nuevo'
+      });
+      document.getElementById('login-email').classList.add('invalid');
+      document.getElementById('login-password').classList.add('invalid');
+    }
+  }, 1200);
+});
+
+// ── SOCIAL LOGIN INFO ─────────────────────────────────────
+function socialLoginInfo() {
+  Swal.fire({
+    icon: 'info',
+    title: 'Próximamente',
+    text: 'El inicio de sesión con redes sociales estará disponible en la próxima versión.',
+    confirmButtonColor: '#C0392B'
+  });
+}
+
+</script>
+</body>
+</html>

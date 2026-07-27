@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle Producto — Acabados y Diseños 1A</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    .detail-page { background: var(--off-white); }
+
+    /* Product detail grid */
+    .detail-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: start; padding: 40px 0;
+    }
+
+    /* Gallery */
+    .gallery-main {
+      border-radius: var(--radius-lg); overflow: hidden;
+      background: white; border: 1px solid var(--border);
+      position: relative;
+    }
+    .gallery-main-img {
+      height: 440px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; cursor: zoom-in; position: relative;
+    }
+    .gallery-main-img img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .gallery-main-img:hover img { transform: scale(1.06); }
+    .gallery-zoom-hint {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(0,0,0,0.4); color: white; padding: 4px 10px;
+      border-radius: 20px; font-size: 0.72rem; display: flex; align-items: center; gap: 5px;
+    }
+    .gallery-badge-wrap { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .gallery-thumbs { display: flex; gap: 8px; padding: 12px; overflow-x: auto; }
+    .gallery-thumb {
+      width: 72px; height: 72px; border-radius: 8px; overflow: hidden; flex-shrink: 0;
+      border: 2px solid var(--border); cursor: pointer; transition: var(--transition);
+    }
+    .gallery-thumb:hover, .gallery-thumb.active { border-color: var(--primary); }
+    .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Product info */
+    .product-info { background: white; border-radius: var(--radius-lg); padding: 36px; border: 1px solid var(--border); }
+    .pi-category { font-size: 0.75rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .pi-title { font-family: var(--font-main); font-weight: 800; font-size: 1.7rem; color: var(--secondary); margin-bottom: 6px; line-height: 1.2; }
+    .pi-code { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; font-family: monospace; }
+    .pi-rating { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .pi-stars { color: var(--accent); font-size: 1rem; letter-spacing: 2px; }
+    .pi-rating-count { font-size: 0.82rem; color: var(--text-muted); }
+
+    .pi-price-block { padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .pi-price { font-family: var(--font-main); font-weight: 900; font-size: 2.2rem; color: var(--primary); }
+    .pi-price-mayorista { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .pi-price-mayorista strong { color: var(--success); }
+
+    .pi-attrs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .pi-attr { background: var(--off-white); padding: 12px 14px; border-radius: var(--radius-sm); }
+    .pi-attr-label { font-size: 0.68rem; font-family: var(--font-main); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
+    .pi-attr-value { font-size: 0.9rem; font-weight: 600; color: var(--secondary); }
+
+    /* Stock indicator */
+    .pi-stock { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: var(--radius-sm); margin-bottom: 24px; }
+    .pi-stock.in { background: rgba(39,174,96,0.08); }
+    .pi-stock.low { background: rgba(243,156,18,0.08); }
+    .pi-stock.out { background: rgba(192,57,43,0.08); }
+    .pi-stock-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .in .pi-stock-dot { background: var(--success); }
+    .low .pi-stock-dot { background: var(--warning); animation: pulse 1.5s infinite; }
+    .out .pi-stock-dot { background: var(--danger); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .pi-stock-text { font-size: 0.85rem; font-weight: 600; }
+    .in .pi-stock-text { color: var(--success); }
+    .low .pi-stock-text { color: var(--warning); }
+    .out .pi-stock-text { color: var(--danger); }
+
+    /* Add to cart area */
+    .pi-add-cart { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .pi-add-cart .qty-control { flex-shrink: 0; }
+    .pi-add-cart .btn-cart { flex: 1; padding: 14px; font-size: 0.95rem; }
+    .pi-actions-row { display: flex; gap: 10px; }
+    .pi-actions-row .btn { flex: 1; }
+
+    /* Tabs */
+    .product-tabs { margin-top: 48px; }
+    .tabs-nav { display: flex; gap: 0; border-bottom: 2px solid var(--border); overflow-x: auto; }
+    .tab-btn {
+      padding: 14px 24px; font-family: var(--font-main); font-weight: 600; font-size: 0.88rem;
+      color: var(--text-muted); cursor: pointer; border: none; background: none;
+      transition: var(--transition); white-space: nowrap; border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-panel { display: none; padding: 28px 0; }
+    .tab-panel.active { display: block; }
+
+    /* Specs table */
+    .specs-table { width: 100%; border-collapse: collapse; }
+    .specs-table tr { border-bottom: 1px solid var(--border); }
+    .specs-table tr:last-child { border-bottom: none; }
+    .specs-table td { padding: 12px 16px; font-size: 0.9rem; }
+    .specs-table td:first-child { font-family: var(--font-main); font-weight: 700; color: var(--text-muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; width: 35%; background: var(--off-white); }
+    .specs-table td:last-child { color: var(--text); }
+
+    /* Review form */
+    .review-card { background: var(--off-white); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .review-stars-input { display: flex; gap: 6px; margin-bottom: 16px; }
+    .star-input { font-size: 1.5rem; color: var(--border); cursor: pointer; transition: var(--transition); }
+    .star-input:hover, .star-input.active { color: var(--accent); }
+
+    /* Related products */
+    .related-section { margin-top: 60px; }
+
+    /* Notify form */
+    .notify-form { display: flex; gap: 10px; }
+    .notify-form input { flex: 1; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.88rem; outline: none; }
+    .notify-form input:focus { border-color: var(--primary); }
+
+    @media (max-width: 992px) {
+      .detail-grid { grid-template-columns: 1fr; gap: 24px; }
+      .gallery-main-img { height: 320px; }
+      .pi-attrs { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .product-info { padding: 24px 20px; }
+      .pi-add-cart { flex-wrap: wrap; }
+      .pi-add-cart .btn-cart { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+    <div class="navbar-nav">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html" class="active">Productos</a>
+      <a href="servicios.html">Servicios</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="promociones.html">Promociones</a>
+      <a href="pqrs.html">PQRS</a>
+      <a href="contacto.html">Contacto</a>
+    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
+    <button class="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-menu">
+  <nav class="mobile-menu-nav">
+    <a href="index.html"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+    <a href="login.html"><i class="ri-user-line"></i> Iniciar Sesión</a>
+  </nav>
+</div>
+
+<main class="main-content detail-page">
+  <div class="page-header">
+    <div class="container">
+      <div class="breadcrumb" id="breadcrumb">
+        <div class="breadcrumb-item"><a href="index.html">Inicio</a></div>
+        <div class="breadcrumb-sep"><i class="ri-arrow-right-s-line"></i></div>
+        <div class="breadcrumb-item"><a href="productos.html">Productos</a></div>
+        <div class="breadcrumb-sep"><i class="ri-arrow-right-s-line"></i></div>
+        <div class="breadcrumb-item active" id="breadcrumb-name">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="product-detail-content">
+      <!-- Skeleton -->
+      <div class="detail-grid">
+        <div class="skeleton-card"><div class="skeleton-img" style="height:440px;"></div></div>
+        <div class="skeleton-card"><div class="skeleton-line" style="height:24px;margin:20px;"></div><div class="skeleton-line" style="height:18px;width:60%;margin:8px 20px;"></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<a href="https://wa.me/573101234567" target="_blank" id="whatsapp-float"><i class="ri-whatsapp-line"></i></a>
+<button id="back-to-top"><i class="ri-arrow-up-line"></i></button>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div><div class="footer-brand">ACABADOS <span>1A</span></div><p class="footer-desc">Materiales de acabados y servicios de instalación.</p></div>
+      <div><h4 class="footer-title">Productos</h4><div class="footer-links"><a href="productos.html">Ver catálogo</a><a href="promociones.html">Ofertas</a></div></div>
+      <div><h4 class="footer-title">Mi Cuenta</h4><div class="footer-links"><a href="login.html">Iniciar Sesión</a><a href="carrito.html">Carrito</a></div></div>
+      <div><h4 class="footer-title">Contacto</h4><div class="footer-contact-item"><i class="ri-phone-line"></i> 310 123 4567</div></div>
+    </div>
+    <div class="footer-bottom">© 2026 Acabados y Diseños 1A</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+
+let product = null;
+let selectedQty = 1;
+let inWishlist = false;
+const wishlist = JSON.parse(localStorage.getItem('acabados1a_wishlist') || '[]');
+
+const mockReviews = [
+  { user: 'Carlos G.', rating: 5, date: '2026-04-20', comment: 'Excelente producto, cubre muy bien y el acabado quedó perfecto. Lo recomiendo totalmente.' },
+  { user: 'María F.', rating: 4, date: '2026-04-15', comment: 'Buena relación calidad-precio. El color es fiel a la muestra. Llegó rápido y bien empacado.' },
+  { user: 'Pedro V.', rating: 5, date: '2026-03-28', comment: 'Llevo varios proyectos usando esta línea y siempre me da excelentes resultados.' }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id'));
+  product = MockData.productos.find(p => p.id_producto === id);
+  if (!product) {
+    document.getElementById('product-detail-content').innerHTML = `
+      <div class="no-results" style="text-align:center;padding:80px 20px;">
+        <i class="ri-error-warning-line" style="font-size:3.5rem;color:var(--border);display:block;margin-bottom:16px;"></i>
+        <h3 style="font-family:var(--font-main);font-weight:700;font-size:1.2rem;color:var(--text-light);">Producto no encontrado</h3>
+        <a href="productos.html" class="btn btn-primary" style="margin-top:20px;">Ver catálogo</a>
+      </div>`;
+    return;
+  }
+  inWishlist = wishlist.includes(product.id_producto);
+  document.title = `${product.nombre} — Acabados y Diseños 1A`;
+  document.getElementById('breadcrumb-name').textContent = product.nombre;
+  renderDetail();
+});
+
+function renderDetail() {
+  const stock = Helpers.getStockStatus(product.id_producto);
+  const stockQty = Helpers.getProductStock(product.id_producto);
+  const catName = Helpers.getCategoryName(product.id_categoria);
+  const impuesto = MockData.impuestos.find(i => i.id_impuesto === product.id_impuesto);
+
+  const imgs = [product.imagen_url,
+    'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&q=80',
+    'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=600&q=80'
+  ];
+
+  document.getElementById('product-detail-content').innerHTML = `
+    <!-- Main detail grid -->
+    <div class="detail-grid">
+      <!-- Gallery -->
+      <div>
+        <div class="gallery-main">
+          <div class="gallery-main-img" onclick="openZoom()">
+            <img src="${product.imagen_url}" alt="${product.nombre}" id="main-img">
+            <div class="gallery-zoom-hint"><i class="ri-zoom-in-line"></i> Click para ampliar</div>
+            <div class="gallery-badge-wrap">
+              ${product.destacado ? '<span class="badge badge-red">Destacado</span>' : ''}
+              <span class="badge ${stock.class === 'in' ? 'stock-in' : stock.class === 'low' ? 'stock-low' : 'stock-out'}">${stock.label}</span>
+            </div>
+          </div>
+          <div class="gallery-thumbs">
+            ${imgs.map((img, i) => `
+              <div class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="changeImg('${img}', this)">
+                <img src="${img}" alt="Vista ${i+1}">
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Share bar -->
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px;padding:14px;background:white;border-radius:var(--radius);border:1px solid var(--border);">
+          <span style="font-size:0.8rem;font-family:var(--font-main);font-weight:600;color:var(--text-muted);">Compartir:</span>
+          <a href="https://wa.me/?text=${encodeURIComponent(product.nombre + ' - ' + window.location.href)}" target="_blank" class="btn btn-sm" style="background:#25D366;color:white;"><i class="ri-whatsapp-line"></i></a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}" target="_blank" class="btn btn-sm" style="background:#1877F2;color:white;"><i class="ri-facebook-fill"></i></a>
+          <button onclick="copyLink()" class="btn btn-sm btn-outline-red"><i class="ri-link"></i> Copiar enlace</button>
+        </div>
+      </div>
+
+      <!-- Product Info -->
+      <div class="product-info">
+        <div class="pi-category"><i class="ri-tag-line"></i> ${catName}</div>
+        <h1 class="pi-title">${product.nombre}</h1>
+        <div class="pi-code">Código: ${product.codigo_producto}</div>
+
+        <div class="pi-rating">
+          <div class="pi-stars">★★★★★</div>
+          <span class="pi-rating-count">(${mockReviews.length} reseñas)</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">|</span>
+          <span style="font-size:0.78rem;color:var(--success);font-weight:600;">${stockQty > 20 ? '✓ Más de 20 vendidos' : ''}</span>
+        </div>
+
+        <div class="pi-price-block">
+          <div class="pi-price">${formatCOP(product.precio_venta)}</div>
+          ${product.precio_mayorista ? `<div class="pi-price-mayorista">Precio mayorista: <strong>${formatCOP(product.precio_mayorista)}</strong> (compras +10 unid.)</div>` : ''}
+          ${impuesto && impuesto.valor > 0 ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">+ ${impuesto.nombre} (${impuesto.valor}%)</div>` : '<div style="font-size:0.78rem;color:var(--success);margin-top:4px;font-weight:600;">✓ Precio sin IVA</div>'}
+        </div>
+
+        <!-- Attributes -->
+        <div class="pi-attrs">
+          ${product.marca ? `<div class="pi-attr"><div class="pi-attr-label">Marca</div><div class="pi-attr-value">${product.marca}</div></div>` : ''}
+          ${product.presentacion ? `<div class="pi-attr"><div class="pi-attr-label">Presentación</div><div class="pi-attr-value">${product.presentacion}</div></div>` : ''}
+          ${product.color && product.color !== 'N/A' ? `<div class="pi-attr"><div class="pi-attr-label">Color</div><div class="pi-attr-value">${product.color}</div></div>` : ''}
+          ${product.acabado && product.acabado !== 'N/A' ? `<div class="pi-attr"><div class="pi-attr-label">Acabado</div><div class="pi-attr-value">${product.acabado}</div></div>` : ''}
+          ${product.unidad_medida ? `<div class="pi-attr"><div class="pi-attr-label">Unidad</div><div class="pi-attr-value">${product.unidad_medida}</div></div>` : ''}
+          ${product.material && product.material !== 'N/A' ? `<div class="pi-attr"><div class="pi-attr-label">Material</div><div class="pi-attr-value">${product.material}</div></div>` : ''}
+        </div>
+
+        <!-- Stock -->
+        <div class="pi-stock ${stock.class}">
+          <div class="pi-stock-dot"></div>
+          <div>
+            <div class="pi-stock-text">${stock.label} — ${stockQty} unidades disponibles</div>
+            ${stock.class === 'low' ? `<div style="font-size:0.75rem;color:var(--warning);margin-top:2px;">¡Pocas unidades! Asegura el tuyo ahora.</div>` : ''}
+          </div>
+        </div>
+
+        ${stockQty > 0 ? `
+        <!-- Add to cart -->
+        <div class="pi-add-cart">
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <input type="number" class="qty-input" id="qty-input" value="1" min="1" max="${stockQty}" onchange="validateQty(this)">
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+          <button class="btn btn-primary btn-cart" onclick="addDetailToCart()">
+            <i class="ri-shopping-cart-line"></i> Agregar al carrito
+          </button>
+        </div>
+
+        <div class="pi-actions-row">
+          <button class="btn btn-outline-red" onclick="buyNow()">
+            <i class="ri-lightning-line"></i> Comprar ahora
+          </button>
+          <button class="btn ${inWishlist ? 'btn-primary' : 'btn-outline-red'}" id="wishlist-btn" onclick="toggleDetailWishlist()">
+            <i class="ri-heart-${inWishlist ? 'fill' : 'line'}"></i> ${inWishlist ? 'En favoritos' : 'Favoritos'}
+          </button>
+          <a href="cotizaciones.html" class="btn btn-dark btn-icon" title="Solicitar cotización">
+            <i class="ri-file-list-3-line"></i>
+          </a>
+        </div>
+        ` : `
+        <!-- Out of stock -->
+        <div style="padding:16px;background:rgba(192,57,43,0.04);border-radius:var(--radius-sm);margin-bottom:20px;">
+          <p style="font-family:var(--font-main);font-weight:700;color:var(--danger);margin-bottom:8px;"><i class="ri-close-circle-line"></i> Producto agotado</p>
+          <p style="font-size:0.85rem;color:var(--text-muted);">Déjanos tu correo y te avisamos cuando esté disponible.</p>
+        </div>
+        <div class="notify-form">
+          <input type="email" placeholder="Tu correo electrónico" id="notify-email">
+          <button class="btn btn-primary" onclick="notifyStock()"><i class="ri-notification-line"></i> Notificarme</button>
+        </div>
+        `}
+
+        <!-- Delivery info -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--text-light);">
+            <i class="ri-truck-line" style="color:var(--primary);font-size:1rem;"></i>
+            Entrega en Pitalito y municipios del Huila en 24–48h
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--text-light);">
+            <i class="ri-shield-check-line" style="color:var(--success);font-size:1rem;"></i>
+            Garantía de 30 días en todos los productos
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.82rem;color:var(--text-light);">
+            <i class="ri-bank-card-line" style="color:var(--info);font-size:1rem;"></i>
+            Pago seguro: Tarjeta, Nequi, transferencia
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="product-tabs">
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="openTab('desc', this)">Descripción</button>
+        <button class="tab-btn" onclick="openTab('specs', this)">Especificaciones</button>
+        <button class="tab-btn" onclick="openTab('reviews', this)">Reseñas (${mockReviews.length})</button>
+        <button class="tab-btn" onclick="openTab('faq', this)">Preguntas frecuentes</button>
+      </div>
+
+      <!-- Description -->
+      <div class="tab-panel active" id="tab-desc">
+        <div style="max-width:720px;">
+          <h3 style="font-family:var(--font-main);font-weight:700;margin-bottom:14px;color:var(--secondary);">Sobre este producto</h3>
+          <p style="color:var(--text-light);line-height:1.8;margin-bottom:20px;">${product.descripcion}</p>
+          ${product.especificaciones_tecnicas ? `
+          <div style="background:var(--off-white);border-radius:var(--radius-sm);padding:20px;border-left:4px solid var(--primary);">
+            <h4 style="font-family:var(--font-main);font-weight:700;font-size:0.9rem;color:var(--secondary);margin-bottom:10px;"><i class="ri-information-line" style="color:var(--primary);"></i> Especificaciones técnicas</h4>
+            <p style="font-size:0.88rem;color:var(--text-light);line-height:1.7;">${product.especificaciones_tecnicas}</p>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- Specifications -->
+      <div class="tab-panel" id="tab-specs">
+        <table class="specs-table" style="background:white;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);">
+          <tbody>
+            <tr><td>Código</td><td>${product.codigo_producto}</td></tr>
+            ${product.marca ? `<tr><td>Marca</td><td>${product.marca}</td></tr>` : ''}
+            ${product.modelo ? `<tr><td>Modelo</td><td>${product.modelo}</td></tr>` : ''}
+            ${product.unidad_medida ? `<tr><td>Unidad de medida</td><td>${product.unidad_medida}</td></tr>` : ''}
+            ${product.presentacion ? `<tr><td>Presentación</td><td>${product.presentacion}</td></tr>` : ''}
+            ${product.color && product.color !== 'N/A' ? `<tr><td>Color</td><td>${product.color}</td></tr>` : ''}
+            ${product.acabado && product.acabado !== 'N/A' ? `<tr><td>Acabado</td><td>${product.acabado}</td></tr>` : ''}
+            ${product.material && product.material !== 'N/A' ? `<tr><td>Material</td><td>${product.material}</td></tr>` : ''}
+            ${product.dimensiones ? `<tr><td>Dimensiones</td><td>${product.dimensiones}</td></tr>` : ''}
+            ${product.peso_kg ? `<tr><td>Peso</td><td>${product.peso_kg} kg</td></tr>` : ''}
+            <tr><td>Precio de venta</td><td>${formatCOP(product.precio_venta)}</td></tr>
+            ${product.precio_mayorista ? `<tr><td>Precio mayorista</td><td>${formatCOP(product.precio_mayorista)}</td></tr>` : ''}
+            <tr><td>Categoría</td><td>${Helpers.getCategoryName(product.id_categoria)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Reviews -->
+      <div class="tab-panel" id="tab-reviews">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;">
+          <div>
+            <h3 style="font-family:var(--font-main);font-weight:700;margin-bottom:20px;">Reseñas de clientes</h3>
+            ${mockReviews.map(r => `
+              <div class="review-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-main);font-weight:700;font-size:0.85rem;">${r.user[0]}</div>
+                    <div><div style="font-family:var(--font-main);font-weight:700;font-size:0.88rem;">${r.user}</div><div style="font-size:0.72rem;color:var(--text-muted);">${Helpers.formatDate(r.date)}</div></div>
+                  </div>
+                  <div style="color:var(--accent);font-size:0.9rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-light);line-height:1.6;">${r.comment}</p>
+              </div>`).join('')}
+          </div>
+          <div>
+            <h3 style="font-family:var(--font-main);font-weight:700;margin-bottom:20px;">Escribir una reseña</h3>
+            <div style="background:white;border-radius:var(--radius);padding:24px;border:1px solid var(--border);">
+              <div class="form-group">
+                <label class="form-label">Tu calificación</label>
+                <div class="review-stars-input">
+                  ${[1,2,3,4,5].map(s => `<i class="ri-star-line star-input" data-val="${s}" onclick="setRating(${s})"></i>`).join('')}
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Tu nombre</label>
+                <input type="text" class="form-control" id="review-name" placeholder="Ej: Carlos G.">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Comentario</label>
+                <textarea class="form-control" id="review-comment" placeholder="Comparte tu experiencia con este producto..." rows="4"></textarea>
+              </div>
+              <button class="btn btn-primary btn-block" onclick="submitReview()">
+                <i class="ri-send-plane-line"></i> Publicar reseña
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="tab-panel" id="tab-faq">
+        <div style="max-width:680px;">
+          ${[
+            { q: '¿Cuánto tiempo demora la entrega?', a: 'Las entregas en Pitalito y Tesalia se realizan en 24 horas hábiles. Para otros municipios del Huila el tiempo es de 24 a 48 horas.' },
+            { q: '¿Puedo devolver el producto si no me satisface?', a: 'Sí. Tienes 30 días desde la fecha de compra para solicitar un cambio o reembolso si el producto está sin abrir y en perfectas condiciones.' },
+            { q: '¿El precio incluye IVA?', a: product.id_impuesto === 3 ? 'Sí, este producto está exento de IVA. El precio mostrado es el precio final.' : 'No, el IVA se calcula al momento del pago según la tarifa vigente.' },
+            { q: '¿Ofrecen descuentos por volumen?', a: `Sí. Para compras mayores a 10 unidades el precio mayorista es de ${product.precio_mayorista ? formatCOP(product.precio_mayorista) : 'consultar'}. Contáctanos para cotizaciones especiales.` },
+            { q: '¿Cómo calculo la cantidad que necesito?', a: 'En la sección de especificaciones técnicas encontrarás el rendimiento del producto por litro o kilo. También puedes contactarnos y nuestros asesores te ayudarán a calcular la cantidad exacta.' }
+          ].map(faq => `
+            <div style="border-bottom:1px solid var(--border);padding:16px 0;">
+              <details>
+                <summary style="font-family:var(--font-main);font-weight:700;font-size:0.9rem;color:var(--secondary);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+                  ${faq.q} <i class="ri-add-line" style="color:var(--primary);font-size:1rem;flex-shrink:0;"></i>
+                </summary>
+                <p style="font-size:0.88rem;color:var(--text-light);line-height:1.7;margin-top:10px;">${faq.a}</p>
+              </details>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="related-section">
+      <div class="d-flex justify-between align-center mb-32">
+        <h2 style="font-family:var(--font-main);font-weight:800;font-size:1.5rem;color:var(--secondary);">Productos relacionados</h2>
+        <a href="productos.html?cat=${product.id_categoria}" class="btn btn-outline-red btn-sm">Ver categoría <i class="ri-arrow-right-line"></i></a>
+      </div>
+      <div class="products-grid" id="related-products"></div>
+    </div>
+  `;
+
+  renderRelated();
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function changeImg(src, el) {
+  document.getElementById('main-img').src = src;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function changeQty(delta) {
+  const input = document.getElementById('qty-input');
+  const max = Helpers.getProductStock(product.id_producto);
+  let val = parseInt(input.value) + delta;
+  val = Math.max(1, Math.min(val, max));
+  input.value = val;
+  selectedQty = val;
+}
+
+function validateQty(input) {
+  const max = Helpers.getProductStock(product.id_producto);
+  let val = parseInt(input.value);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > max) val = max;
+  input.value = val;
+  selectedQty = val;
+}
+
+function addDetailToCart() {
+  const qty = parseInt(document.getElementById('qty-input').value) || 1;
+  CartManager.addItem(product, qty);
+  Swal.fire({
+    icon: 'success',
+    title: '¡Agregado al carrito!',
+    html: `<strong>${product.nombre}</strong><br>Cantidad: ${qty} unidad${qty > 1 ? 'es' : ''}`,
+    showCancelButton: true,
+    confirmButtonText: '<i class="ri-shopping-cart-line"></i> Ver carrito',
+    cancelButtonText: 'Seguir comprando',
+    confirmButtonColor: '#C0392B',
+    cancelButtonColor: '#6c6c6c'
+  }).then(r => { if (r.isConfirmed) window.location.href = 'carrito.html'; });
+}
+
+function buyNow() {
+  if (!Auth.isLoggedIn()) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Inicia sesión para comprar',
+      text: 'Necesitas una cuenta para realizar compras.',
+      confirmButtonText: 'Iniciar sesión',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#C0392B'
+    }).then(r => { if (r.isConfirmed) window.location.href = 'login.html'; });
+    return;
+  }
+  const qty = parseInt(document.getElementById('qty-input').value) || 1;
+  CartManager.addItem(product, qty);
+  window.location.href = 'carrito.html';
+}
+
+function toggleDetailWishlist() {
+  const btn = document.getElementById('wishlist-btn');
+  const list = JSON.parse(localStorage.getItem('acabados1a_wishlist') || '[]');
+  if (inWishlist) {
+    const updated = list.filter(v => v !== product.id_producto);
+    localStorage.setItem('acabados1a_wishlist', JSON.stringify(updated));
+    inWishlist = false;
+    btn.className = 'btn btn-outline-red';
+    btn.innerHTML = '<i class="ri-heart-line"></i> Favoritos';
+    showToast('Eliminado de favoritos', 'info');
+  } else {
+    list.push(product.id_producto);
+    localStorage.setItem('acabados1a_wishlist', JSON.stringify(list));
+    inWishlist = true;
+    btn.className = 'btn btn-primary';
+    btn.innerHTML = '<i class="ri-heart-fill"></i> En favoritos';
+    showToast('Agregado a favoritos', 'success');
+  }
+}
+
+function openZoom() {
+  Swal.fire({
+    imageUrl: document.getElementById('main-img').src,
+    imageAlt: product.nombre,
+    showConfirmButton: false,
+    showCloseButton: true,
+    background: '#1A1A2E',
+    width: '80%'
+  });
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => showToast('Enlace copiado al portapapeles', 'success'));
+}
+
+function openTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+let selectedRating = 0;
+function setRating(val) {
+  selectedRating = val;
+  document.querySelectorAll('.star-input').forEach((s, i) => {
+    s.classList.toggle('active', i < val);
+    s.className = `star-input ${i < val ? 'ri-star-fill' : 'ri-star-line'}`;
+  });
+}
+
+function submitReview() {
+  const name = document.getElementById('review-name').value.trim();
+  const comment = document.getElementById('review-comment').value.trim();
+  if (!name || !comment || !selectedRating) {
+    showToast('Completa todos los campos y selecciona una calificación', 'warning');
+    return;
+  }
+  Swal.fire({
+    icon: 'success',
+    title: '¡Reseña publicada!',
+    text: 'Gracias por compartir tu experiencia.',
+    confirmButtonColor: '#C0392B',
+    timer: 2500,
+    timerProgressBar: true
+  });
+  document.getElementById('review-name').value = '';
+  document.getElementById('review-comment').value = '';
+  selectedRating = 0;
+  document.querySelectorAll('.star-input').forEach(s => { s.classList.remove('active'); s.className = 'ri-star-line star-input'; });
+}
+
+function notifyStock() {
+  const email = document.getElementById('notify-email').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Ingresa un correo válido', 'warning'); return; }
+  Swal.fire({ icon: 'success', title: '¡Te notificaremos!', text: `Cuando el producto esté disponible te avisaremos a ${email}`, confirmButtonColor: '#C0392B' });
+  document.getElementById('notify-email').value = '';
+}
+
+function renderRelated() {
+  const related = MockData.productos
+    .filter(p => p.id_categoria === product.id_categoria && p.id_producto !== product.id_producto && p.activo)
+    .slice(0, 4);
+  const container = document.getElementById('related-products');
+  if (!container) return;
+  container.innerHTML = related.map(p => {
+    const stock = Helpers.getStockStatus(p.id_producto);
+    return `
+      <div class="product-card">
+        <div class="product-card-img">
+          <img src="${p.imagen_url}" alt="${p.nombre}" loading="lazy">
+          <div class="product-card-badges">
+            ${p.destacado ? '<span class="badge badge-red">Destacado</span>' : ''}
+          </div>
+          <div class="product-actions-hover">
+            <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id_producto})"><i class="ri-shopping-cart-line"></i> Agregar</button>
+            <a href="detalle-producto.html?id=${p.id_producto}" class="btn btn-white btn-sm btn-icon"><i class="ri-eye-line"></i></a>
+          </div>
+        </div>
+        <div class="product-card-body">
+          <div class="product-category">${Helpers.getCategoryName(p.id_categoria)}</div>
+          <h3 class="product-name">${p.nombre}</h3>
+          <span class="product-price">${formatCOP(p.precio_venta)}</span>
+        </div>
+        <div class="product-footer">
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="addToCart(${p.id_producto})"><i class="ri-shopping-cart-line"></i> Carrito</button>
+          <a href="detalle-producto.html?id=${p.id_producto}" class="btn btn-outline-red btn-sm" style="flex:1;">Ver más</a>
+        </div>
+      </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

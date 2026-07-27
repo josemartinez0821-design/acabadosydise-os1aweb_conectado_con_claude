@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrito de Compras — Acabados y Diseños 1A</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    .cart-page { background: var(--off-white); min-height: 100vh; }
+
+    /* ── CHECKOUT STEPS BAR ────────────────────────────── */
+    .checkout-steps-bar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0; position: sticky; top: var(--navbar-height); z-index: 90;
+    }
+    .checkout-steps-inner {
+      display: flex; align-items: stretch; max-width: 1400px;
+      margin: 0 auto; padding: 0 20px;
+    }
+    .cstep {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 28px; cursor: pointer; transition: var(--transition);
+      border-bottom: 3px solid transparent; flex: 1; justify-content: center;
+    }
+    .cstep:hover { background: var(--off-white); }
+    .cstep.active { border-bottom-color: var(--primary); }
+    .cstep.done { border-bottom-color: var(--success); }
+    .cstep-num {
+      width: 32px; height: 32px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-family: var(--font-main);
+      font-weight: 700; font-size: 0.85rem; border: 2px solid var(--border);
+      color: var(--text-muted); transition: var(--transition); flex-shrink: 0;
+    }
+    .cstep.active .cstep-num { background: var(--primary); color: white; border-color: var(--primary); }
+    .cstep.done .cstep-num { background: var(--success); color: white; border-color: var(--success); }
+    .cstep-info .cstep-label {
+      font-family: var(--font-main); font-size: 0.78rem; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .cstep.active .cstep-label, .cstep.done .cstep-label { color: var(--secondary); }
+    .cstep-info .cstep-sublabel { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+
+    /* ── MAIN LAYOUT ───────────────────────────────────── */
+    .cart-layout {
+      display: grid; grid-template-columns: 1fr 360px;
+      gap: 28px; padding: 32px 0 60px;
+    }
+    .cart-layout.empty-layout { grid-template-columns: 1fr; }
+
+    /* ── CART PANEL ─────────────────────────────────────── */
+    .cart-panel { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .cart-panel-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--secondary);
+    }
+    .cart-panel-title {
+      font-family: var(--font-main); font-weight: 700; font-size: 1rem;
+      color: white; display: flex; align-items: center; gap: 10px;
+    }
+    .cart-panel-title .count-badge {
+      background: var(--primary); color: white; width: 22px; height: 22px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem;
+    }
+    .cart-panel-action { font-size: 0.8rem; color: rgba(255,255,255,0.5); cursor: pointer; background: none; border: none; transition: var(--transition); font-family: var(--font-main); }
+    .cart-panel-action:hover { color: var(--primary); }
+
+    /* Cart item */
+    .cart-item { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 16px; align-items: flex-start; transition: var(--transition); }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item:hover { background: var(--off-white); }
+    .cart-item-img { width: 88px; height: 88px; border-radius: var(--radius-sm); overflow: hidden; flex-shrink: 0; background: var(--light); border: 1px solid var(--border); }
+    .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+    .cart-item-body { flex: 1; min-width: 0; }
+    .cart-item-cat { font-size: 0.7rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .cart-item-name { font-family: var(--font-main); font-weight: 700; font-size: 0.95rem; color: var(--secondary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cart-item-meta { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .cart-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .cart-item-price-unit { font-size: 0.8rem; color: var(--text-muted); }
+    .cart-item-subtotal { font-family: var(--font-main); font-weight: 800; font-size: 1rem; color: var(--primary); min-width: 90px; text-align: right; }
+    .btn-remove-item { width: 30px; height: 30px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; transition: var(--transition); background: white; flex-shrink: 0; font-size: 0.9rem; }
+    .btn-remove-item:hover { background: rgba(192,57,43,0.08); border-color: var(--primary); color: var(--primary); }
+
+    /* Coupon section */
+    .coupon-section { padding: 18px 24px; background: var(--off-white); border-top: 1px solid var(--border); }
+    .coupon-row { display: flex; gap: 10px; }
+    .coupon-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.88rem; outline: none; font-family: var(--font-main); text-transform: uppercase; letter-spacing: 1px; transition: var(--transition); }
+    .coupon-input:focus { border-color: var(--primary); }
+    .coupon-applied { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(39,174,96,0.08); border-radius: var(--radius-sm); border: 1px solid rgba(39,174,96,0.2); font-size: 0.85rem; color: var(--success); font-weight: 600; }
+
+    /* Saved items */
+    .saved-section { padding: 18px 24px; border-top: 2px dashed var(--border); }
+    .saved-title { font-family: var(--font-main); font-weight: 700; font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+    /* ── SUMMARY PANEL ──────────────────────────────────── */
+    .summary-panel { position: sticky; top: calc(var(--navbar-height) + 80px); }
+    .summary-card { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .summary-card-header { padding: 18px 22px; background: var(--secondary); }
+    .summary-card-title { font-family: var(--font-main); font-weight: 700; font-size: 0.95rem; color: white; display: flex; align-items: center; gap: 8px; }
+    .summary-body { padding: 20px 22px; }
+    .summary-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; margin-bottom: 12px; }
+    .summary-line .label { color: var(--text-muted); }
+    .summary-line .value { font-weight: 600; color: var(--text); }
+    .summary-line.discount .value { color: var(--success); }
+    .summary-divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .summary-total { display: flex; justify-content: space-between; align-items: center; }
+    .summary-total .label { font-family: var(--font-main); font-weight: 700; font-size: 1rem; color: var(--secondary); }
+    .summary-total .value { font-family: var(--font-main); font-weight: 900; font-size: 1.5rem; color: var(--primary); }
+    .summary-footer { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+    .btn-checkout { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-family: var(--font-main); font-weight: 700; font-size: 1rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-checkout:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-red); }
+    .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-continue-shopping { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; font-family: var(--font-main); padding: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); transition: var(--transition); }
+    .btn-continue-shopping:hover { border-color: var(--primary); color: var(--primary); }
+    .secure-badges { display: flex; justify-content: center; gap: 16px; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--off-white); }
+    .secure-badge { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-muted); }
+    .secure-badge i { color: var(--success); }
+
+    /* Payment methods */
+    .payment-methods { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .pm-badge { background: var(--light); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; font-family: var(--font-main); font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .pm-badge i { font-size: 1rem; }
+
+    /* ── CHECKOUT STEPS CONTENT ─────────────────────────── */
+    .checkout-step-content { display: none; }
+    .checkout-step-content.active { display: block; }
+
+    /* Step 2 - Address */
+    .address-cards { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+    .address-card { padding: 16px 20px; border: 2px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); display: flex; align-items: flex-start; gap: 12px; }
+    .address-card:hover { border-color: var(--primary); }
+    .address-card.selected { border-color: var(--primary); background: rgba(192,57,43,0.03); }
+    .address-card-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; transition: var(--transition); }
+    .address-card.selected .address-card-radio { border-color: var(--primary); background: var(--primary); }
+    .address-card.selected .address-card-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: white; }
+    .address-card-name { font-family: var(--font-main); font-weight: 700; font-size: 0.9rem; color: var(--secondary); margin-bottom: 4px; }
+    .address-card-detail { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* Step 3 - Payment */
+    .payment-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .payment-option { padding: 16px 20px; border: 2px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 14px; }
+    .payment-option:hover { border-color: var(--primary); }
+    .payment-option.selected { border-color: var(--primary); background: rgba(192,57,43,0.03); }
+    .payment-option-icon { width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--off-white); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; transition: var(--transition); }
+    .payment-option.selected .payment-option-icon { background: var(--primary); color: white; }
+    .payment-option-info { flex: 1; }
+    .payment-option-name { font-family: var(--font-main); font-weight: 700; font-size: 0.9rem; color: var(--secondary); }
+    .payment-option-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .payment-option-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); transition: var(--transition); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .payment-option.selected .payment-option-radio { border-color: var(--primary); background: var(--primary); }
+    .payment-option.selected .payment-option-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: white; }
+
+    /* Card fields */
+    .card-fields { background: var(--off-white); border-radius: var(--radius-sm); padding: 20px; margin-top: 4px; border: 1px solid var(--border); display: none; }
+    .card-fields.show { display: block; }
+    .card-number-input { font-family: monospace; letter-spacing: 2px; }
+
+    /* Step 4 - Confirmation */
+    .confirm-check { width: 80px; height: 80px; border-radius: 50%; background: rgba(39,174,96,0.1); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: var(--success); margin: 0 auto 20px; animation: successPop 0.6s cubic-bezier(0.175,0.885,0.32,1.275); }
+    @keyframes successPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .order-number-box { background: var(--off-white); border-radius: var(--radius); padding: 20px; border: 2px dashed var(--border); text-align: center; margin: 20px 0; }
+    .order-number-label { font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-main); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .order-number-value { font-family: monospace; font-size: 1.5rem; font-weight: 700; color: var(--secondary); margin-top: 4px; letter-spacing: 3px; }
+    .order-steps-mini { display: flex; justify-content: space-between; align-items: center; margin: 24px 0; }
+    .order-step-mini { text-align: center; flex: 1; }
+    .order-step-mini i { font-size: 1.4rem; color: var(--primary); display: block; margin-bottom: 6px; }
+    .order-step-mini span { font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-main); font-weight: 600; }
+    .order-step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; }
+
+    /* Empty cart */
+    .empty-cart { text-align: center; padding: 80px 20px; }
+    .empty-cart-icon-wrap { width: 140px; height: 140px; border-radius: 50%; background: var(--off-white); display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; }
+    .empty-cart-icon-wrap i { font-size: 3.2rem; color: var(--border); }
+    .empty-cart-badge { display: inline-block; background: rgba(192,57,43,0.08); color: var(--primary); font-size: 0.68rem; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-family: var(--font-main); }
+    .empty-cart h3 { font-family: var(--font-main); font-weight: 800; font-size: 1.4rem; color: var(--secondary); margin-bottom: 10px; }
+    .empty-cart p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 28px; max-width: 460px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+    .empty-cart-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* Popular products (recommendations) */
+    .popular-section { margin-top: 44px; padding: 0 4px; }
+    .popular-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .popular-label { font-family: var(--font-main); font-size: 0.72rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .popular-title { font-family: var(--font-main); font-weight: 800; font-size: 1.35rem; color: var(--secondary); }
+    .popular-viewall { font-size: 0.85rem; font-weight: 700; color: var(--primary); font-family: var(--font-main); display: flex; align-items: center; gap: 4px; }
+    .popular-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .popular-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: relative; transition: var(--transition); }
+    .popular-card:hover { box-shadow: var(--shadow-red); transform: translateY(-3px); border-color: var(--primary); }
+    .popular-card-badge { position: absolute; top: 12px; left: 12px; background: var(--primary); color: white; font-size: 0.66rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; z-index: 2; text-transform: uppercase; letter-spacing: 0.5px; font-family: var(--font-main); }
+    .popular-card-img { width: 100%; height: 190px; background: var(--off-white); overflow: hidden; }
+    .popular-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .popular-card-body { padding: 16px; }
+    .popular-card-cat { font-size: 0.7rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .popular-card-name { font-family: var(--font-main); font-weight: 700; font-size: 0.92rem; color: var(--secondary); margin-bottom: 8px; line-height: 1.3; }
+    .popular-card-price { font-family: var(--font-main); font-weight: 800; font-size: 1.05rem; color: var(--secondary); margin-bottom: 14px; }
+    .popular-card-btn { width: 100%; padding: 9px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: white; color: var(--text); font-family: var(--font-main); font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .popular-card-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(192,57,43,0.04); }
+
+    /* Nav buttons */
+    .step-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; }
+    .btn-step-back { display: flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: white; color: var(--text); font-family: var(--font-main); font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: var(--transition); }
+    .btn-step-back:hover { border-color: var(--text-light); background: var(--off-white); }
+    .btn-step-next { display: flex; align-items: center; gap: 8px; padding: 13px 28px; border-radius: var(--radius-sm); border: none; background: var(--primary); color: white; font-family: var(--font-main); font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: var(--transition); margin-left: auto; }
+    .btn-step-next:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-red); }
+    .btn-step-next .btn-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    .btn-step-next.loading .btn-text { display: none; }
+    .btn-step-next.loading .btn-spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 992px) {
+      .cart-layout { grid-template-columns: 1fr; }
+      .summary-panel { position: static; }
+      .checkout-steps-inner { padding: 0; }
+      .cstep { padding: 14px 12px; }
+      .cstep-info .cstep-sublabel { display: none; }
+      .popular-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .cart-item { flex-wrap: wrap; }
+      .cart-item-img { width: 72px; height: 72px; }
+      .step-nav { flex-direction: column; }
+      .btn-step-back, .btn-step-next { width: 100%; justify-content: center; }
+      .popular-grid { grid-template-columns: 1fr; }
+      .empty-cart-actions { flex-direction: column; }
+      .empty-cart-actions .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- ── NAVBAR ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+    <div class="navbar-nav">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html">Productos</a>
+      <a href="servicios.html">Servicios</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="promociones.html">Promociones</a>
+      <a href="pqrs.html">PQRS</a>
+      <a href="contacto.html">Contacto</a>
+    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
+    <button class="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-menu">
+  <nav class="mobile-menu-nav">
+    <a href="index.html"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+    <a href="login.html"><i class="ri-user-line"></i> Iniciar Sesión</a>
+  </nav>
+</div>
+
+<!-- ── CHECKOUT STEPS BAR ─────────────────────────────────── -->
+<div class="checkout-steps-bar">
+  <div class="checkout-steps-inner">
+    <div class="cstep active" id="cstep-1" onclick="goCheckoutStep(1)">
+      <div class="cstep-num" id="cnum-1">1</div>
+      <div class="cstep-info">
+        <div class="cstep-label">Mi Carrito</div>
+        <div class="cstep-sublabel">Revisa tus productos</div>
+      </div>
+    </div>
+    <div class="cstep" id="cstep-2" onclick="goCheckoutStep(2)">
+      <div class="cstep-num" id="cnum-2">2</div>
+      <div class="cstep-info">
+        <div class="cstep-label">Dirección</div>
+        <div class="cstep-sublabel">Dónde entregar</div>
+      </div>
+    </div>
+    <div class="cstep" id="cstep-3" onclick="goCheckoutStep(3)">
+      <div class="cstep-num" id="cnum-3">3</div>
+      <div class="cstep-info">
+        <div class="cstep-label">Pago</div>
+        <div class="cstep-sublabel">Método de pago</div>
+      </div>
+    </div>
+    <div class="cstep" id="cstep-4">
+      <div class="cstep-num" id="cnum-4">4</div>
+      <div class="cstep-info">
+        <div class="cstep-label">Confirmación</div>
+        <div class="cstep-sublabel">Pedido realizado</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<main class="main-content cart-page">
+
+  <div class="container">
+    <div class="cart-layout" id="cart-layout">
+
+      <!-- ── LEFT COLUMN ─────────────────────────────── -->
+      <div>
+
+        <!-- STEP 1: Cart items -->
+        <div class="checkout-step-content active" id="step-content-1">
+          <div class="cart-panel" id="cart-items-panel">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Recommended / popular products (shown when cart is empty) -->
+          <div class="popular-section" id="popular-section" style="display:none;">
+            <div class="popular-header">
+              <div>
+                <div class="popular-label">Populares</div>
+                <h3 class="popular-title">También te puede interesar</h3>
+              </div>
+              <a href="productos.html" class="popular-viewall">Ver todos <i class="ri-arrow-right-line"></i></a>
+            </div>
+            <div class="popular-grid" id="popular-products-grid">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Address -->
+        <div class="checkout-step-content" id="step-content-2">
+          <div class="cart-panel">
+            <div class="cart-panel-header">
+              <span class="cart-panel-title"><i class="ri-map-pin-line"></i> Dirección de entrega</span>
+            </div>
+            <div style="padding:24px;">
+              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">Selecciona o ingresa la dirección donde recibirás tu pedido.</p>
+
+              <!-- Saved addresses -->
+              <div class="address-cards" id="address-cards">
+                <!-- Rendered by JS -->
+              </div>
+
+              <!-- New address form -->
+              <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+                <div style="font-family:var(--font-main);font-weight:700;font-size:0.85rem;color:var(--secondary);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                  <i class="ri-add-circle-line" style="color:var(--primary);"></i> Nueva dirección de entrega
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div class="form-group" style="grid-column:1/-1;">
+                    <label class="form-label required">Dirección completa</label>
+                    <div class="input-group">
+                      <i class="ri-map-pin-line input-icon"></i>
+                      <input type="text" id="addr-direccion" class="form-control" placeholder="Ej: Calle 5 #10-20, Barrio Centro">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label required">Ciudad</label>
+                    <input type="text" id="addr-ciudad" class="form-control" placeholder="Ej: Pitalito">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label required">Departamento</label>
+                    <select id="addr-depto" class="form-control">
+                    <option value="Amazonas">Amazonas</option>
+<option value="Antioquia">Antioquia</option>
+<option value="Arauca">Arauca</option>
+<option value="Atlántico">Atlántico</option>
+<option value="Bogotá D.C.">Bogotá D.C.</option>
+<option value="Bolívar">Bolívar</option>
+<option value="Boyacá">Boyacá</option>
+<option value="Caldas">Caldas</option>
+<option value="Caquetá">Caquetá</option>
+<option value="Casanare">Casanare</option>
+<option value="Cauca">Cauca</option>
+<option value="Cesar">Cesar</option>
+<option value="Chocó">Chocó</option>
+<option value="Córdoba">Córdoba</option>
+<option value="Cundinamarca">Cundinamarca</option>
+<option value="Guainía">Guainía</option>
+<option value="Guaviare">Guaviare</option>
+<option value="Huila" selected>Huila</option>
+<option value="La Guajira">La Guajira</option>
+<option value="Magdalena">Magdalena</option>
+<option value="Meta">Meta</option>
+<option value="Nariño">Nariño</option>
+<option value="Norte de Santander">Norte de Santander</option>
+<option value="Putumayo">Putumayo</option>
+<option value="Quindío">Quindío</option>
+<option value="Risaralda">Risaralda</option>
+<option value="San Andrés y Providencia">San Andrés y Providencia</option>
+<option value="Santander">Santander</option>
+<option value="Sucre">Sucre</option>
+<option value="Tolima">Tolima</option>
+<option value="Valle del Cauca">Valle del Cauca</option>
+<option value="Vaupés">Vaupés</option>
+<option value="Vichada">Vichada</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Teléfono de contacto</label>
+                    <div class="input-group">
+                      <i class="ri-phone-line input-icon"></i>
+                      <input type="tel" id="addr-tel" class="form-control" placeholder="310 000 0000">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Notas para el domiciliario</label>
+                    <input type="text" id="addr-notas" class="form-control" placeholder="Ej: Llamar antes de llegar, apto 201">
+                  </div>
+                </div>
+
+                <!-- Delivery method -->
+                <div style="margin-top:8px;">
+                  <div style="font-family:var(--font-main);font-weight:700;font-size:0.85rem;color:var(--secondary);margin-bottom:12px;">Método de entrega</div>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--primary);border-radius:var(--radius-sm);cursor:pointer;background:rgba(192,57,43,0.03);">
+                      <input type="radio" name="delivery" value="domicilio" checked style="accent-color:var(--primary);">
+                      <div>
+                        <div style="font-family:var(--font-main);font-weight:700;font-size:0.88rem;">Domicilio <span style="color:var(--success);font-size:0.8rem;">GRATIS</span></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Entrega en 24–48 horas hábiles en Pitalito y municipios del Huila</div>
+                      </div>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;">
+                      <input type="radio" name="delivery" value="retiro" style="accent-color:var(--primary);">
+                      <div>
+                        <div style="font-family:var(--font-main);font-weight:700;font-size:0.88rem;">Recoger en tienda <span style="color:var(--primary);font-size:0.8rem;">GRATIS</span></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Calle 5 #10-20, Tesalia, Huila — Lun–Sáb 8am–6pm</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-nav">
+                <button class="btn-step-back" onclick="goCheckoutStep(1)"><i class="ri-arrow-left-line"></i> Volver al carrito</button>
+                <button class="btn-step-next" onclick="goToPayment()">
+                  <div class="btn-spinner"></div>
+                  <span class="btn-text">Continuar al pago <i class="ri-arrow-right-line"></i></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Payment -->
+        <div class="checkout-step-content" id="step-content-3">
+          <div class="cart-panel">
+            <div class="cart-panel-header">
+              <span class="cart-panel-title"><i class="ri-bank-card-line"></i> Método de pago</span>
+            </div>
+            <div style="padding:24px;">
+              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">Selecciona cómo quieres pagar tu pedido. Todos los pagos son seguros y encriptados.</p>
+
+              <div class="payment-options">
+                <div class="payment-option selected" onclick="selectPayment(this, 'tarjeta')">
+                  <div class="payment-option-icon"><i class="ri-bank-card-line"></i></div>
+                  <div class="payment-option-info">
+                    <div class="payment-option-name">Tarjeta de crédito / débito</div>
+                    <div class="payment-option-desc">Visa, Mastercard, American Express</div>
+                  </div>
+                  <div class="payment-option-radio"></div>
+                </div>
+                <div class="payment-option" onclick="selectPayment(this, 'nequi')">
+                  <div class="payment-option-icon" style="color:#7B2D8B;">
+                    <i class="ri-smartphone-line"></i>
+                  </div>
+                  <div class="payment-option-info">
+                    <div class="payment-option-name">Nequi</div>
+                    <div class="payment-option-desc">Paga con tu celular al número 310 123 4567</div>
+                  </div>
+                  <div class="payment-option-radio"></div>
+                </div>
+                <div class="payment-option" onclick="selectPayment(this, 'transferencia')">
+                  <div class="payment-option-icon" style="color:var(--info);">
+                    <i class="ri-bank-line"></i>
+                  </div>
+                  <div class="payment-option-info">
+                    <div class="payment-option-name">Transferencia bancaria</div>
+                    <div class="payment-option-desc">Bancolombia, Davivienda, BBVA</div>
+                  </div>
+                  <div class="payment-option-radio"></div>
+                </div>
+                <div class="payment-option" onclick="selectPayment(this, 'efectivo')">
+                  <div class="payment-option-icon" style="color:var(--success);">
+                    <i class="ri-money-dollar-circle-line"></i>
+                  </div>
+                  <div class="payment-option-info">
+                    <div class="payment-option-name">Efectivo contra entrega</div>
+                    <div class="payment-option-desc">Paga en efectivo al recibir tu pedido</div>
+                  </div>
+                  <div class="payment-option-radio"></div>
+                </div>
+              </div>
+
+              <!-- Card fields (shows when card selected) -->
+              <div class="card-fields show" id="card-fields">
+                <div style="font-family:var(--font-main);font-weight:700;font-size:0.85rem;color:var(--secondary);margin-bottom:16px;display:flex;align-items:center;gap:8px;"><i class="ri-secure-payment-line" style="color:var(--primary);"></i> Datos de la tarjeta</div>
+                <div class="form-group">
+                  <label class="form-label required">Número de tarjeta</label>
+                  <div class="input-group">
+                    <i class="ri-bank-card-line input-icon"></i>
+                    <input type="text" id="card-number" class="form-control card-number-input" placeholder="0000 0000 0000 0000" maxlength="19" oninput="formatCardNumber(this)">
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div class="form-group">
+                    <label class="form-label required">Nombre en la tarjeta</label>
+                    <input type="text" id="card-name" class="form-control" placeholder="Como aparece en la tarjeta">
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                      <label class="form-label required">Vencimiento</label>
+                      <input type="text" id="card-exp" class="form-control" placeholder="MM/AA" maxlength="5" oninput="formatExp(this)">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label required">CVV</label>
+                      <input type="text" id="card-cvv" class="form-control" placeholder="123" maxlength="4">
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(39,174,96,0.06);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-muted);">
+                  <i class="ri-lock-line" style="color:var(--success);"></i>
+                  Tus datos están protegidos con encriptación SSL de 256 bits
+                </div>
+              </div>
+
+              <!-- Nequi fields -->
+              <div class="card-fields" id="nequi-fields">
+                <div style="text-align:center;padding:20px;">
+                  <div style="font-size:3rem;color:#7B2D8B;margin-bottom:12px;">📱</div>
+                  <p style="font-family:var(--font-main);font-weight:700;color:var(--secondary);margin-bottom:8px;">Paga con Nequi</p>
+                  <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Envía el pago al número Nequi:</p>
+                  <div style="font-family:monospace;font-size:1.4rem;font-weight:700;color:#7B2D8B;letter-spacing:3px;background:var(--off-white);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px;">310 123 4567</div>
+                  <p style="font-size:0.78rem;color:var(--text-muted);">A nombre de: <strong>Danny Jair Bonilla</strong></p>
+                  <div class="form-group" style="margin-top:16px;text-align:left;">
+                    <label class="form-label">Número de comprobante Nequi</label>
+                    <input type="text" id="nequi-ref" class="form-control" placeholder="Ingresa el número de referencia del pago">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Transfer fields -->
+              <div class="card-fields" id="transfer-fields">
+                <div style="padding:16px;">
+                  <p style="font-family:var(--font-main);font-weight:700;color:var(--secondary);margin-bottom:12px;"><i class="ri-bank-line" style="color:var(--info);"></i> Datos bancarios</p>
+                  <div style="display:flex;flex-direction:column;gap:10px;font-size:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--off-white);border-radius:var(--radius-sm);">
+                      <span style="color:var(--text-muted);">Banco</span><strong>Bancolombia</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--off-white);border-radius:var(--radius-sm);">
+                      <span style="color:var(--text-muted);">Tipo</span><strong>Ahorros</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--off-white);border-radius:var(--radius-sm);">
+                      <span style="color:var(--text-muted);">No. Cuenta</span><strong>123-456789-01</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--off-white);border-radius:var(--radius-sm);">
+                      <span style="color:var(--text-muted);">Titular</span><strong>Danny Jair Bonilla</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--off-white);border-radius:var(--radius-sm);">
+                      <span style="color:var(--text-muted);">NIT</span><strong>1.079.409.325-1</strong>
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">Número de comprobante de transferencia</label>
+                    <input type="text" id="transfer-ref" class="form-control" placeholder="Número de referencia de la transferencia">
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-nav">
+                <button class="btn-step-back" onclick="goCheckoutStep(2)"><i class="ri-arrow-left-line"></i> Volver a dirección</button>
+                <button class="btn-step-next" id="btn-confirm-order" onclick="confirmOrder()">
+                  <div class="btn-spinner"></div>
+                  <span class="btn-text"><i class="ri-shield-check-line"></i>&nbsp; Confirmar pedido</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: Confirmation -->
+        <div class="checkout-step-content" id="step-content-4">
+          <div class="cart-panel">
+            <div style="padding:40px;text-align:center;" id="order-confirm-content">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── RIGHT COLUMN: Summary ──────────────────────── -->
+      <div class="summary-panel" id="summary-panel">
+        <div class="summary-card">
+          <div class="summary-card-header">
+            <div class="summary-card-title"><i class="ri-receipt-line"></i> Resumen del pedido</div>
+          </div>
+          <div class="summary-body" id="summary-body">
+            <!-- Rendered by JS -->
+          </div>
+          <div class="summary-footer" id="summary-footer">
+            <!-- Rendered by JS -->
+          </div>
+          <div class="secure-badges">
+            <div class="secure-badge"><i class="ri-lock-line"></i> SSL Seguro</div>
+            <div class="secure-badge"><i class="ri-shield-check-line"></i> Protegido</div>
+            <div class="secure-badge"><i class="ri-refund-line"></i> Garantía</div>
+          </div>
+        </div>
+
+        <!-- Payment methods accepted -->
+        <div style="background:white;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:14px;">
+          <div style="font-size:0.72rem;font-family:var(--font-main);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Métodos de pago aceptados</div>
+          <div class="payment-methods">
+            <div class="pm-badge"><i class="ri-bank-card-line"></i> Visa</div>
+            <div class="pm-badge"><i class="ri-bank-card-line"></i> Mastercard</div>
+            <div class="pm-badge"><i class="ri-smartphone-line"></i> Nequi</div>
+            <div class="pm-badge"><i class="ri-bank-line"></i> Transferencia</div>
+            <div class="pm-badge"><i class="ri-money-dollar-circle-line"></i> Efectivo</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<a href="https://wa.me/573101234567" target="_blank" id="whatsapp-float"><i class="ri-whatsapp-line"></i></a>
+<button id="back-to-top"><i class="ri-arrow-up-line"></i></button>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div><div class="footer-brand">ACABADOS <span>1A</span></div><p class="footer-desc">Materiales de acabados y servicios de instalación.</p></div>
+      <div><h4 class="footer-title">Comprar</h4><div class="footer-links"><a href="productos.html">Catálogo</a><a href="promociones.html">Ofertas</a></div></div>
+      <div><h4 class="footer-title">Mi Cuenta</h4><div class="footer-links"><a href="login.html">Iniciar Sesión</a><a href="pedidos.html">Mis Pedidos</a></div></div>
+      <div><h4 class="footer-title">Contacto</h4><div class="footer-contact-item"><i class="ri-phone-line"></i> 310 123 4567</div></div>
+    </div>
+    <div class="footer-bottom">© 2026 Acabados y Diseños 1A — Todos los derechos reservados</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+// ── STATE ─────────────────────────────────────────────────
+let currentCheckoutStep = 1;
+let selectedPaymentMethod = 'tarjeta';
+let selectedAddressIdx = 0;
+let appliedCoupon = null;
+const COUPONS = { 'PROMO20': 0.20, 'BIENVENIDO': 0.10, 'HUILA10': 0.10 };
+
+// Fallback featured products shown on the empty-cart screen
+const FALLBACK_POPULAR_PRODUCTS = [
+  { id_producto: 9001, nombre: 'Pintura Viniltex Interior 1 galón', precio_venta: 38000, categoria: 'Pinturas', imagen_url: 'assets/img/productos/viniltex-interior.jpg' },
+  { id_producto: 9002, nombre: 'Lija al agua grano 120 (x10)', precio_venta: 12500, categoria: 'Herramientas', imagen_url: 'assets/img/productos/lija-120.jpg' },
+  { id_producto: 9003, nombre: 'Estuco plástico Pintuco 20kg', precio_venta: 67000, categoria: 'Acabados', imagen_url: 'assets/img/productos/estuco-pintuco.jpg' }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderCartItems();
+  renderSummary();
+  renderAddressCards();
+});
+
+// ── RENDER CART ITEMS ─────────────────────────────────────
+function renderCartItems() {
+  const cart = CartManager.getCart();
+  const panel = document.getElementById('cart-items-panel');
+  const popularSection = document.getElementById('popular-section');
+  const cartLayout = document.getElementById('cart-layout');
+  const summaryPanel = document.getElementById('summary-panel');
+
+  if (cart.length === 0) {
+    panel.innerHTML = `
+      <div class="empty-cart">
+        <div class="empty-cart-icon-wrap">
+          <i class="ri-shopping-cart-line"></i>
+        </div>
+        <span class="empty-cart-badge">Tu carrito</span>
+        <h3>Aún no hay nada aquí</h3>
+        <p>Explora nuestro catálogo de pinturas, materiales de acabado y herramientas para transformar tu próximo proyecto.</p>
+        <div class="empty-cart-actions">
+          <a href="productos.html" class="btn btn-primary"><i class="ri-store-line"></i> Ver Catálogo</a>
+          <a href="servicios.html" class="btn btn-outline-red"><i class="ri-tools-line"></i> Ver Servicios</a>
+        </div>
+      </div>`;
+
+    // Full-width layout, hide the order summary, show recommendations
+    if (cartLayout) cartLayout.classList.add('empty-layout');
+    if (summaryPanel) summaryPanel.style.display = 'none';
+    if (popularSection) popularSection.style.display = 'block';
+    renderPopularProducts();
+
+    renderSummary();
+    return;
+  }
+
+  // Cart has items → restore normal two-column layout
+  if (cartLayout) cartLayout.classList.remove('empty-layout');
+  if (summaryPanel) summaryPanel.style.display = '';
+  if (popularSection) popularSection.style.display = 'none';
+
+  const header = `
+    <div class="cart-panel-header">
+      <span class="cart-panel-title">
+        <i class="ri-shopping-cart-line"></i> Productos
+        <span class="count-badge">${CartManager.getCount()}</span>
+      </span>
+      <button class="cart-panel-action" onclick="clearCartConfirm()"><i class="ri-delete-bin-line"></i> Vaciar carrito</button>
+    </div>`;
+
+  const items = cart.map(item => {
+    const subtotal = item.precio_venta * item.cantidad;
+    const stock = Helpers.getProductStock(item.id_producto);
+    return `
+      <div class="cart-item" id="cart-item-${item.id_producto}">
+        <div class="cart-item-img">
+          <a href="detalle-producto.html?id=${item.id_producto}">
+            <img src="${item.imagen_url}" alt="${item.nombre}" loading="lazy">
+          </a>
+        </div>
+        <div class="cart-item-body">
+          <div class="cart-item-cat">${Helpers.getCategoryName(item.id_categoria)}</div>
+          <div class="cart-item-name">${item.nombre}</div>
+          <div class="cart-item-meta">
+            ${item.presentacion ? `${item.presentacion}` : ''}
+            ${item.marca ? ` · ${item.marca}` : ''}
+            · Código: ${item.codigo_producto}
+          </div>
+          <div class="cart-item-bottom">
+            <div>
+              <div class="cart-item-price-unit">Precio unitario: <strong>${formatCOP(item.precio_venta)}</strong></div>
+              <div class="qty-control" style="margin-top:8px;">
+                <button class="qty-btn" onclick="updateQty(${item.id_producto}, ${item.cantidad - 1})">−</button>
+                <input type="number" class="qty-input" value="${item.cantidad}" min="1" max="${stock}"
+                  onchange="updateQtyInput(${item.id_producto}, this.value)">
+                <button class="qty-btn" onclick="updateQty(${item.id_producto}, ${item.cantidad + 1})">+</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+              <div class="cart-item-subtotal">${formatCOP(subtotal)}</div>
+              <div style="display:flex;gap:8px;">
+                <a href="detalle-producto.html?id=${item.id_producto}" class="btn-remove-item" title="Ver producto">
+                  <i class="ri-eye-line"></i>
+                </a>
+                <button class="btn-remove-item" onclick="removeItem(${item.id_producto})" title="Eliminar">
+                  <i class="ri-delete-bin-line"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const couponSection = `
+    <div class="coupon-section">
+      <div style="font-family:var(--font-main);font-weight:700;font-size:0.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <i class="ri-coupon-line" style="color:var(--primary);"></i> Código de descuento
+      </div>
+      ${appliedCoupon ? `
+        <div class="coupon-applied">
+          <i class="ri-checkbox-circle-fill"></i>
+          Cupón "${appliedCoupon.code}" aplicado — ${(appliedCoupon.rate * 100)}% de descuento
+          <button onclick="removeCoupon()" style="margin-left:auto;background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;"><i class="ri-close-line"></i></button>
+        </div>` : `
+        <div class="coupon-row">
+          <input type="text" id="coupon-input" class="coupon-input" placeholder="CÓDIGO" maxlength="20">
+          <button class="btn btn-outline-red btn-sm" onclick="applyCoupon()">Aplicar</button>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Prueba: PROMO20 / BIENVENIDO / HUILA10</div>`}
+    </div>`;
+
+  const continueBtn = `
+    <div style="padding:20px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--off-white);">
+      <a href="productos.html" class="btn-continue-shopping"><i class="ri-arrow-left-line"></i> Seguir comprando</a>
+      <button class="btn btn-primary" onclick="goCheckoutStep(2)">
+        Continuar <i class="ri-arrow-right-line"></i>
+      </button>
+    </div>`;
+
+  panel.innerHTML = header + `<div id="cart-items-list">${items}</div>` + couponSection + continueBtn;
+  renderSummary();
+}
+
+// ── RENDER POPULAR / RECOMMENDED PRODUCTS ────────────────
+function renderPopularProducts() {
+  const grid = document.getElementById('popular-products-grid');
+  if (!grid) return;
+
+  let products = [];
+  try {
+    if (typeof MockData !== 'undefined' && Array.isArray(MockData.productos)) {
+      products = MockData.productos.filter(p => p.destacado).slice(0, 3);
+      if (products.length === 0) products = MockData.productos.slice(0, 3);
+    }
+  } catch (e) { /* MockData not available, use fallback */ }
+
+  if (!products || products.length === 0) products = FALLBACK_POPULAR_PRODUCTS;
+
+  grid.innerHTML = products.map(p => {
+    const categoryLabel = p.categoria || (typeof Helpers !== 'undefined' && Helpers.getCategoryName && p.id_categoria ? Helpers.getCategoryName(p.id_categoria) : '');
+    const priceLabel = typeof formatCOP === 'function' ? formatCOP(p.precio_venta) : ('$' + Number(p.precio_venta).toLocaleString('es-CO'));
+    return `
+      <div class="popular-card">
+        <div class="popular-card-badge">Destacado</div>
+        <div class="popular-card-img">
+          <a href="detalle-producto.html?id=${p.id_producto}">
+            <img src="${p.imagen_url}" alt="${p.nombre}" loading="lazy" onerror="this.src='https://placehold.co/400x300/f3f3f3/9a9a9a?text=Sin+imagen';">
+          </a>
+        </div>
+        <div class="popular-card-body">
+          <div class="popular-card-cat">${categoryLabel}</div>
+          <div class="popular-card-name">${p.nombre}</div>
+          <div class="popular-card-price">${priceLabel}</div>
+          <button class="popular-card-btn" onclick="addPopularToCart(${p.id_producto})">
+            <i class="ri-shopping-cart-line"></i> Agregar al carrito
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addPopularToCart(id) {
+  try {
+    if (typeof CartManager !== 'undefined' && typeof MockData !== 'undefined' && Array.isArray(MockData.productos)) {
+      const product = MockData.productos.find(p => p.id_producto === id);
+      if (product) {
+        CartManager.addItem(product, 1);
+        renderCartItems();
+        showToast('Producto agregado al carrito', 'success');
+        return;
+      }
+    }
+  } catch (e) { /* fall through to generic toast */ }
+  showToast('Producto agregado al carrito', 'success');
+}
+
+// ── CART ACTIONS ──────────────────────────────────────────
+function updateQty(id, newQty) {
+  if (newQty < 1) { removeItem(id); return; }
+  const stock = Helpers.getProductStock(id);
+  if (newQty > stock) { showToast(`Solo hay ${stock} unidades disponibles`, 'warning'); return; }
+  CartManager.updateQuantity(id, newQty);
+  renderCartItems();
+}
+
+function updateQtyInput(id, val) {
+  updateQty(id, parseInt(val) || 1);
+}
+
+function removeItem(id) {
+  const item = CartManager.getCart().find(i => i.id_producto === id);
+  Swal.fire({
+    title: '¿Eliminar producto?',
+    text: `¿Quieres eliminar "${item?.nombre}" del carrito?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#C0392B',
+    cancelButtonColor: '#6c6c6c'
+  }).then(r => {
+    if (r.isConfirmed) {
+      CartManager.removeItem(id);
+      renderCartItems();
+      showToast('Producto eliminado del carrito', 'info');
+    }
+  });
+}
+
+function clearCartConfirm() {
+  Swal.fire({
+    title: '¿Vaciar el carrito?',
+    text: 'Se eliminarán todos los productos del carrito.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, vaciar',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#C0392B'
+  }).then(r => {
+    if (r.isConfirmed) {
+      CartManager.clearCart();
+      appliedCoupon = null;
+      renderCartItems();
+      showToast('Carrito vaciado', 'info');
+    }
+  });
+}
+
+// ── COUPON ────────────────────────────────────────────────
+function applyCoupon() {
+  const code = (document.getElementById('coupon-input')?.value || '').trim().toUpperCase();
+  if (!code) { showToast('Ingresa un código de cupón', 'warning'); return; }
+  if (COUPONS[code]) {
+    appliedCoupon = { code, rate: COUPONS[code] };
+    showToast(`¡Cupón aplicado! ${(COUPONS[code]*100)}% de descuento`, 'success');
+    renderCartItems();
+  } else {
+    showToast('Código de cupón inválido o expirado', 'danger');
+    document.getElementById('coupon-input').classList.add('invalid');
+    setTimeout(() => document.getElementById('coupon-input')?.classList.remove('invalid'), 2000);
+  }
+}
+
+function removeCoupon() {
+  appliedCoupon = null;
+  showToast('Cupón eliminado', 'info');
+  renderCartItems();
+}
+
+// ── SUMMARY ───────────────────────────────────────────────
+function renderSummary() {
+  const cart = CartManager.getCart();
+  const subtotal = cart.reduce((s, i) => s + i.precio_venta * i.cantidad, 0);
+  const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
+  const shipping = 0; // Free shipping
+  const total = subtotal - discount + shipping;
+
+  const body = document.getElementById('summary-body');
+  const footer = document.getElementById('summary-footer');
+  if (!body || !footer) return;
+
+  if (cart.length === 0) {
+    body.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">No hay productos en el carrito</div>`;
+    footer.innerHTML = `<button class="btn-checkout" disabled><i class="ri-shopping-cart-line"></i> Carrito vacío</button>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <!-- Mini item list -->
+    <div style="margin-bottom:16px;max-height:200px;overflow-y:auto;">
+      ${cart.map(item => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+          <img src="${item.imagen_url}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.nombre}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);">x${item.cantidad} · ${formatCOP(item.precio_venta)}</div>
+          </div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--primary);flex-shrink:0;">${formatCOP(item.precio_venta * item.cantidad)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="summary-line">
+      <span class="label">Subtotal (${CartManager.getCount()} item${CartManager.getCount() !== 1 ? 's' : ''})</span>
+      <span class="value">${formatCOP(subtotal)}</span>
+    </div>
+    ${appliedCoupon ? `
+    <div class="summary-line discount">
+      <span class="label">Descuento (${appliedCoupon.code})</span>
+      <span class="value">-${formatCOP(discount)}</span>
+    </div>` : ''}
+    <div class="summary-line">
+      <span class="label">Envío</span>
+      <span class="value" style="color:var(--success);">GRATIS</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-total">
+      <span class="label">Total a pagar</span>
+      <span class="value">${formatCOP(total)}</span>
+    </div>`;
+
+  footer.innerHTML = `
+    <button class="btn-checkout" onclick="goCheckoutStep(2)">
+      <i class="ri-shield-check-line"></i> Proceder al pago
+    </button>
+    <a href="productos.html" class="btn-continue-shopping">
+      <i class="ri-arrow-left-line"></i> Seguir comprando
+    </a>`;
+}
+
+// ── RENDER ADDRESS CARDS ──────────────────────────────────
+function renderAddressCards() {
+  const user = Auth.getCurrentUser();
+  const container = document.getElementById('address-cards');
+  if (!container) return;
+
+  const addresses = user ? [
+    { label: 'Dirección principal', detail: `${user.direccion || 'Sin dirección registrada'} — ${user.ciudad || ''}, ${user.departamento || ''}`, tel: user.telefono }
+  ] : [];
+
+  if (addresses.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `<div style="font-family:var(--font-main);font-weight:700;font-size:0.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Mis direcciones guardadas</div>` +
+    addresses.map((addr, i) => `
+      <div class="address-card ${i === selectedAddressIdx ? 'selected' : ''}" onclick="selectAddress(${i}, this)">
+        <div class="address-card-radio"></div>
+        <div>
+          <div class="address-card-name"><i class="ri-map-pin-2-line" style="color:var(--primary);margin-right:4px;"></i>${addr.label}</div>
+          <div class="address-card-detail">${addr.detail}</div>
+          ${addr.tel ? `<div class="address-card-detail"><i class="ri-phone-line"></i> ${addr.tel}</div>` : ''}
+        </div>
+      </div>`).join('');
+}
+
+function selectAddress(idx, el) {
+  selectedAddressIdx = idx;
+  document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── CHECKOUT STEP NAVIGATION ──────────────────────────────
+function goCheckoutStep(step) {
+  const cart = CartManager.getCart();
+  if (step > 1 && cart.length === 0) {
+    showToast('Ingresa el número de referencia', 'warning');
+    return;
+  }
+  if (step > 1 && !Auth.isLoggedIn()) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Inicia sesión para continuar',
+      text: 'Necesitas una cuenta para realizar tu compra.',
+      confirmButtonText: 'Iniciar sesión',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#C0392B'
+    }).then(r => { if (r.isConfirmed) window.location.href = 'login.html?redirect=carrito.html'; });
+    return;
+  }
+
+  // Update step bar
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`cstep-${i}`);
+    const num = document.getElementById(`cnum-${i}`);
+    el.classList.remove('active', 'done');
+    if (i < step) {
+      el.classList.add('done');
+      num.innerHTML = '<i class="ri-check-line" style="font-size:0.85rem;"></i>';
+    } else if (i === step) {
+      el.classList.add('active');
+      num.textContent = i;
+    } else {
+      num.textContent = i;
+    }
+  }
+
+  // Show/hide panels
+  document.querySelectorAll('.checkout-step-content').forEach(p => p.classList.remove('active'));
+  document.getElementById(`step-content-${step}`).classList.add('active');
+
+  currentCheckoutStep = step;
+
+  // Update header labels
+  const titles = { 1: 'Carrito de Compras', 2: 'Dirección de entrega', 3: 'Método de pago', 4: 'Pedido confirmado' };
+  const subs = { 1: 'Revisa tus productos', 2: 'Dónde quieres recibir tu pedido', 3: 'Selecciona cómo pagar', 4: 'Tu pedido fue procesado exitosamente' };
+  document.getElementById('cart-page-title').textContent = titles[step] || '';
+  document.getElementById('cart-page-sub').textContent = subs[step] || '';
+  document.getElementById('cart-header-label').textContent = titles[step] || '';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── GO TO PAYMENT ─────────────────────────────────────────
+function goToPayment() {
+  const btn = document.querySelector('#step-content-2 .btn-step-next');
+  const delivery = document.querySelector('input[name="delivery"]:checked')?.value;
+
+  // If custom address was typed, validate
+  const addr = document.getElementById('addr-direccion')?.value.trim();
+  const ciudad = document.getElementById('addr-ciudad')?.value.trim();
+  if (delivery === 'domicilio' && !addr && !selectedAddressIdx >= 0) {
+    showToast('Ingresa una dirección de entrega', 'warning');
+    return;
+  }
+
+  btn.classList.add('loading'); btn.disabled = true;
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.disabled = false;
+    goCheckoutStep(3);
+  }, 700);
+}
+
+// ── PAYMENT METHOD ────────────────────────────────────────
+function selectPayment(el, method) {
+  selectedPaymentMethod = method;
+  document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Toggle fields
+  document.getElementById('card-fields').classList.remove('show');
+  document.getElementById('nequi-fields').classList.remove('show');
+  document.getElementById('transfer-fields').classList.remove('show');
+  if (method === 'tarjeta') document.getElementById('card-fields').classList.add('show');
+  if (method === 'nequi') document.getElementById('nequi-fields').classList.add('show');
+  if (method === 'transferencia') document.getElementById('transfer-fields').classList.add('show');
+}
+
+// ── FORMAT CARD ───────────────────────────────────────────
+function formatCardNumber(input) {
+  let val = input.value.replace(/\D/g, '').slice(0, 16);
+  input.value = val.replace(/(.{4})/g, '$1 ').trim();
+}
+function formatExp(input) {
+  let val = input.value.replace(/\D/g, '').slice(0, 4);
+  if (val.length >= 3) val = val.slice(0, 2) + '/' + val.slice(2);
+  input.value = val;
+}
+
+// ── CONFIRM ORDER ─────────────────────────────────────────
+function confirmOrder() {
+  // Validate payment fields
+  if (selectedPaymentMethod === 'tarjeta') {
+    const num = document.getElementById('card-number').value.replace(/\s/g, '');
+    const name = document.getElementById('card-name').value.trim();
+    const exp = document.getElementById('card-exp').value;
+    const cvv = document.getElementById('card-cvv').value;
+    if (num.length < 16 || !name || exp.length < 5 || cvv.length < 3) {
+      showToast('Completa todos los datos de la tarjeta', 'warning');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('btn-confirm-order');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  setTimeout(() => {
+    btn.classList.remove('loading'); btn.disabled = false;
+
+    const cart = CartManager.getCart();
+    const subtotal = cart.reduce((s, i) => s + i.precio_venta * i.cantidad, 0);
+    const discount = appliedCoupon ? subtotal * appliedCoupon.rate : 0;
+    const total = subtotal - discount;
+    const orderNum = 'VEN-2026-' + String(MockData.ventas.length + 1).padStart(3, '0');
+
+    // Save order to mock data
+    const user = Auth.getCurrentUser();
+    const newOrder = {
+      id_venta: MockData.ventas.length + 1,
+      numero_venta: orderNum,
+      id_usuario: user?.id_usuario || null,
+      fecha: new Date().toISOString().split('T')[0],
+      subtotal,
+      descuento: discount,
+      iva_total: 0,
+      total,
+      estado: 'pendiente',
+      metodo_pago: selectedPaymentMethod,
+      items: cart.map(i => ({ id_producto: i.id_producto, nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_venta }))
+    };
+    MockData.ventas.push(newOrder);
+
+    // Clear cart
+    CartManager.clearCart();
+    appliedCoupon = null;
+
+    // Render confirmation
+    goCheckoutStep(4);
+    renderOrderConfirmation(orderNum, total, cart.length);
+
+  }, 2000);
+}
+
+function renderOrderConfirmation(orderNum, total, itemCount) {
+  const user = Auth.getCurrentUser();
+  document.getElementById('order-confirm-content').innerHTML = `
+    <div class="confirm-check"><i class="ri-check-line"></i></div>
+    <h2 style="font-family:var(--font-main);font-weight:800;font-size:1.6rem;color:var(--secondary);margin-bottom:10px;">¡Pedido confirmado!</h2>
+    <p style="color:var(--text-muted);font-size:0.92rem;margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto;">
+      Tu pedido fue procesado exitosamente. Recibirás una notificación por correo y WhatsApp con los detalles del envío.
+    </p>
+    <div class="order-number-box">
+      <div class="order-number-label">Número de pedido</div>
+      <div class="order-number-value">${orderNum}</div>
+    </div>
+    <div style="background:var(--off-white);border-radius:var(--radius);padding:20px;margin-bottom:24px;text-align:left;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.85rem;">
+        <div><span style="color:var(--text-muted);">Cliente:</span><br><strong>${user ? user.nombre + ' ' + user.apellido : 'Invitado'}</strong></div>
+        <div><span style="color:var(--text-muted);">Total pagado:</span><br><strong style="color:var(--primary);font-size:1.05rem;">${formatCOP(total)}</strong></div>
+        <div><span style="color:var(--text-muted);">Método de pago:</span><br><strong>${{tarjeta:'Tarjeta',nequi:'Nequi',transferencia:'Transferencia',efectivo:'Efectivo'}[selectedPaymentMethod]}</strong></div>
+        <div><span style="color:var(--text-muted);">Productos:</span><br><strong>${itemCount} artículo${itemCount !== 1 ? 's' : ''}</strong></div>
+      </div>
+    </div>
+    <div class="order-steps-mini">
+      <div class="order-step-mini"><i class="ri-checkbox-circle-fill" style="color:var(--success);"></i><span>Pedido recibido</span></div>
+      <div class="order-step-line"></div>
+      <div class="order-step-mini"><i class="ri-settings-3-line"></i><span>En preparación</span></div>
+      <div class="order-step-line"></div>
+      <div class="order-step-mini"><i class="ri-truck-line"></i><span>En camino</span></div>
+      <div class="order-step-line"></div>
+      <div class="order-step-mini"><i class="ri-home-line"></i><span>Entregado</span></div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+      <a href="pedidos.html" class="btn btn-primary">
+        <i class="ri-shopping-bag-line"></i> Ver mis pedidos
+      </a>
+      <a href="productos.html" class="btn btn-outline-red">
+        <i class="ri-store-line"></i> Seguir comprando
+      </a>
+      <a href="https://wa.me/573101234567?text=Hola! Acabo de realizar el pedido ${orderNum}" target="_blank" class="btn" style="background:#25D366;color:white;">
+        <i class="ri-whatsapp-line"></i> Confirmar por WhatsApp
+      </a>
+    </div>`;
+
+  // Update summary
+  document.getElementById('summary-body').innerHTML = `
+    <div style="text-align:center;padding:20px;">
+      <div style="font-size:2rem;color:var(--success);margin-bottom:10px;">✓</div>
+      <div style="font-family:var(--font-main);font-weight:700;color:var(--success);">Pedido procesado</div>
+      <div style="font-size:0.82rem;color:var(--text-muted);margin-top:6px;">Orden: ${orderNum}</div>
+    </div>`;
+  document.getElementById('summary-footer').innerHTML = '';
+}
+</script>
+</body>
+</html>

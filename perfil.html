@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil — Acabados y Diseños 1A</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    .profile-page { background: var(--off-white); min-height: 100vh; }
+
+    /* Cover */
+    .profile-cover {
+      height: 200px; background: linear-gradient(135deg, var(--secondary) 0%, #2d2d5e 50%, var(--primary-dark) 100%);
+      position: relative; overflow: hidden;
+    }
+    .profile-cover::before {
+      content: ''; position: absolute; inset: 0;
+      background: repeating-linear-gradient(45deg, rgba(192,57,43,0.06) 0, rgba(192,57,43,0.06) 1px, transparent 0, transparent 50%);
+      background-size: 24px 24px;
+    }
+    .cover-edit-btn {
+      position: absolute; top: 16px; right: 20px; z-index: 2;
+      display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.8); border-radius: var(--radius-sm); font-size: 0.8rem;
+      font-family: var(--font-main); font-weight: 600; cursor: pointer; transition: var(--transition);
+      backdrop-filter: blur(4px);
+    }
+    .cover-edit-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+
+    /* Profile header card */
+    .profile-header-card {
+      background: white; border-radius: var(--radius-lg); border: 1px solid var(--border);
+      padding: 0 32px 28px; margin-top: -60px; position: relative; z-index: 10;
+      box-shadow: var(--shadow);
+    }
+    .profile-avatar-wrap {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding-top: 0; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;
+    }
+    .profile-avatar {
+      width: 110px; height: 110px; border-radius: 50%;
+      border: 4px solid white; background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-main); font-weight: 900; font-size: 2.2rem; color: white;
+      box-shadow: var(--shadow); flex-shrink: 0; margin-top: -50px;
+      position: relative; cursor: pointer; transition: var(--transition);
+    }
+    .profile-avatar:hover::after {
+      content: '\f0ac'; font-family: 'remixicon'; font-size: 1rem;
+      position: absolute; inset: 0; background: rgba(0,0,0,0.5); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; color: white;
+    }
+    .profile-avatar-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.45); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition);
+    }
+    .profile-avatar:hover .profile-avatar-overlay { opacity: 1; }
+    .profile-name { font-family: var(--font-main); font-weight: 800; font-size: 1.5rem; color: var(--secondary); margin-bottom: 4px; }
+    .profile-email { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 8px; }
+    .profile-role-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+      border-radius: 20px; font-size: 0.75rem; font-family: var(--font-main); font-weight: 700;
+    }
+    .role-admin { background: rgba(192,57,43,0.1); color: var(--primary); }
+    .role-cliente { background: rgba(39,174,96,0.1); color: var(--success); }
+    .profile-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+    .profile-stat { text-align: center; }
+    .profile-stat-value { font-family: var(--font-main); font-weight: 800; font-size: 1.4rem; color: var(--secondary); }
+    .profile-stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Profile tabs */
+    .profile-tabs { display: flex; gap: 4px; background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+    .profile-tab {
+      flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); font-family: var(--font-main);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+      color: var(--text-muted); text-align: center; white-space: nowrap; border: none; background: none;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .profile-tab:hover { color: var(--text); background: var(--off-white); }
+    .profile-tab.active { background: var(--primary); color: white; }
+    .profile-tab i { font-size: 1rem; }
+
+    /* Tab panels */
+    .profile-panel { display: none; }
+    .profile-panel.active { display: block; }
+
+    /* Section cards */
+    .section-card { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
+    .section-card-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--off-white);
+    }
+    .section-card-title { font-family: var(--font-main); font-weight: 700; font-size: 0.9rem; color: var(--secondary); display: flex; align-items: center; gap: 8px; }
+    .section-card-title i { color: var(--primary); }
+    .section-card-body { padding: 24px; }
+
+    /* Form grid */
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+    .form-grid-2 .full { grid-column: 1 / -1; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
+
+    /* Info display (read mode) */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-item { }
+    .info-label { font-size: 0.72rem; font-family: var(--font-main); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .info-value { font-size: 0.92rem; color: var(--secondary); font-weight: 500; }
+    .info-value.empty { color: var(--text-muted); font-style: italic; }
+
+    /* Password strength */
+    .pw-strength-bar { height: 4px; background: var(--light); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+    .pw-strength-fill { height: 100%; border-radius: 2px; transition: var(--transition); width: 0; }
+
+    /* Notification prefs */
+    .notif-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-info h4 { font-family: var(--font-main); font-weight: 700; font-size: 0.9rem; color: var(--secondary); margin-bottom: 3px; }
+    .notif-info p { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Toggle switch */
+    .toggle-switch { position: relative; width: 46px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--border); border-radius: 24px;
+      cursor: pointer; transition: var(--transition);
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background: white; border-radius: 50%; transition: var(--transition); box-shadow: var(--shadow-sm);
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--primary); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+    /* Danger zone */
+    .danger-zone { border: 1.5px solid rgba(192,57,43,0.3); border-radius: var(--radius); padding: 20px; background: rgba(192,57,43,0.03); }
+    .danger-title { font-family: var(--font-main); font-weight: 700; color: var(--danger); font-size: 0.9rem; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .danger-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 14px; }
+
+    /* Activity timeline */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .timeline-item { display: flex; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; margin-top: 2px; }
+    .timeline-dot.purchase { background: rgba(39,174,96,0.1); color: var(--success); }
+    .timeline-dot.quote { background: rgba(41,128,185,0.1); color: var(--info); }
+    .timeline-dot.profile { background: rgba(243,156,18,0.1); color: var(--warning); }
+    .timeline-dot.login { background: rgba(192,57,43,0.1); color: var(--primary); }
+    .timeline-content { flex: 1; }
+    .timeline-title { font-family: var(--font-main); font-weight: 600; font-size: 0.88rem; color: var(--secondary); margin-bottom: 3px; }
+    .timeline-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .profile-header-card { padding: 0 16px 20px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+      .form-grid-2 .full { grid-column: 1; }
+      .form-grid-3 { grid-template-columns: 1fr; }
+      .profile-tabs { gap: 2px; }
+      .profile-tab { font-size: 0.75rem; padding: 8px 10px; }
+      .profile-stat-value { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+    <div class="navbar-nav">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html">Productos</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="pedidos.html">Pedidos</a>
+      <a href="pqrs.html">PQRS</a>
+      <a href="contacto.html">Contacto</a>
+    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
+    <button class="hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <nav class="mobile-menu-nav">
+    <a href="index.html"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="perfil.html"><i class="ri-user-line"></i> Mi Perfil</a>
+    <a href="pedidos.html"><i class="ri-shopping-bag-line"></i> Pedidos</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+  </nav>
+</div>
+
+<main class="main-content profile-page">
+  <!-- Cover -->
+  <div class="profile-cover">
+    <button class="cover-edit-btn" onclick="showToast('Función de cambio de portada disponible próximamente','info')">
+      <i class="ri-image-edit-line"></i> Cambiar portada
+    </button>
+    <!-- Decorative shapes -->
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(192,57,43,0.1);top:-100px;right:100px;"></div>
+    <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.04);bottom:-80px;left:200px;"></div>
+  </div>
+
+  <div class="container" style="padding-top:0;padding-bottom:60px;">
+
+    <!-- Profile Header Card -->
+    <div class="profile-header-card" id="profile-header-card">
+      <div class="profile-avatar-wrap">
+        <div style="display:flex;align-items:flex-end;gap:20px;">
+          <div class="profile-avatar" id="profile-avatar" onclick="changeAvatar()">
+            <span id="avatar-initials">??</span>
+            <div class="profile-avatar-overlay"><i class="ri-camera-line" style="color:white;font-size:1.3rem;"></i></div>
+          </div>
+          <div style="padding-bottom:4px;">
+            <h1 class="profile-name" id="profile-name">Cargando...</h1>
+            <div class="profile-email" id="profile-email">—</div>
+            <span class="profile-role-badge" id="profile-role-badge"></span>
+          </div>
+        </div>
+        <div class="profile-stats" id="profile-stats">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Tabs -->
+    <div class="profile-tabs">
+      <button class="profile-tab active" onclick="openTab('info', this)"><i class="ri-user-line"></i> Información</button>
+      <button class="profile-tab" onclick="openTab('security', this)"><i class="ri-shield-keyhole-line"></i> Seguridad</button>
+      <button class="profile-tab" onclick="openTab('notifications', this)"><i class="ri-notification-line"></i> Notificaciones</button>
+      <button class="profile-tab" onclick="openTab('activity', this)"><i class="ri-history-line"></i> Actividad</button>
+      <button class="profile-tab" onclick="openTab('addresses', this)"><i class="ri-map-pin-line"></i> Direcciones</button>
+    </div>
+
+    <!-- ── TAB: INFORMACIÓN ──────────────────────────── -->
+    <div class="profile-panel active" id="tab-info">
+
+      <!-- Personal data card -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-user-3-line"></i> Datos personales</span>
+          <button class="btn btn-outline-red btn-sm" id="edit-btn-personal" onclick="toggleEditPersonal()">
+            <i class="ri-edit-line"></i> Editar
+          </button>
+        </div>
+        <div class="section-card-body">
+
+          <!-- Read mode -->
+          <div id="personal-read-mode">
+            <div class="info-grid" id="personal-info-grid"><!-- JS --></div>
+          </div>
+
+          <!-- Edit mode -->
+          <form id="personal-edit-form" style="display:none;" onsubmit="savePersonal(event)">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label required">Nombre(s)</label>
+                <input type="text" id="edit-nombre" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Apellido(s)</label>
+                <input type="text" id="edit-apellido" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de identificación</label>
+                <select id="edit-tipo-id" class="form-control">
+                  <option value="CC">CC</option><option value="TI">TI</option>
+                  <option value="CE">CE</option><option value="NIT">NIT</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Número de identificación</label>
+                <input type="text" id="edit-num-id" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fecha de nacimiento</label>
+                <input type="date" id="edit-fecha-nac" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Correo electrónico</label>
+                <input type="email" id="edit-email" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono principal</label>
+                <div class="input-group"><i class="ri-phone-line input-icon"></i>
+                  <input type="tel" id="edit-telefono" class="form-control">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">WhatsApp</label>
+                <div class="input-group"><i class="ri-whatsapp-line input-icon"></i>
+                  <input type="tel" id="edit-whatsapp" class="form-control">
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+              <button type="button" class="btn btn-outline-red btn-sm" onclick="cancelEditPersonal()">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="ri-save-line"></i> Guardar cambios</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Address card (quick view) -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-map-pin-line"></i> Dirección principal</span>
+          <button class="btn btn-outline-red btn-sm" onclick="openTab('addresses', document.querySelectorAll('.profile-tab')[4])">
+            <i class="ri-edit-line"></i> Gestionar
+          </button>
+        </div>
+        <div class="section-card-body">
+          <div class="info-grid" id="address-info-grid"><!-- JS --></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB: SEGURIDAD ────────────────────────────── -->
+    <div class="profile-panel" id="tab-security">
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-lock-password-line"></i> Cambiar contraseña</span>
+        </div>
+        <div class="section-card-body">
+          <div style="max-width:480px;">
+            <form onsubmit="changePassword(event)">
+              <div class="form-group">
+                <label class="form-label required">Contraseña actual</label>
+                <div style="position:relative;">
+                  <input type="password" id="curr-pass" class="form-control" placeholder="Tu contraseña actual" style="padding-right:44px;">
+                  <i class="ri-eye-off-line" style="position:absolute;right:14px;top:13px;cursor:pointer;color:var(--text-muted);" onclick="togglePW('curr-pass',this)"></i>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Nueva contraseña</label>
+                <div style="position:relative;">
+                  <input type="password" id="new-pass" class="form-control" placeholder="Mínimo 8 caracteres" style="padding-right:44px;" oninput="pwStrength(this.value)">
+                  <i class="ri-eye-off-line" style="position:absolute;right:14px;top:13px;cursor:pointer;color:var(--text-muted);" onclick="togglePW('new-pass',this)"></i>
+                </div>
+                <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+                <span class="form-text" id="pw-strength-label"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Confirmar nueva contraseña</label>
+                <input type="password" id="confirm-pass" class="form-control" placeholder="Repite la nueva contraseña">
+              </div>
+              <button type="submit" class="btn btn-primary"><i class="ri-save-line"></i> Actualizar contraseña</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-device-line"></i> Sesiones activas</span>
+          <button class="btn btn-sm" style="background:rgba(192,57,43,0.08);color:var(--primary);font-family:var(--font-main);font-weight:700;" onclick="closeAllSessions()">
+            <i class="ri-logout-box-line"></i> Cerrar todas
+          </button>
+        </div>
+        <div class="section-card-body">
+          <div style="display:flex;flex-direction:column;gap:14px;" id="sessions-list"><!-- JS --></div>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title" style="color:var(--danger);"><i class="ri-alert-line"></i> Zona de peligro</span>
+        </div>
+        <div class="section-card-body">
+          <div class="danger-zone">
+            <div class="danger-title"><i class="ri-delete-bin-line"></i> Eliminar cuenta</div>
+            <p class="danger-desc">Esta acción eliminará permanentemente tu cuenta, historial de compras, cotizaciones y todos tus datos. Esta acción no se puede deshacer.</p>
+            <button class="btn btn-sm" style="background:var(--danger);color:white;font-family:var(--font-main);font-weight:700;" onclick="deleteAccount()">
+              <i class="ri-delete-bin-line"></i> Eliminar mi cuenta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: NOTIFICACIONES ───────────────────────── -->
+    <div class="profile-panel" id="tab-notifications">
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-notification-3-line"></i> Preferencias de notificación</span>
+        </div>
+        <div class="section-card-body">
+          <div id="notif-list">
+            <!-- Rendered by JS -->
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" onclick="saveNotifPrefs()"><i class="ri-save-line"></i> Guardar preferencias</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ACTIVIDAD ────────────────────────────── -->
+    <div class="profile-panel" id="tab-activity">
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-history-line"></i> Historial de actividad</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">Últimos 30 días</span>
+        </div>
+        <div class="section-card-body">
+          <div class="timeline" id="activity-timeline"><!-- JS --></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: DIRECCIONES ──────────────────────────── -->
+    <div class="profile-panel" id="tab-addresses">
+      <div class="section-card">
+        <div class="section-card-header">
+          <span class="section-card-title"><i class="ri-map-pin-2-line"></i> Mis direcciones</span>
+          <button class="btn btn-primary btn-sm" onclick="openAddAddressModal()">
+            <i class="ri-add-line"></i> Agregar dirección
+          </button>
+        </div>
+        <div class="section-card-body">
+          <div id="addresses-list"><!-- JS --></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Add Address Modal -->
+<div class="modal-overlay" id="add-address-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ri-map-pin-add-line" style="color:var(--primary);"></i> Nueva dirección</span>
+      <button class="modal-close" onclick="closeModal('add-address-modal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label required">Etiqueta</label>
+        <input type="text" id="new-addr-label" class="form-control" placeholder="Ej: Casa, Trabajo, Oficina">
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Dirección completa</label>
+        <input type="text" id="new-addr-dir" class="form-control" placeholder="Calle, carrera, número">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label class="form-label required">Ciudad</label>
+          <input type="text" id="new-addr-ciudad" class="form-control" placeholder="Pitalito">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departamento</label>
+          <select id="new-addr-depto" class="form-control">
+            <option value="Huila" selected>Huila</option>
+            <option value="Cundinamarca">Cundinamarca</option>
+            <option value="Nariño">Nariño</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono de contacto</label>
+        <input type="tel" id="new-addr-tel" class="form-control" placeholder="310 000 0000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-red" onclick="closeModal('add-address-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewAddress()"><i class="ri-save-line"></i> Guardar dirección</button>
+    </div>
+  </div>
+</div>
+
+<a href="https://wa.me/573101234567" target="_blank" id="whatsapp-float"><i class="ri-whatsapp-line"></i></a>
+<button id="back-to-top"><i class="ri-arrow-up-line"></i></button>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+let currentUser = null;
+let isEditingPersonal = false;
+let userAddresses = [];
+
+const notifPrefs = {
+  compras: true, cotizaciones: true, promociones: true,
+  whatsapp: true, email: true, sms: false
+};
+
+const mockActivity = [
+  { type: 'purchase', icon: 'ri-shopping-bag-line', title: 'Compra realizada — VEN-2026-003', meta: 'Hace 12 días · $62,500', dotClass: 'purchase' },
+  { type: 'quote', icon: 'ri-file-list-3-line', title: 'Cotización aprobada — COT-002', meta: 'Hace 15 días · $450,000', dotClass: 'quote' },
+  { type: 'login', icon: 'ri-login-box-line', title: 'Inicio de sesión', meta: 'Hace 2 días · Chrome · Pitalito, Huila', dotClass: 'login' },
+  { type: 'profile', icon: 'ri-user-settings-line', title: 'Perfil actualizado', meta: 'Hace 20 días', dotClass: 'profile' },
+  { type: 'purchase', icon: 'ri-shopping-bag-line', title: 'Compra realizada — VEN-2026-001', meta: 'Hace 25 días · $98,000', dotClass: 'purchase' },
+];
+
+const mockSessions = [
+  { device: 'Chrome — Windows 11', location: 'Pitalito, Huila', last: 'Sesión actual', active: true },
+  { device: 'Firefox — Android', location: 'Pitalito, Huila', last: 'Hace 3 días', active: false },
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn()) {
+    window.location.href = 'login.html';
+    return;
+  }
+  currentUser = Auth.getCurrentUser();
+  renderProfileHeader();
+  renderPersonalReadMode();
+  renderAddressInfo();
+  renderNotifications();
+  renderActivity();
+  renderSessions();
+  renderAddresses();
+});
+
+// ── RENDER HEADER ─────────────────────────────────────────
+function renderProfileHeader() {
+  const u = currentUser;
+  const initials = (u.nombre[0] + u.apellido[0]).toUpperCase();
+  document.getElementById('avatar-initials').textContent = initials;
+  document.getElementById('profile-name').textContent = `${u.nombre} ${u.apellido}`;
+  document.getElementById('profile-email').textContent = u.email;
+
+  const roleBadge = document.getElementById('profile-role-badge');
+  if (u.id_rol === 1) {
+    roleBadge.className = 'profile-role-badge role-admin';
+    roleBadge.innerHTML = '<i class="ri-shield-star-line"></i> Administrador';
+  } else {
+    roleBadge.className = 'profile-role-badge role-cliente';
+    roleBadge.innerHTML = '<i class="ri-user-line"></i> Cliente';
+  }
+
+  const userOrders = MockData.ventas.filter(v => v.id_usuario === u.id_usuario);
+  const userQuotes = MockData.cotizaciones.filter(c => c.id_usuario === u.id_usuario);
+  const totalSpent = userOrders.reduce((s, v) => s + (v.total || 0), 0);
+
+  document.getElementById('profile-stats').innerHTML = `
+    <div class="profile-stat"><div class="profile-stat-value">${userOrders.length}</div><div class="profile-stat-label">Pedidos</div></div>
+    <div class="profile-stat"><div class="profile-stat-value">${userQuotes.length}</div><div class="profile-stat-label">Cotizaciones</div></div>
+    <div class="profile-stat"><div class="profile-stat-value">${formatCOP(totalSpent)}</div><div class="profile-stat-label">Total gastado</div></div>
+    <div class="profile-stat"><div class="profile-stat-value">${Helpers.formatDate(u.fecha_registro || '2026-01-01')}</div><div class="profile-stat-label">Miembro desde</div></div>
+  `;
+}
+
+// ── PERSONAL INFO ─────────────────────────────────────────
+function renderPersonalReadMode() {
+  const u = currentUser;
+  document.getElementById('personal-info-grid').innerHTML = [
+    { label: 'Nombre completo', value: `${u.nombre} ${u.apellido}` },
+    { label: 'Identificación', value: u.numero_identificacion ? `${u.tipo_identificacion} ${u.numero_identificacion}` : null },
+    { label: 'Correo electrónico', value: u.email },
+    { label: 'Teléfono', value: u.telefono },
+    { label: 'WhatsApp', value: u.whatsapp },
+    { label: 'Fecha de nacimiento', value: u.fecha_nacimiento ? Helpers.formatDate(u.fecha_nacimiento) : null },
+  ].map(f => `
+    <div class="info-item">
+      <div class="info-label">${f.label}</div>
+      <div class="info-value ${!f.value ? 'empty' : ''}">${f.value || 'No registrado'}</div>
+    </div>`).join('');
+}
+
+function renderAddressInfo() {
+  const u = currentUser;
+  document.getElementById('address-info-grid').innerHTML = [
+    { label: 'Dirección', value: u.direccion },
+    { label: 'Ciudad', value: u.ciudad },
+    { label: 'Departamento', value: u.departamento },
+  ].map(f => `
+    <div class="info-item">
+      <div class="info-label">${f.label}</div>
+      <div class="info-value ${!f.value ? 'empty' : ''}">${f.value || 'No registrado'}</div>
+    </div>`).join('');
+}
+
+// ── TOGGLE EDIT PERSONAL ──────────────────────────────────
+function toggleEditPersonal() {
+  isEditingPersonal = !isEditingPersonal;
+  const readMode = document.getElementById('personal-read-mode');
+  const editForm = document.getElementById('personal-edit-form');
+  const editBtn = document.getElementById('edit-btn-personal');
+
+  if (isEditingPersonal) {
+    const u = currentUser;
+    document.getElementById('edit-nombre').value = u.nombre || '';
+    document.getElementById('edit-apellido').value = u.apellido || '';
+    document.getElementById('edit-tipo-id').value = u.tipo_identificacion || 'CC';
+    document.getElementById('edit-num-id').value = u.numero_identificacion || '';
+    document.getElementById('edit-fecha-nac').value = u.fecha_nacimiento || '';
+    document.getElementById('edit-email').value = u.email || '';
+    document.getElementById('edit-telefono').value = u.telefono || '';
+    document.getElementById('edit-whatsapp').value = u.whatsapp || '';
+    readMode.style.display = 'none';
+    editForm.style.display = 'block';
+    editBtn.innerHTML = '<i class="ri-close-line"></i> Cancelar';
+    editBtn.className = 'btn btn-sm';
+    editBtn.style.cssText = 'background:var(--light);color:var(--text);';
+  } else {
+    cancelEditPersonal();
+  }
+}
+
+function cancelEditPersonal() {
+  isEditingPersonal = false;
+  document.getElementById('personal-read-mode').style.display = 'block';
+  document.getElementById('personal-edit-form').style.display = 'none';
+  const btn = document.getElementById('edit-btn-personal');
+  btn.innerHTML = '<i class="ri-edit-line"></i> Editar';
+  btn.className = 'btn btn-outline-red btn-sm';
+  btn.style.cssText = '';
+}
+
+function savePersonal(e) {
+  e.preventDefault();
+  currentUser.nombre = document.getElementById('edit-nombre').value.trim();
+  currentUser.apellido = document.getElementById('edit-apellido').value.trim();
+  currentUser.tipo_identificacion = document.getElementById('edit-tipo-id').value;
+  currentUser.numero_identificacion = document.getElementById('edit-num-id').value.trim();
+  currentUser.fecha_nacimiento = document.getElementById('edit-fecha-nac').value;
+  currentUser.email = document.getElementById('edit-email').value.trim();
+  currentUser.telefono = document.getElementById('edit-telefono').value.trim();
+  currentUser.whatsapp = document.getElementById('edit-whatsapp').value.trim();
+  localStorage.setItem('acabados1a_user', JSON.stringify(currentUser));
+  cancelEditPersonal();
+  renderProfileHeader();
+  renderPersonalReadMode();
+  renderNavUser();
+  Swal.fire({ icon: 'success', title: '¡Perfil actualizado!', timer: 1800, showConfirmButton: false, timerProgressBar: true, iconColor: '#C0392B' });
+}
+
+// ── PASSWORD ──────────────────────────────────────────────
+function pwStrength(val) {
+  const fill = document.getElementById('pw-fill');
+  const label = document.getElementById('pw-strength-label');
+  let s = 0;
+  if (val.length >= 8) s++;
+  if (/[A-Z]/.test(val)) s++;
+  if (/[0-9]/.test(val)) s++;
+  if (/[^A-Za-z0-9]/.test(val)) s++;
+  const colors = ['', '#C0392B', '#F39C12', '#2980B9', '#27AE60'];
+  const labels = ['', 'Muy débil', 'Regular', 'Buena', 'Muy segura'];
+  const widths = ['0%', '25%', '50%', '75%', '100%'];
+  fill.style.width = widths[s] || '0%';
+  fill.style.background = colors[s] || 'transparent';
+  label.textContent = labels[s] || '';
+  label.style.color = colors[s] || '';
+}
+
+function changePassword(e) {
+  e.preventDefault();
+  const curr = document.getElementById('curr-pass').value;
+  const newP = document.getElementById('new-pass').value;
+  const conf = document.getElementById('confirm-pass').value;
+  if (curr !== currentUser.password) { showToast('La contraseña actual es incorrecta', 'danger'); return; }
+  if (newP.length < 8) { showToast('La nueva contraseña debe tener al menos 8 caracteres', 'warning'); return; }
+  if (newP !== conf) { showToast('Las contraseñas no coinciden', 'danger'); return; }
+  currentUser.password = newP;
+  localStorage.setItem('acabados1a_user', JSON.stringify(currentUser));
+  Swal.fire({ icon: 'success', title: '¡Contraseña actualizada!', text: 'Tu contraseña fue cambiada exitosamente.', confirmButtonColor: '#C0392B' });
+  e.target.reset();
+  document.getElementById('pw-fill').style.width = '0';
+  document.getElementById('pw-strength-label').textContent = '';
+}
+
+function togglePW(id, icon) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.className = input.type === 'text' ? 'ri-eye-line' : 'ri-eye-off-line';
+  icon.style.cssText = 'position:absolute;right:14px;top:13px;cursor:pointer;color:var(--text-muted);';
+}
+
+// ── SESSIONS ──────────────────────────────────────────────
+function renderSessions() {
+  document.getElementById('sessions-list').innerHTML = mockSessions.map(s => `
+    <div style="display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);${s.active ? 'border-color:var(--success);background:rgba(39,174,96,0.03);' : ''}">
+      <div style="width:44px;height:44px;background:var(--off-white);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:var(--text-muted);flex-shrink:0;">
+        <i class="ri-computer-line"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:var(--font-main);font-weight:700;font-size:0.88rem;color:var(--secondary);">${s.device}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);">${s.location} · ${s.last}</div>
+      </div>
+      ${s.active
+        ? `<span class="badge badge-green" style="font-size:0.68rem;">Actual</span>`
+        : `<button onclick="this.closest('div').remove();showToast('Sesión cerrada','info')" class="btn btn-sm" style="background:rgba(192,57,43,0.08);color:var(--primary);font-size:0.75rem;"><i class="ri-logout-box-line"></i> Cerrar</button>`}
+    </div>`).join('');
+}
+
+function closeAllSessions() {
+  Swal.fire({ icon: 'warning', title: '¿Cerrar todas las sesiones?', text: 'Se cerrará sesión en todos los dispositivos excepto el actual.', confirmButtonColor: '#C0392B', showCancelButton: true, cancelButtonText: 'Cancelar', confirmButtonText: 'Sí, cerrar todo' })
+    .then(r => { if (r.isConfirmed) showToast('Todas las sesiones externas fueron cerradas', 'success'); });
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────
+function renderNotifications() {
+  const items = [
+    { key: 'compras', title: 'Confirmación de compras', desc: 'Recibe notificaciones cuando realices una compra' },
+    { key: 'cotizaciones', title: 'Estado de cotizaciones', desc: 'Te avisamos cuando tu cotización sea aprobada o rechazada' },
+    { key: 'promociones', title: 'Promociones y ofertas', desc: 'Entérate de descuentos y productos en oferta' },
+    { key: 'whatsapp', title: 'Notificaciones por WhatsApp', desc: 'Recibe avisos importantes por WhatsApp' },
+    { key: 'email', title: 'Notificaciones por correo', desc: 'Resúmenes y confirmaciones en tu correo electrónico' },
+    { key: 'sms', title: 'Mensajes de texto (SMS)', desc: 'Alertas críticas por mensaje de texto' },
+  ];
+  document.getElementById('notif-list').innerHTML = items.map(item => `
+    <div class="notif-item">
+      <div class="notif-info">
+        <h4>${item.title}</h4>
+        <p>${item.desc}</p>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="notif-${item.key}" ${notifPrefs[item.key] ? 'checked' : ''} onchange="notifPrefs['${item.key}']=this.checked">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`).join('');
+}
+
+function saveNotifPrefs() {
+  Swal.fire({ icon: 'success', title: 'Preferencias guardadas', timer: 1600, showConfirmButton: false, timerProgressBar: true, iconColor: '#C0392B' });
+}
+
+// ── ACTIVITY ──────────────────────────────────────────────
+function renderActivity() {
+  document.getElementById('activity-timeline').innerHTML = mockActivity.map(a => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${a.dotClass}"><i class="${a.icon}"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title">${a.title}</div>
+        <div class="timeline-meta">${a.meta}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── ADDRESSES ─────────────────────────────────────────────
+function renderAddresses() {
+  const u = currentUser;
+  if (!userAddresses.length && u.direccion) {
+    userAddresses = [{ label: 'Principal', dir: u.direccion, ciudad: u.ciudad, depto: u.departamento, tel: u.telefono, isPrimary: true }];
+  }
+  document.getElementById('addresses-list').innerHTML = userAddresses.length
+    ? userAddresses.map((addr, i) => `
+      <div style="display:flex;gap:14px;padding:16px;border:1.5px solid ${addr.isPrimary ? 'var(--primary)' : 'var(--border)'};border-radius:var(--radius-sm);margin-bottom:12px;${addr.isPrimary ? 'background:rgba(192,57,43,0.02);' : ''}">
+        <div style="width:40px;height:40px;background:${addr.isPrimary ? 'var(--primary)' : 'var(--light)'};border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:${addr.isPrimary ? 'white' : 'var(--text-muted)'};font-size:1.1rem;flex-shrink:0;">
+          <i class="ri-map-pin-2-line"></i>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-family:var(--font-main);font-weight:700;font-size:0.9rem;">${addr.label}</span>
+            ${addr.isPrimary ? '<span class="badge badge-red" style="font-size:0.65rem;">Principal</span>' : ''}
+          </div>
+          <div style="font-size:0.85rem;color:var(--text-muted);">${addr.dir} — ${addr.ciudad}, ${addr.depto}</div>
+          ${addr.tel ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;"><i class="ri-phone-line"></i> ${addr.tel}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-start;">
+          ${!addr.isPrimary ? `<button onclick="setPrimary(${i})" class="btn btn-sm" style="background:var(--off-white);color:var(--text);font-size:0.72rem;"><i class="ri-home-line"></i></button>` : ''}
+          <button onclick="deleteAddress(${i})" class="btn btn-sm" style="background:rgba(192,57,43,0.08);color:var(--primary);font-size:0.72rem;"><i class="ri-delete-bin-line"></i></button>
+        </div>
+      </div>`).join('')
+    : `<div style="text-align:center;padding:40px;color:var(--text-muted);">
+        <i class="ri-map-pin-line" style="font-size:2.5rem;display:block;margin-bottom:12px;color:var(--border);"></i>
+        <p>No tienes direcciones guardadas</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAddAddressModal()"><i class="ri-add-line"></i> Agregar dirección</button>
+      </div>`;
+}
+
+function openAddAddressModal() { openModal('add-address-modal'); }
+
+function saveNewAddress() {
+  const label = document.getElementById('new-addr-label').value.trim();
+  const dir = document.getElementById('new-addr-dir').value.trim();
+  const ciudad = document.getElementById('new-addr-ciudad').value.trim();
+  const depto = document.getElementById('new-addr-depto').value;
+  const tel = document.getElementById('new-addr-tel').value.trim();
+  if (!label || !dir || !ciudad) { showToast('Completa los campos requeridos', 'warning'); return; }
+  userAddresses.push({ label, dir, ciudad, depto, tel, isPrimary: false });
+  closeModal('add-address-modal');
+  renderAddresses();
+  showToast('Dirección guardada', 'success');
+}
+
+function setPrimary(idx) {
+  userAddresses.forEach((a, i) => a.isPrimary = i === idx);
+  renderAddresses();
+  showToast('Dirección principal actualizada', 'success');
+}
+
+function deleteAddress(idx) {
+  Swal.fire({ icon: 'question', title: '¿Eliminar dirección?', confirmButtonColor: '#C0392B', showCancelButton: true, cancelButtonText: 'Cancelar', confirmButtonText: 'Eliminar' })
+    .then(r => { if (r.isConfirmed) { userAddresses.splice(idx, 1); renderAddresses(); showToast('Dirección eliminada', 'info'); } });
+}
+
+// ── DANGER ────────────────────────────────────────────────
+function deleteAccount() {
+  Swal.fire({
+    icon: 'warning', title: '¿Eliminar tu cuenta?',
+    html: 'Esta acción es <strong>permanente e irreversible</strong>. Se eliminarán todos tus datos.',
+    confirmButtonText: 'Sí, eliminar mi cuenta', showCancelButton: true,
+    cancelButtonText: 'Cancelar', confirmButtonColor: '#C0392B',
+    input: 'text', inputPlaceholder: 'Escribe DELETE para confirmar',
+    preConfirm: (val) => { if (val !== 'DELETE') { Swal.showValidationMessage('Debes escribir DELETE'); } }
+  }).then(r => {
+    if (r.isConfirmed) { Auth.logout(); showToast('Cuenta eliminada', 'info'); }
+  });
+}
+
+// ── TABS ──────────────────────────────────────────────────
+function openTab(id, btn) {
+  document.querySelectorAll('.profile-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.profile-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function changeAvatar() {
+  showToast('Función de cambio de foto disponible próximamente', 'info');
+}
+</script>
+</body>
+</html>

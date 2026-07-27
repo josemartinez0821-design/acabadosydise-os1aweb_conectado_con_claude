@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acabados y Diseños 1A — Materiales de construcción y acabados en Huila</title>
+  <meta name="description" content="Tienda online de pinturas, vinilos, materiales de acabado, drywall, PVC y servicios de instalación en Pitalito, Huila.">
+
+  <!-- Swiper CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <!-- Remix Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css">
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="main.css">
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       ESTILOS ESPECÍFICOS DE INDEX.HTML
+       ═══════════════════════════════════════════════ */
+
+    /* ── ABOUT ─────────────────────────────────────── */
+    .about-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .about-img-block {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .about-img-block img {
+      width: 100%;
+      height: 440px;
+      object-fit: cover;
+    }
+    .about-img-block::before {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      border: 3px solid var(--primary);
+      border-radius: var(--radius-lg);
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .about-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(192,57,43,0.08);
+      padding: 8px 16px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+    .about-tag i { color: var(--primary); }
+    .about-tag span {
+      font-family: var(--font-main);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .about-text {
+      font-size: 0.95rem;
+      color: var(--text-light);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .about-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 28px 0;
+    }
+    .about-item { display: flex; align-items: flex-start; gap: 10px; }
+    .about-item i { color: var(--primary); font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+    .about-item span { font-size: 0.88rem; color: var(--text); font-weight: 500; }
+
+    /* ── CONTACT ───────────────────────────────────── */
+    .contact-section { background: var(--secondary); }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: start;
+    }
+    .contact-info-item { display: flex; gap: 16px; margin-bottom: 28px; }
+    .contact-icon {
+      width: 50px; height: 50px;
+      border-radius: var(--radius-sm);
+      background: rgba(192,57,43,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 1.3rem; flex-shrink: 0;
+    }
+    .contact-label {
+      font-family: var(--font-main); font-weight: 700; font-size: 0.82rem;
+      color: rgba(255,255,255,0.5); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 4px;
+    }
+    .contact-value { color: white; font-size: 0.95rem; }
+    .contact-form .form-control {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.15);
+      color: white;
+    }
+    .contact-form .form-control::placeholder { color: rgba(255,255,255,0.3); }
+    .contact-form .form-control:focus {
+      border-color: var(--primary);
+      background: rgba(255,255,255,0.12);
+    }
+    .contact-form .form-label { color: rgba(255,255,255,0.75); }
+
+    /* ── BANNER MARQUEE ────────────────────────────── */
+    .banner-strip {
+      background: var(--primary);
+      padding: 14px 0;
+      overflow: hidden;
+    }
+    .banner-strip-inner {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      animation: marquee 25s linear infinite;
+      white-space: nowrap;
+      width: max-content;
+    }
+    .strip-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .strip-item i { font-size: 1rem; opacity: 0.8; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── NEWSLETTER ────────────────────────────────── */
+    .newsletter-section {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      padding: 60px 0;
+      text-align: center;
+    }
+    .newsletter-title {
+      font-family: var(--font-main);
+      font-weight: 800;
+      font-size: 2rem;
+      color: white;
+      margin-bottom: 12px;
+    }
+    .newsletter-sub {
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 32px;
+      font-size: 1rem;
+    }
+    .newsletter-form {
+      display: flex;
+      gap: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+    .newsletter-form input {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      outline: none;
+      font-size: 0.9rem;
+    }
+    .newsletter-form button {
+      padding: 14px 28px;
+      background: var(--secondary);
+      color: white;
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .newsletter-form button:hover { background: #0f0f22; }
+
+    /* ── SERVICE STRIP ─────────────────────────────── */
+    .service-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .service-strip-item {
+      padding: 22px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-right: 1px solid var(--border);
+      transition: var(--transition);
+    }
+    .service-strip-item:last-child { border-right: none; }
+    .service-strip-item:hover { background: rgba(192,57,43,0.04); }
+    .service-strip-icon {
+      width: 44px; height: 44px;
+      background: rgba(192,57,43,0.08);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary); font-size: 1.2rem; flex-shrink: 0;
+      transition: var(--transition);
+    }
+    .service-strip-item:hover .service-strip-icon {
+      background: var(--primary);
+      color: white;
+    }
+    .service-strip-title {
+      font-family: var(--font-main);
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--secondary);
+    }
+    .service-strip-desc { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ── RESPONSIVE INDEX ──────────────────────────── */
+    @media (max-width: 992px) {
+      .about-section { grid-template-columns: 1fr; }
+      .about-img-block { display: none; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .service-strip { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .newsletter-title { font-size: 1.5rem; }
+      .newsletter-sub { font-size: 0.9rem; }
+      .newsletter-form {
+        flex-direction: column;
+        border-radius: var(--radius-sm);
+        overflow: visible;
+        gap: 10px;
+      }
+      .newsletter-form input,
+      .newsletter-form button {
+        border-radius: var(--radius-sm);
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .service-strip { grid-template-columns: 1fr; }
+      .service-strip-item {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .service-strip-item:last-child { border-bottom: none; }
+
+      .about-items { grid-template-columns: 1fr; }
+
+      .contact-grid { gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PAGE LOADER ───────────────────────────────────────── -->
+<div id="page-loader">
+  <div class="loader-logo">ACABADOS <span>1A</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- ── NAVBAR ────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-brand">
+      <div class="brand-icon"><i class="ri-paint-brush-line"></i></div>
+      ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+    </a>
+
+    <div class="navbar-nav">
+      <a href="index.html" class="active">Inicio</a>
+      <a href="productos.html">Catálogo</a>
+      <a href="servicios.html">Servicios</a>
+      <a href="cotizaciones.html">Cotizaciones</a>
+      <a href="Nosotros.html">Nosotros</a>
+      <a href="contacto.html">Contactos</a>
+    </div>
+
+    <div class="navbar-actions" id="navbar-actions">
+      <!-- Rendered by JS -->
+    </div>
+
+    <button class="hamburger" aria-label="Menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── MOBILE MENU ────────────────────────────────────────── -->
+<div class="mobile-menu" role="navigation" aria-label="Menú móvil">
+  <nav class="mobile-menu-nav">
+    <a href="index.html" class="active"><i class="ri-home-line"></i> Inicio</a>
+    <a href="productos.html"><i class="ri-store-line"></i> Productos</a>
+    <a href="servicios.html"><i class="ri-tools-line"></i> Servicios</a>
+    <a href="cotizaciones.html"><i class="ri-file-list-line"></i> Cotizaciones</a>
+    <a href="pqrs.html"><i class="ri-customer-service-line"></i> PQRS</a>
+    <a href="contacto.html"><i class="ri-map-pin-line"></i> Contacto</a>
+    <a href="carrito.html"><i class="ri-shopping-cart-line"></i> Carrito</a>
+    <a href="login.html"><i class="ri-user-line"></i> Iniciar Sesión</a>
+  </nav>
+</div>
+
+<!-- ── MAIN ────────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- ══════════════════════════════════════════════════
+       HERO CON SLIDER
+       ══════════════════════════════════════════════════ -->
+  <section class="hero">
+    <div class="hero-bg-pattern"></div>
+
+    <div class="hero-inner">
+
+      <!-- Columna izquierda: texto -->
+      <div class="hero-text">
+        <div class="hero-badge">
+          <i class="ri-verified-badge-line"></i>
+          <span>Líderes en acabados — Tesalia, Huila</span>
+        </div>
+
+        <h1 class="hero-title">
+          Transforma tu<br>
+          espacio con<br>
+          <span class="highlight">acabados premium</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Pinturas, vinilos, materiales de acabado y servicios de instalación profesional.
+          Todo lo que necesitas para darle vida a tus proyectos.
+        </p>
+
+        <div class="hero-cta">
+          <a href="productos.html" class="btn btn-primary btn-lg">
+            <i class="ri-store-line"></i> Ver Catálogo
+          </a>
+          <a href="cotizaciones.html" class="btn btn-outline btn-lg">
+            <i class="ri-file-list-line"></i> Solicitar Cotización
+          </a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-value" data-count="500">0</div>
+            <div class="stat-label">Productos</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="1200">0</div>
+            <div class="stat-label">Clientes</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="8">0</div>
+            <div class="stat-label">Años exp.</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" data-count="100">0</div>
+            <div class="stat-label">% Garantía</div>
+          </div>
+        </div>
+      </div>
+      <!-- /hero-text -->
+
+      <!-- Columna derecha: slider -->
+      <div class="hero-visual">
+        <div class="swiper hero-swiper">
+          <div class="swiper-wrapper">
+
+            <!-- Slide 1 — Pinturas -->
+            <div class="swiper-slide hero-swiper-slide">
+              <img
+                src="https://images.pexels.com/photos/164558/pexels-photo-164558.jpeg?w=700&h=500&fit=crop"
+                alt="Pinturas de colores"
+                loading="eager">
+              <div class="hero-slide-caption">
+                <span><i class="ri-paint-bucket-line"></i>&nbsp; Pinturas de alta calidad</span>
+              </div>
+            </div>
+
+            <!-- Slide 2 — Acabados -->
+            <div class="swiper-slide hero-swiper-slide">
+              <img
+                src="https://images.pexels.com/photos/2760242/pexels-photo-2760242.jpeg?w=700&h=500&fit=crop"
+                alt="Acabados profesionales"
+                loading="lazy">
+              <div class="hero-slide-caption">
+                <span><i class="ri-brush-line"></i>&nbsp; Acabados premium</span>
+              </div>
+            </div>
+
+            <!-- Slide 3 — Drywall -->
+            <div class="swiper-slide hero-swiper-slide">
+              <img
+                src="https://images.pexels.com/photos/209296/pexels-photo-209296.jpeg?w=700&h=500&fit=crop"
+                alt="Instalación Drywall"
+                loading="lazy">
+              <div class="hero-slide-caption">
+                <span><i class="ri-home-gear-line"></i>&nbsp; Instalación profesional</span>
+              </div>
+            </div>
+
+            <!-- Slide 4 — Herramientas -->
+            <div class="swiper-slide hero-swiper-slide">
+              <img
+                src="https://images.pexels.com/photos/211647/pexels-photo-211647.jpeg?w=700&h=500&fit=crop"
+                alt="Herramientas y accesorios"
+                loading="lazy">
+              <div class="hero-slide-caption">
+                <span><i class="ri-tools-line"></i>&nbsp; Todo en herramientas</span>
+              </div>
+            </div>
+
+          </div><!-- /swiper-wrapper -->
+
+          <!-- Navegación -->
+          <div class="swiper-button-prev" aria-label="Imagen anterior"></div>
+          <div class="swiper-button-next" aria-label="Imagen siguiente"></div>
+
+          <!-- Paginación -->
+          <div class="swiper-pagination"></div>
+        </div><!-- /hero-swiper -->
+      </div>
+      <!-- /hero-visual -->
+
+    </div><!-- /hero-inner -->
+  </section>
+  <!-- /hero -->
+
+  <!-- ── BANNER STRIP ─────────────────────────────────────── -->
+  <div class="banner-strip" aria-hidden="true">
+    <div class="banner-strip-inner">
+      <div class="strip-item"><i class="ri-truck-line"></i> Envío a domicilio</div>
+      <div class="strip-item"><i class="ri-price-tag-3-line"></i> Precios competitivos</div>
+      <div class="strip-item"><i class="ri-customer-service-line"></i> Asesoría personalizada</div>
+      <div class="strip-item"><i class="ri-shield-check-line"></i> Garantía de calidad</div>
+      <div class="strip-item"><i class="ri-bank-card-line"></i> Múltiples métodos de pago</div>
+      <div class="strip-item"><i class="ri-paint-brush-line"></i> Pinturas certificadas</div>
+      <div class="strip-item"><i class="ri-tools-line"></i> Servicio profesional</div>
+      <div class="strip-item"><i class="ri-map-pin-line"></i> Tesalia, Huila</div>
+      <!-- Duplicado para loop continuo -->
+      <div class="strip-item"><i class="ri-truck-line"></i> Envío a domicilio</div>
+      <div class="strip-item"><i class="ri-price-tag-3-line"></i> Precios competitivos</div>
+      <div class="strip-item"><i class="ri-customer-service-line"></i> Asesoría personalizada</div>
+      <div class="strip-item"><i class="ri-shield-check-line"></i> Garantía de calidad</div>
+      <div class="strip-item"><i class="ri-bank-card-line"></i> Múltiples métodos de pago</div>
+      <div class="strip-item"><i class="ri-paint-brush-line"></i> Pinturas certificadas</div>
+      <div class="strip-item"><i class="ri-tools-line"></i> Servicio profesional</div>
+      <div class="strip-item"><i class="ri-map-pin-line"></i> Tesalia, Huila</div>
+    </div>
+  </div>
+
+  <!-- ── SERVICE STRIP ────────────────────────────────────── -->
+  <section class="section-sm" style="background:var(--off-white);">
+    <div class="container">
+      <div class="service-strip" data-aos="fade-up">
+        <div class="service-strip-item">
+          <div class="service-strip-icon"><i class="ri-truck-line"></i></div>
+          <div>
+            <div class="service-strip-title">Envío a Domicilio</div>
+            <div class="service-strip-desc">Pitalito y municipios cercanos</div>
+          </div>
+        </div>
+        <div class="service-strip-item">
+          <div class="service-strip-icon"><i class="ri-refund-line"></i></div>
+          <div>
+            <div class="service-strip-title">Garantía 30 días</div>
+            <div class="service-strip-desc">En todos los productos</div>
+          </div>
+        </div>
+        <div class="service-strip-item">
+          <div class="service-strip-icon"><i class="ri-bank-card-line"></i></div>
+          <div>
+            <div class="service-strip-title">Pago Seguro</div>
+            <div class="service-strip-desc">Tarjeta, Nequi, transferencia</div>
+          </div>
+        </div>
+        <div class="service-strip-item">
+          <div class="service-strip-icon"><i class="ri-headphone-line"></i></div>
+          <div>
+            <div class="service-strip-title">Soporte 24/7</div>
+            <div class="service-strip-desc">Lun-Sáb 8am–6pm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROMOCIONES SWIPER ────────────────────────────────── -->
+  <section class="section" style="background:white;">
+    <div class="container">
+      <div class="section-header" data-aos="fade-up">
+        <span class="section-eyebrow">Ofertas especiales</span>
+        <h2 class="section-title">Promociones del Mes</h2>
+        <p class="section-subtitle">Aprovecha nuestras ofertas exclusivas por tiempo limitado</p>
+      </div>
+
+      <div class="swiper promo-swiper" data-aos="fade-up" data-aos-delay="100">
+        <div class="swiper-wrapper" id="promo-swiper-wrapper">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="swiper-pagination" style="margin-top:16px;position:relative;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CATEGORÍAS ─────────────────────────────────────────── -->
+  <section class="section" style="background:var(--off-white);">
+    <div class="container">
+      <div class="section-header" data-aos="fade-up">
+        <span class="section-eyebrow">Explora</span>
+        <h2 class="section-title">Categorías de Productos</h2>
+        <p class="section-subtitle">Encuentra todo lo que necesitas organizado por categoría</p>
+      </div>
+      <div class="categories-grid" id="categories-grid" data-aos="fade-up" data-aos-delay="100">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRODUCTOS DESTACADOS ──────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div class="d-flex justify-between align-center mb-32" data-aos="fade-up" style="flex-wrap:wrap;gap:16px;">
+        <div>
+          <span class="section-eyebrow">Lo más vendido</span>
+          <h2 class="section-title mb-0">Productos Destacados</h2>
+        </div>
+        <a href="productos.html" class="btn btn-outline-red">
+          Ver todos <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+
+      <div class="swiper featured-products-swiper">
+        <div class="swiper-wrapper" id="featured-products">
+          <!-- Rendered by JS -->
+        </div>
+        <div class="swiper-pagination" style="margin-top:20px;position:relative;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SERVICIOS ─────────────────────────────────────────── -->
+  <section class="section" style="background:var(--off-white);">
+    <div class="container">
+      <div class="d-flex justify-between align-center mb-32" data-aos="fade-up" style="flex-wrap:wrap;gap:16px;">
+        <div>
+          <span class="section-eyebrow">Profesionales</span>
+          <h2 class="section-title mb-0">Nuestros Servicios</h2>
+        </div>
+        <a href="servicios.html" class="btn btn-outline-red">
+          Ver todos <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+      <div class="services-grid" id="services-grid" data-aos="fade-up" data-aos-delay="100">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ¿POR QUÉ ELEGIRNOS? ───────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header" data-aos="fade-up">
+        <span class="section-eyebrow">Nuestros valores</span>
+        <h2 class="section-title">¿Por qué elegir Acabados 1A?</h2>
+        <p class="section-subtitle">Más de 8 años brindando soluciones de calidad a hogares y empresas del Huila</p>
+      </div>
+      <div class="why-grid" data-aos="fade-up" data-aos-delay="100">
+        <div class="why-card">
+          <div class="why-icon"><i class="ri-medal-line"></i></div>
+          <h3 class="why-title">Calidad Certificada</h3>
+          <p class="why-desc">Trabajamos únicamente con marcas reconocidas como Pintuco, Sherwin-Williams y Corona, garantizando la mejor calidad.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon"><i class="ri-user-star-line"></i></div>
+          <h3 class="why-title">Asesoría Experta</h3>
+          <p class="why-desc">Nuestro equipo de especialistas te guía para elegir el producto correcto según tu proyecto y presupuesto.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon"><i class="ri-truck-line"></i></div>
+          <h3 class="why-title">Entrega Rápida</h3>
+          <p class="why-desc">Hacemos entregas en Pitalito, Tesalia y municipios del suroccidente del Huila con tiempos de entrega de 24-48h.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon"><i class="ri-price-tag-3-line"></i></div>
+          <h3 class="why-title">Precios Justos</h3>
+          <p class="why-desc">Ofrecemos precios competitivos y descuentos especiales para proyectos al por mayor y clientes frecuentes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SOBRE NOSOTROS ─────────────────────────────────────── -->
+  <section class="section" id="sobre-nosotros" style="background:var(--off-white);">
+    <div class="container">
+      <div class="about-section">
+        <div class="about-img-block" data-aos="fade-right">
+          <img src="https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&q=80" alt="Acabados y Diseños 1A">
+        </div>
+        <div class="about-content" data-aos="fade-left">
+          <div class="about-tag">
+            <i class="ri-store-line"></i>
+            <span>Quiénes somos</span>
+          </div>
+          <h2 class="section-title mb-0" style="text-align:left;">ACABADOS Y DISEÑOS 1A</h2>
+          <div style="width:60px;height:4px;background:var(--primary);margin:16px 0 20px;border-radius:2px;"></div>
+          <p class="about-text">
+            Somos una empresa especializada en la venta de materiales de acabados y diseño de interiores, ubicada en Tesalia, Huila. Atendemos a clientes de Pitalito, Neiva y todo el suroccidente colombiano.
+          </p>
+          <p class="about-text">
+            Con más de 8 años de experiencia, ofrecemos pinturas, vinilos, materiales de construcción y servicios de instalación profesional, convirtiéndonos en el aliado estratégico de constructores, decoradores y hogares.
+          </p>
+          <div class="about-items">
+            <div class="about-item"><i class="ri-check-line"></i><span>Pinturas y Vinilos tipo 1, 2 y 3</span></div>
+            <div class="about-item"><i class="ri-check-line"></i><span>Instalación Drywall y PVC</span></div>
+            <div class="about-item"><i class="ri-check-line"></i><span>Estuco plástico y Graniplast</span></div>
+            <div class="about-item"><i class="ri-check-line"></i><span>Pegacol y materiales adhesivos</span></div>
+            <div class="about-item"><i class="ri-check-line"></i><span>Herramientas y accesorios</span></div>
+            <div class="about-item"><i class="ri-check-line"></i><span>Asesoría en diseño de interiores</span></div>
+          </div>
+          <div class="d-flex gap-16" style="flex-wrap:wrap;">
+            <a href="contacto.html" class="btn btn-primary">
+              <i class="ri-map-pin-line"></i> Encuéntranos
+            </a>
+            <a href="productos.html" class="btn btn-outline-red">
+              <i class="ri-store-line"></i> Ver Productos
+
+            <a href="servicios.html" class="btn btn-outline-red">
+              <i class="ri-store-line"></i> Ver servicios
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ───────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header" data-aos="fade-up">
+        <span class="section-eyebrow">Reseñas</span>
+        <h2 class="section-title">Lo que dicen nuestros clientes</h2>
+      </div>
+      <div class="swiper testimonials-swiper" data-aos="fade-up" data-aos-delay="100">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide">
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★★</div>
+              <p class="testimonial-text">"Excelente servicio y productos de primera calidad. El equipo de Acabados 1A me asesoró perfectamente para elegir los colores de mi apartamento. Totalmente recomendados."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">CA</div>
+                <div>
+                  <div class="author-name">Carlos Andrés Gómez</div>
+                  <div class="author-role">Cliente — Pitalito, Huila</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-slide">
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★★</div>
+              <p class="testimonial-text">"Compré pinturas y el servicio de instalación de Drywall. Quedé muy satisfecha con el resultado y con los precios. El trabajo fue impecable y terminaron antes de lo esperado."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">MF</div>
+                <div>
+                  <div class="author-name">María Fernanda López</div>
+                  <div class="author-role">Clienta — La Plata, Huila</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-slide">
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★☆</div>
+              <p class="testimonial-text">"Muy buenos precios en estuco y Graniplast. El proceso de compra online fue sencillo y recibí mi pedido al día siguiente. Seguiré comprando aquí para mis obras."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">PV</div>
+                <div>
+                  <div class="author-name">Pedro Antonio Vargas</div>
+                  <div class="author-role">Contratista — Neiva, Huila</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="swiper-slide">
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★★</div>
+              <p class="testimonial-text">"La asesoría de diseño de interiores fue increíble. Me ayudaron a transformar completamente mi negocio con colores corporativos. 100% recomendados para proyectos empresariales."</p>
+              <div class="testimonial-author">
+                <div class="author-avatar">LR</div>
+                <div>
+                  <div class="author-name">Luisa Ramírez</div>
+                  <div class="author-role">Empresaria — Garzón, Huila</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-pagination" style="margin-top:20px;position:relative;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONTACTO ───────────────────────────────────────────── -->
+  <section class="section contact-section">
+    <div class="container">
+      <div class="section-header" data-aos="fade-up">
+        <span class="section-eyebrow" style="color:rgba(255,255,255,0.5);">Contáctanos</span>
+        <h2 class="section-title" style="color:white;">¿Tienes alguna pregunta?</h2>
+        <p class="section-subtitle" style="color:rgba(255,255,255,0.55);">Estamos aquí para ayudarte. Escríbenos o llámanos.</p>
+      </div>
+      <div class="contact-grid">
+        <div data-aos="fade-right">
+          <div class="contact-info-item">
+            <div class="contact-icon"><i class="ri-map-pin-line"></i></div>
+            <div>
+              <div class="contact-label">Dirección</div>
+              <div class="contact-value">Calle 5 #10-20, Tesalia, Huila</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon"><i class="ri-phone-line"></i></div>
+            <div>
+              <div class="contact-label">Teléfono</div>
+              <div class="contact-value">310 123 4567</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon"><i class="ri-mail-line"></i></div>
+            <div>
+              <div class="contact-label">Email</div>
+              <div class="contact-value">info@acabados1a.com</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="contact-icon"><i class="ri-time-line"></i></div>
+            <div>
+              <div class="contact-label">Horario</div>
+              <div class="contact-value">Lun – Sáb: 8:00am – 6:00pm</div>
+            </div>
+          </div>
+          <div class="d-flex gap-10 mt-20" style="flex-wrap:wrap;">
+            <a href="https://wa.me/573101234567" target="_blank" rel="noopener" class="btn btn-success">
+              <i class="ri-whatsapp-line"></i> WhatsApp
+            </a>
+            <a href="contacto.html" class="btn btn-outline" style="color:rgba(255,255,255,0.75);border-color:rgba(255,255,255,0.25);">
+              Ver mapa <i class="ri-map-pin-line"></i>
+            </a>
+          </div>
+        </div>
+
+        <div data-aos="fade-left">
+          <form class="contact-form" id="contact-form-home" onsubmit="submitContactForm(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-group">
+                <label class="form-label required">Nombre</label>
+                <input type="text" class="form-control" placeholder="Tu nombre" required autocomplete="given-name">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Teléfono</label>
+                <input type="tel" class="form-control" placeholder="310 000 0000" required autocomplete="tel">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Email</label>
+              <input type="email" class="form-control" placeholder="correo@ejemplo.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Mensaje</label>
+              <textarea class="form-control" placeholder="¿En qué podemos ayudarte?" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="ri-send-plane-line"></i> Enviar Mensaje
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── NEWSLETTER ─────────────────────────────────────────── -->
+  <section class="newsletter-section">
+    <div class="container">
+      <h2 class="newsletter-title" data-aos="fade-up">Suscríbete a nuestras ofertas</h2>
+      <p class="newsletter-sub" data-aos="fade-up" data-aos-delay="100">
+        Recibe notificaciones de promociones exclusivas y nuevos productos directamente en tu correo.
+      </p>
+      <form class="newsletter-form" data-aos="fade-up" data-aos-delay="200" onsubmit="subscribeNewsletter(event)">
+        <input type="email" placeholder="Tu correo electrónico" required autocomplete="email">
+        <button type="submit">Suscribirse</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+<!-- /main-content -->
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">ACABADOS <span>1A</span></div>
+        <p class="footer-desc">Empresa especializada en materiales de acabados, pinturas y servicios de instalación para hogares y empresas del Huila.</p>
+        <p class="footer-desc" style="margin-bottom:16px;font-style:italic;">"Calidad y servicio en cada proyecto"</p>
+        <div class="footer-socials">
+          <a href="https://facebook.com/acabados1a" target="_blank" rel="noopener" class="footer-social" aria-label="Facebook"><i class="ri-facebook-line"></i></a>
+          <a href="https://instagram.com/acabados1a" target="_blank" rel="noopener" class="footer-social" aria-label="Instagram"><i class="ri-instagram-line"></i></a>
+          <a href="https://wa.me/573101234567" target="_blank" rel="noopener" class="footer-social" aria-label="WhatsApp"><i class="ri-whatsapp-line"></i></a>
+          <a href="mailto:info@acabados1a.com" class="footer-social" aria-label="Email"><i class="ri-mail-line"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Productos</h4>
+        <div class="footer-links">
+          <a href="productos.html?cat=1">Pinturas y Vinilos</a>
+          <a href="productos.html?cat=2">Materiales de Acabado</a>
+          <a href="productos.html?cat=3">Pegantes y Adhesivos</a>
+          <a href="productos.html?cat=4">Drywall y PVC</a>
+          <a href="productos.html?cat=5">Herramientas</a>
+          <a href="promociones.html">Ofertas</a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Mi Cuenta</h4>
+        <div class="footer-links">
+          <a href="login.html">Iniciar Sesión</a>
+          <a href="registro.html">Registrarse</a>
+          <a href="perfil.html">Mi Perfil</a>
+          <a href="pedidos.html">Mis Pedidos</a>
+          <a href="cotizaciones.html">Cotizaciones</a>
+          <a href="historial-compras.html">Historial</a>
+        </div>
+      </div>
+      <div>
+        <h4 class="footer-title">Contacto</h4>
+        <div class="footer-contact-item"><i class="ri-map-pin-line"></i> Calle 5 #10-20, Tesalia, Huila</div>
+        <div class="footer-contact-item"><i class="ri-phone-line"></i> 310 123 4567</div>
+        <div class="footer-contact-item"><i class="ri-mail-line"></i> info@acabados1a.com</div>
+        <div class="footer-contact-item"><i class="ri-time-line"></i> Lun-Sáb: 8am–6pm</div>
+        <a href="pqrs.html" class="btn btn-outline-red btn-sm" style="width:100%;justify-content:center;display:flex;margin-top:16px;">
+          <i class="ri-customer-service-line"></i> Atención PQRS
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Acabados y Diseños 1A — Todos los derechos reservados | NIT: 1079409325-1 |
+         Desarrollado por Juliana Trujillo &amp; Jose Miguel Martínez — SENA ADSO Ficha 3151895</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ── FLOATING BUTTONS ───────────────────────────────────── -->
+<a href="https://wa.me/573101234567?text=Hola!%20Quiero%20más%20información"
+   target="_blank" rel="noopener" id="whatsapp-float" title="Contáctanos por WhatsApp" aria-label="Contactar por WhatsApp">
+  <i class="ri-whatsapp-line"></i>
+</a>
+<button id="back-to-top" title="Volver arriba" aria-label="Volver al inicio">
+  <i class="ri-arrow-up-line"></i>
+</button>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/data/mockdata.js"></script>
+<script src="assets/js/app.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   INDEX PAGE JS
+   ═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderPromosSwiper();
+  renderCategories();
+  renderFeaturedProducts();
+  renderServices();
+  initSwipers();
+  animateCounters();
+});
+
+/* ── RENDER PROMOTIONS ──────────────────────────────────── */
+function renderPromosSwiper() {
+  const wrapper = document.getElementById('promo-swiper-wrapper');
+  if (!wrapper) return;
+  wrapper.innerHTML = MockData.promociones.map(p => `
+    <div class="swiper-slide">
+      <div class="promo-card">
+        <img src="${p.imagen_url}" alt="${p.titulo}" loading="lazy">
+        <div class="promo-overlay">
+          <div class="promo-content">
+            <span class="promo-tag">
+              ${p.tipo === 'descuento' ? `${p.descuento_porcentaje}% OFF`
+                : p.tipo === 'combo' ? 'Combo Especial' : 'Servicio'}
+            </span>
+            <h3 class="promo-title">${p.titulo}</h3>
+            <p class="promo-desc">${p.descripcion}</p>
+            <a href="promociones.html" class="btn btn-white btn-sm">
+              Ver oferta <i class="ri-arrow-right-line"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── RENDER CATEGORIES ──────────────────────────────────── */
+function renderCategories() {
+  const grid = document.getElementById('categories-grid');
+  if (!grid) return;
+  grid.innerHTML = MockData.categorias.map(cat => {
+    const count = MockData.productos.filter(p => p.id_categoria === cat.id_categoria).length;
+    return `
+      <div class="category-card" onclick="window.location.href='productos.html?cat=${cat.id_categoria}'"
+           role="button" tabindex="0"
+           onkeypress="if(event.key==='Enter') window.location.href='productos.html?cat=${cat.id_categoria}'">
+        <div class="cat-icon"><i class="${cat.icono}"></i></div>
+        <div class="cat-name">${cat.nombre}</div>
+        <div class="cat-count">${count} productos</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ── RENDER FEATURED PRODUCTS ───────────────────────────── */
+function renderFeaturedProducts() {
+  const wrapper = document.getElementById('featured-products');
+  if (!wrapper) return;
+  const featured = MockData.productos.filter(p => p.destacado);
+  wrapper.innerHTML = featured.map(p => {
+    const stock = Helpers.getStockStatus(p.id_producto);
+    return `
+      <div class="swiper-slide">
+        <div class="product-card">
+          <div class="product-card-img">
+            <img src="${p.imagen_url}" alt="${p.nombre}" loading="lazy">
+            <div class="product-card-badges">
+              <span class="badge badge-red">Destacado</span>
+              <span class="badge ${stock.class === 'in' ? 'badge-green stock-in'
+                : stock.class === 'low' ? 'badge-yellow stock-low'
+                : 'badge-red stock-out'}">${stock.label}</span>
+            </div>
+            <div class="product-actions-hover">
+              <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id_producto})">
+                <i class="ri-shopping-cart-line"></i> Agregar
+              </button>
+              <a href="detalle-producto.html?id=${p.id_producto}" class="btn btn-white btn-sm btn-icon">
+                <i class="ri-eye-line"></i>
+              </a>
+            </div>
+          </div>
+          <div class="product-card-body">
+            <div class="product-category">${Helpers.getCategoryName(p.id_categoria)}</div>
+            <h3 class="product-name">${p.nombre}</h3>
+            <p class="product-desc">${p.descripcion}</p>
+            <div class="d-flex align-center gap-10">
+              <span class="product-price">${formatCOP(p.precio_venta)}</span>
+              ${p.precio_mayorista ? `<span class="product-price-old">${formatCOP(p.precio_mayorista)}</span>` : ''}
+            </div>
+          </div>
+          <div class="product-footer">
+            <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id_producto})">
+              <i class="ri-shopping-cart-line"></i> Carrito
+            </button>
+            <a href="detalle-producto.html?id=${p.id_producto}" class="btn btn-outline-red btn-sm">
+              Ver más
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ── RENDER SERVICES ────────────────────────────────────── */
+function renderServices() {
+  const grid = document.getElementById('services-grid');
+  if (!grid) return;
+  const featured = MockData.servicios.slice(0, 3);
+  grid.innerHTML = featured.map(s => `
+    <div class="service-card">
+      <div class="service-card-img">
+        <img src="${s.imagen_url}" alt="${s.nombre_servicio}" loading="lazy">
+      </div>
+      <div class="service-card-body">
+        <div class="service-type">${s.tipo_servicio.replace('_', ' ')}</div>
+        <h3 class="service-name">${s.nombre_servicio}</h3>
+        <p class="service-desc">${s.descripcion}</p>
+        <div class="d-flex justify-between align-center">
+          <div>
+            ${s.precio_hora    ? `<span class="service-price">${formatCOP(s.precio_hora)}/hora</span>` : ''}
+            ${s.precio_proyecto ? `<span class="service-price">Desde ${formatCOP(s.precio_proyecto)}</span>` : ''}
+          </div>
+          <a href="cotizaciones.html" class="btn btn-primary btn-sm">Cotizar</a>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── INIT SWIPERS ───────────────────────────────────────── */
+function initSwipers() {
+
+  /* Hero Swiper */
+  new Swiper('.hero-swiper', {
+    loop: true,
+    speed: 800,
+    grabCursor: true,
+    effect: 'slide',
+    autoplay: {
+      delay: 5000,
+      disableOnInteraction: false,
+      pauseOnMouseEnter: true,
+    },
+    navigation: {
+      nextEl: '.hero-swiper .swiper-button-next',
+      prevEl: '.hero-swiper .swiper-button-prev',
+    },
+    pagination: {
+      el: '.hero-swiper .swiper-pagination',
+      clickable: true,
+      dynamicBullets: true,
+    },
+    a11y: {
+      prevSlideMessage: 'Imagen anterior',
+      nextSlideMessage: 'Imagen siguiente',
+    },
+  });
+
+  /* Promos Swiper */
+  new Swiper('.promo-swiper', {
+    loop: true,
+    speed: 700,
+    autoplay: { delay: 5000, disableOnInteraction: false },
+    slidesPerView: 1,
+    spaceBetween: 24,
+    pagination: {
+      el: '.promo-swiper .swiper-pagination',
+      clickable: true,
+    },
+  });
+
+  /* Featured Products Swiper */
+  new Swiper('.featured-products-swiper', {
+    slidesPerView: 1.15,
+    spaceBetween: 20,
+    grabCursor: true,
+    pagination: {
+      el: '.featured-products-swiper .swiper-pagination',
+      clickable: true,
+    },
+    breakpoints: {
+      480:  { slidesPerView: 1.5,  spaceBetween: 16 },
+      640:  { slidesPerView: 2,    spaceBetween: 20 },
+      900:  { slidesPerView: 2.5,  spaceBetween: 20 },
+      1024: { slidesPerView: 3,    spaceBetween: 24 },
+      1280: { slidesPerView: 4,    spaceBetween: 24 },
+    },
+  });
+
+  /* Testimonials Swiper */
+  new Swiper('.testimonials-swiper', {
+    slidesPerView: 1,
+    spaceBetween: 24,
+    loop: true,
+    grabCursor: true,
+    autoplay: { delay: 6000, disableOnInteraction: false },
+    pagination: {
+      el: '.testimonials-swiper .swiper-pagination',
+      clickable: true,
+    },
+    breakpoints: {
+      640:  { slidesPerView: 1.5 },
+      768:  { slidesPerView: 2   },
+      1200: { slidesPerView: 3   },
+    },
+  });
+}
+
+/* ── COUNTER ANIMATION ──────────────────────────────────── */
+function animateCounters() {
+  const counters = document.querySelectorAll('[data-count]');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseInt(el.dataset.count);
+      const suffix = target === 100 ? '%' : '+';
+      let current = 0;
+      const step = Math.ceil(target / 50);
+      const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current + suffix;
+        if (current >= target) clearInterval(timer);
+      }, 30);
+      observer.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  counters.forEach(c => observer.observe(c));
+}
+
+/* ── CONTACT FORM ───────────────────────────────────────── */
+function submitContactForm(e) {
+  e.preventDefault();
+  Swal.fire({
+    icon: 'success',
+    title: '¡Mensaje enviado!',
+    text: 'Nos pondremos en contacto contigo pronto. ¡Gracias por escribirnos!',
+    confirmButtonColor: '#C0392B',
+    confirmButtonText: 'Perfecto',
+  });
+  e.target.reset();
+}
+
+/* ── NEWSLETTER ─────────────────────────────────────────── */
+function subscribeNewsletter(e) {
+  e.preventDefault();
+  Swal.fire({
+    icon: 'success',
+    title: '¡Suscripción exitosa!',
+    text: 'Recibirás nuestras mejores promociones en tu correo.',
+    confirmButtonColor: '#C0392B',
+  });
+  e.target.reset();
+}
+</script>
+
+</body>
+</html>
