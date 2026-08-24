@@ -4,43 +4,49 @@ Aplicación web de comercio electrónico y gestión para **Acabados y Diseños 1
 
 Proyecto formativo SENA (Tecnólogo en Análisis y Desarrollo de Software).
 
+## Estructura
+
+```
+frontend/   Vue 3 + Vite + Vue Router + Pinia
+backend/    Spring Boot 4 (Java 21) + MariaDB
+```
+
 ## Stack
 
-- **Vue 3** (Composition API, `<script setup>`)
-- **Vite**
-- **Vue Router**
-- **Pinia** (manejo de estado)
-- **Axios** (listo para conectar con el backend real)
+**Frontend**: Vue 3 (Composition API, `<script setup>`), Vite, Vue Router, Pinia, Axios.
 
-Por ahora, todo el frontend corre sobre datos de prueba (`src/data/mockData.js`), mientras se construye el backend (Spring + MySQL, esquema ya definido) que reemplazará esa capa manteniendo los mismos nombres de campo.
+**Backend**: Spring Boot, Spring Security + JWT, Spring Data JPA (Hibernate), MariaDB, envío de correo vía Gmail SMTP.
 
 ## Funcionalidades
 
-- Catálogo de productos con filtros, búsqueda, variantes de tamaño/color y calculadora de cantidad de pintura
-- Selector de color de pinturas por familias, con búsqueda por nombre/código
-- Carrito de compras y checkout en 3 pasos
-- Módulo de cotizaciones (productos y servicios)
-- Historial de pedidos y perfil de usuario
-- Servicios: listado y detalle con galería
-- Contacto, PQRS, páginas legales
-- Panel de administración (en construcción)
-- Autenticación con roles Administrador / Cliente
+- Catálogo de productos con filtros, búsqueda, variantes de tamaño/color
+- Carrito de compras y checkout
+- Cotizaciones (productos y servicios)
+- Ventas: checkout real, anticipos de cotización, gestión desde el panel admin
+- PQRS: radicación y gestión con respuesta del equipo
+- Inventario: umbrales de stock y movimientos manuales (entrada/salida/ajuste/devolución)
+- Autenticación con verificación de correo y recuperación de contraseña (JWT, roles Administrador/Cliente/Vendedor)
+- Panel de administración: dashboard, productos, servicios, inventario, ventas, cotizaciones, PQRS, reportes
 
 ## Cómo correr el proyecto
 
+### Backend
+
 ```bash
+cd backend
+cp src/main/resources/application.properties.example src/main/resources/application.properties
+# Editar application.properties con los datos reales de tu base de datos MariaDB y credenciales SMTP
+./mvnw spring-boot:run
+```
+
+Requiere una base de datos MariaDB local con el esquema del proyecto ya creado.
+
+### Frontend
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-## Estructura
-
-```
-src/
-  components/   Componentes reutilizables (layout, producto, servicio)
-  views/        Vistas por ruta
-  stores/       Stores de Pinia
-  data/         Datos de prueba (mockData.js) y catálogos de referencia
-  composables/  Lógica reutilizable (formato, toasts, etc.)
-  router/       Configuración de rutas
-```
+Por defecto apunta a `http://localhost:8080/api` (ver `frontend/.env`).

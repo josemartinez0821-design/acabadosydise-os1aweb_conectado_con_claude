@@ -1,0 +1,54 @@
+package com.acabados1a.backend.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "cotizaciones")
+@Getter
+@Setter
+@NoArgsConstructor
+public class Cotizacion {
+
+    public enum Estado { pendiente, en_revision, aprobada, rechazada, convertida_venta }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_cotizacion")
+    private Integer idCotizacion;
+
+    @Column(name = "numero_cotizacion", nullable = false, unique = true, length = 50)
+    private String numeroCotizacion;
+
+    @ManyToOne
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private Usuario usuario;
+
+    @Column(name = "fecha", insertable = false, updatable = false)
+    private LocalDateTime fecha;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado")
+    private Estado estado;
+
+    @Column(name = "total_estimado")
+    private BigDecimal totalEstimado;
+
+    @Column(name = "observaciones")
+    private String observaciones;
+
+    @Column(name = "respuesta")
+    private String respuesta;
+
+    @Column(name = "validez_dias")
+    private Integer validezDias;
+
+    @Column(name = "fecha_aprobacion")
+    private LocalDate fechaAprobacion;
+}
