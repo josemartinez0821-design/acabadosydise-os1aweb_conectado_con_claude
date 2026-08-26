@@ -10,9 +10,9 @@ Proyecto formativo SENA (Tecnólogo en Análisis y Desarrollo de Software).
 - **Vite**
 - **Vue Router**
 - **Pinia** (manejo de estado)
-- **Axios** (listo para conectar con el backend real)
+- **Axios** (conectado al backend real)
 
-Por ahora, todo el frontend corre sobre datos de prueba (`src/data/mockData.js`), mientras se construye el backend (Spring + MySQL, esquema ya definido) que reemplazará esa capa manteniendo los mismos nombres de campo.
+El frontend consume el backend real (Spring Boot + MariaDB) — no queda ningún dato de prueba (`mockData.js`, ya eliminado).
 
 ## Funcionalidades
 
@@ -40,7 +40,7 @@ src/
   components/   Componentes reutilizables (layout, producto, servicio)
   views/        Vistas por ruta
   stores/       Stores de Pinia
-  data/         Datos de prueba (mockData.js) y catálogos de referencia
+  data/         Catálogos de referencia (departamentos/municipios, enriquecimiento de servicios)
   composables/  Lógica reutilizable (formato, toasts, etc.)
   router/       Configuración de rutas
 ```
