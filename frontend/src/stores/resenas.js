@@ -1,12 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { MockData } from '../data/mockData'
+import api from '../services/api'
 
-// TODO: cuando el backend Spring esté disponible, reemplazar las referencias
-// a MockData por llamadas a `api` (src/services/api.js) manteniendo los mismos nombres de campo.
-// NOTA: la tabla `resenas_productos` no existe en la BD real todavía — hay que crearla al conectar el backend.
 export const useResenasStore = defineStore('resenas', () => {
-  const resenas = ref(MockData.resenas_productos)
+  // Ya viene del backend real (cargarResenas(), llamado desde DetalleProductoView.vue's
+  // onMounted — no se precarga en App.vue porque solo esa vista la consume, mismo criterio
+  // que cotizaciones/pqrs). Empieza vacío en vez de MockData.resenas_productos.
+  const resenas = ref([])
+  async function cargarResenas() {
+    const { data } = await api.get('/resenas')
+    resenas.value = data
+  }
 
   function getResenasDeProducto(id_producto) {
     return resenas.value
@@ -28,22 +32,13 @@ export const useResenasStore = defineStore('resenas', () => {
   }
 
   function yaReseno(id_producto, id_usuario) {
-    return resenas.value.some((r) => r.id_producto === id_producto && r.id_usuario === id_usuario)
+    return resenas.value.some((r) => r.id_producto === id_producto && r.usuario.id_usuario === id_usuario)
   }
 
-  function crearResena({ id_producto, id_usuario, calificacion, comentario }) {
-    const nuevoId = resenas.value.length ? Math.max(...resenas.value.map((r) => r.id_resena)) + 1 : 1
-    const nueva = {
-      id_resena: nuevoId,
-      id_producto,
-      id_usuario,
-      calificacion,
-      comentario,
-      fecha: new Date().toISOString().slice(0, 10),
-    }
-    resenas.value.push(nueva)
-    return nueva
+  async function crearResena({ id_producto, calificacion, comentario }) {
+    await api.post('/resenas', { id_producto, calificacion, comentario })
+    await cargarResenas()
   }
 
-  return { resenas, getResenasDeProducto, getPromedio, getDistribucion, yaReseno, crearResena }
+  return { resenas, cargarResenas, getResenasDeProducto, getPromedio, getDistribucion, yaReseno, crearResena }
 })

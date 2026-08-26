@@ -1,6 +1,6 @@
 <script setup>
 // RF06 - detalle de producto: galería, atributos, tabs (descripción/especificaciones/reseñas/FAQ), relacionados
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCatalogStore } from '../stores/catalog'
 import { useCartStore } from '../stores/cart'
@@ -8,7 +8,6 @@ import { useAuthStore } from '../stores/auth'
 import { useResenasStore } from '../stores/resenas'
 import { useToast } from '../composables/useToast'
 import { formatCOP, formatUnidadMedida } from '../composables/useFormat'
-import { MockData } from '../data/mockData'
 import ProductCard from '../components/product/ProductCard.vue'
 import CalculadoraPinturaModal from '../components/product/CalculadoraPinturaModal.vue'
 import SelectorColorModal from '../components/product/SelectorColorModal.vue'
@@ -23,6 +22,10 @@ const resenasStore = useResenasStore()
 const router = useRouter()
 const { showToast } = useToast()
 const { mostrarModalLogin: mostrarModalLoginCotizar, irACotizar, irALogin: irALoginCotizar } = useCotizarGate()
+
+onMounted(() => {
+  resenasStore.cargarResenas()
+})
 
 const producto = computed(() => catalog.getProductById(props.id))
 const cantidad = ref(1)
@@ -174,13 +177,11 @@ const totalResenas = computed(() => misResenas.value.length)
 const promedioResenas = computed(() => producto.value ? resenasStore.getPromedio(producto.value.id_producto) : 0)
 const distribucionResenas = computed(() => producto.value ? resenasStore.getDistribucion(producto.value.id_producto) : {})
 
-function nombreUsuario(id_usuario) {
-  const u = MockData.usuarios.find((x) => x.id_usuario === id_usuario)
-  return u ? `${u.nombre} ${u.apellido}` : 'Usuario'
+function nombreUsuario(usuario) {
+  return usuario ? `${usuario.nombre} ${usuario.apellido}` : 'Usuario'
 }
-function inicialesUsuario(id_usuario) {
-  const u = MockData.usuarios.find((x) => x.id_usuario === id_usuario)
-  return u ? (u.nombre[0] + (u.apellido?.[0] || '')) : 'U'
+function inicialesUsuario(usuario) {
+  return usuario ? (usuario.nombre[0] + (usuario.apellido?.[0] || '')) : 'U'
 }
 
 function irAResenas() {
@@ -211,16 +212,19 @@ async function publicarResena() {
     return
   }
   enviandoResena.value = true
-  await new Promise((r) => setTimeout(r, 400))
-  resenasStore.crearResena({
-    id_producto: producto.value.id_producto,
-    id_usuario: auth.usuario.id_usuario,
-    calificacion: nuevaResena.value.calificacion,
-    comentario: nuevaResena.value.comentario.trim(),
-  })
-  nuevaResena.value = { calificacion: 0, comentario: '' }
-  enviandoResena.value = false
-  showToast('¡Gracias por tu reseña!', 'success')
+  try {
+    await resenasStore.crearResena({
+      id_producto: producto.value.id_producto,
+      calificacion: nuevaResena.value.calificacion,
+      comentario: nuevaResena.value.comentario.trim(),
+    })
+    nuevaResena.value = { calificacion: 0, comentario: '' }
+    showToast('¡Gracias por tu reseña!', 'success')
+  } catch (e) {
+    showToast(e.response?.data?.mensaje || 'No se pudo publicar la reseña.', 'danger')
+  } finally {
+    enviandoResena.value = false
+  }
 }
 
 // ── Preguntas frecuentes ─────────────────────────────────────
@@ -490,9 +494,9 @@ function toggleFaq(i) {
                 <div v-for="r in misResenas" :key="r.id_resena" class="review-card">
                   <div class="review-card-header">
                     <div class="review-card-author">
-                      <div class="review-card-avatar">{{ inicialesUsuario(r.id_usuario) }}</div>
+                      <div class="review-card-avatar">{{ inicialesUsuario(r.usuario) }}</div>
                       <div>
-                        <div class="review-card-name">{{ nombreUsuario(r.id_usuario) }}</div>
+                        <div class="review-card-name">{{ nombreUsuario(r.usuario) }}</div>
                         <div class="review-card-date">{{ new Date(r.fecha).toLocaleDateString('es-CO', { day:'numeric', month:'long', year:'numeric' }) }}</div>
                       </div>
                     </div>

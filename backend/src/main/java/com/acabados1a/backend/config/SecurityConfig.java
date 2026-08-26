@@ -66,6 +66,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/pqrs").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/pqrs").authenticated()
                 .requestMatchers(HttpMethod.PATCH, "/api/pqrs/*/estado").hasRole("ADMIN")
+                // Reseñas: el GET se queda permitAll (dato público de catálogo, como productos) -
+                // solo publicar una reseña nueva requiere estar logueado.
+                .requestMatchers(HttpMethod.POST, "/api/resenas").authenticated()
                 // Inventario: GET sigue permitAll (catálogo público lo necesita para stock), pero
                 // registrar movimientos manuales y tocar umbrales es solo-admin.
                 .requestMatchers(HttpMethod.PUT, "/api/inventario/*/umbrales").hasRole("ADMIN")
