@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +72,21 @@ public class AuthService {
         Usuario guardado = usuarioRepository.save(usuario);
         emailService.enviarCodigoVerificacion(guardado.getEmail(), guardado.getCodigoVerificacion());
         return guardado;
+    }
+
+    // Para el aviso "ya existe una cuenta" en tiempo real de RegistroView.vue - antes comparaba
+    // contra una lista fija de usuarios de prueba en el frontend (MockData), ahora consulta la
+    // BD real. Revelar si un correo/cédula/teléfono ya está registrado es una decisión ya tomada
+    // en este mismo servicio (ver solicitarRecuperacion()), no una nueva - registrar() ya lo
+    // revela igual a través del mensaje de error al enviar el formulario.
+    public Map<String, Boolean> disponibilidad(String email, String numeroIdentificacion, String telefono) {
+        Map<String, Boolean> resultado = new HashMap<>();
+        if (email != null && !email.isBlank()) resultado.put("email", usuarioRepository.existsByEmail(email));
+        if (numeroIdentificacion != null && !numeroIdentificacion.isBlank()) {
+            resultado.put("numero_identificacion", usuarioRepository.existsByNumeroIdentificacion(numeroIdentificacion));
+        }
+        if (telefono != null && !telefono.isBlank()) resultado.put("telefono", usuarioRepository.existsByTelefono(telefono));
+        return resultado;
     }
 
     public Usuario login(LoginRequest request) {

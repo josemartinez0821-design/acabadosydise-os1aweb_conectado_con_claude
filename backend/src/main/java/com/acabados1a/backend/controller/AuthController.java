@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -28,6 +30,16 @@ public class AuthController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
+    }
+
+    // Público (sin token) - lo consume el formulario de registro mientras alguien todavía no
+    // tiene cuenta. Cada parámetro es opcional; solo devuelve una clave por cada uno que llegó.
+    @GetMapping("/disponibilidad")
+    public Map<String, Boolean> disponibilidad(
+        @RequestParam(name = "email", required = false) String email,
+        @RequestParam(name = "numero_identificacion", required = false) String numeroIdentificacion,
+        @RequestParam(name = "telefono", required = false) String telefono) {
+        return authService.disponibilidad(email, numeroIdentificacion, telefono);
     }
 
     @PostMapping("/login")

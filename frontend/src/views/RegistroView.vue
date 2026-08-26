@@ -4,7 +4,6 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useToast } from '../composables/useToast'
-import { MockData } from '../data/mockData'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
 import api from '../services/api'
 import logoUrl from '../assets/logo.png'
@@ -95,18 +94,41 @@ watch(() => form.value.departamento, () => {
 
 // Duplicados en tiempo real: apenas escriben un número de identificación, teléfono o correo que ya
 // existe, se los marcamos ahí mismo junto al campo — no hay que esperar a enviar el formulario para
-// enterarse.
-const cedulaDuplicada = computed(() => {
-  const num = form.value.numeroIdentificacion.trim()
-  return num.length > 0 && MockData.usuarios.some((u) => u.numero_identificacion === num)
-})
-const telefonoDuplicado = computed(() => {
-  const tel = form.value.telefono.trim()
-  return tel.length > 0 && MockData.usuarios.some((u) => u.telefono === tel)
-})
-const emailDuplicado = computed(() => {
-  const em = form.value.email.trim().toLowerCase()
-  return em.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em) && MockData.usuarios.some((u) => u.email.toLowerCase() === em)
+// enterarse. Antes comparaba contra una lista fija de usuarios de prueba (MockData); ahora
+// consulta GET /api/auth/disponibilidad (público) contra la BD real, con un pequeño debounce para
+// no disparar una petición por cada tecla. Es solo una ayuda visual — el backend vuelve a
+// validar de verdad al enviar el formulario, así que un fallo de red aquí no deja pasar nada.
+const cedulaDuplicada = ref(false)
+const telefonoDuplicado = ref(false)
+const emailDuplicado = ref(false)
+let timeoutDisponibilidad = null
+
+watch(() => [form.value.numeroIdentificacion, form.value.telefono, form.value.email], () => {
+  const cedula = form.value.numeroIdentificacion.trim()
+  const telefono = form.value.telefono.trim()
+  const email = form.value.email.trim().toLowerCase()
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+  if (!cedula) cedulaDuplicada.value = false
+  if (!telefono) telefonoDuplicado.value = false
+  if (!email || !emailValido) emailDuplicado.value = false
+
+  clearTimeout(timeoutDisponibilidad)
+  if (!cedula && !telefono && !(email && emailValido)) return
+  timeoutDisponibilidad = setTimeout(async () => {
+    const params = {}
+    if (cedula) params.numero_identificacion = cedula
+    if (telefono) params.telefono = telefono
+    if (email && emailValido) params.email = email
+    try {
+      const { data } = await api.get('/auth/disponibilidad', { params })
+      if ('numero_identificacion' in data) cedulaDuplicada.value = data.numero_identificacion
+      if ('telefono' in data) telefonoDuplicado.value = data.telefono
+      if ('email' in data) emailDuplicado.value = data.email
+    } catch {
+      // silencioso a propósito - ver comentario arriba
+    }
+  }, 400)
 })
 
 const requisitos = computed(() => ({
