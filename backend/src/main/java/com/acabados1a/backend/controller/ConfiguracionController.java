@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 // Genérico — cualquier fila de `configuracion` por su clave. El frontend decide qué hacer con
 // `valor` según `tipo` (ej. JSON.parse si tipo === 'json').
 @RestController
@@ -23,5 +25,12 @@ public class ConfiguracionController {
         return configuracionRepository.findByClave(clave)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Todas las filas a la vez - usado por catalog.cargarConfiguracion() para armar de un solo
+    // viaje el objeto plano {telefono, direccion, ...} que antes venía de MockData.configuracion.
+    @GetMapping
+    public List<Configuracion> listar() {
+        return configuracionRepository.findAll();
     }
 }

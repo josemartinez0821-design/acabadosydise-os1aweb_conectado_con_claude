@@ -71,6 +71,7 @@ onMounted(() => {
   catalog.cargarPromociones()
   catalog.cargarServicios()
   catalog.cargarImpuestos()
+  catalog.cargarConfiguracion()
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)

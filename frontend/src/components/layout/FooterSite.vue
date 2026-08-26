@@ -59,7 +59,7 @@ const catalog = useCatalogStore()
           <span>·</span>
           <RouterLink to="/politica-privacidad">Política de Privacidad</RouterLink>
         </div>
-        <p>&copy; 2026 Acabados y Diseños 1A — Todos los derechos reservados | NIT: {{ catalog.configuracion.nit }} |
+        <p>&copy; 2026 Acabados y Diseños 1A — Todos los derechos reservados<template v-if="catalog.configuracion.nit"> | NIT: {{ catalog.configuracion.nit }}</template> |
            Desarrollado por Juliana Trujillo &amp; Jose Miguel Martínez — SENA ADSO Ficha 3151895</p>
       </div>
     </div>

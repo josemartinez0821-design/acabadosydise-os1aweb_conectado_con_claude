@@ -250,7 +250,7 @@ function toggleFaq(i) {
                   <div class="info-item-value">{{ catalog.configuracion.email }}</div>
                 </div>
               </div>
-              <div class="info-item">
+              <div v-if="catalog.configuracion.nit" class="info-item">
                 <div class="info-item-icon"><i class="ri-building-line"></i></div>
                 <div>
                   <div class="info-item-label">NIT</div>

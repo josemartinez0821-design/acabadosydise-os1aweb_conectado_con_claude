@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { MockData } from '../data/mockData'
 import { ServiciosEnriquecimiento } from '../data/serviciosEnriquecimiento'
 import api from '../services/api'
 
@@ -74,7 +73,16 @@ export const useCatalogStore = defineStore('catalog', () => {
     impuestos.value = data
   }
 
-  const configuracion = ref(MockData.configuracion)
+  // Datos de la empresa (teléfono, dirección, redes, misión/visión...) - ya vienen del backend
+  // real (cargarConfiguracion(), llamado una vez al iniciar la app en App.vue) — empieza vacío
+  // en vez de MockData.configuracion. La tabla `configuracion` es genérica clave/valor (la misma
+  // que ya usaba grupos_variante_productos) - acá se aplanan todas sus filas en un solo objeto
+  // {telefono, direccion, ...} para que el resto del frontend siga leyéndolo igual que antes.
+  const configuracion = ref({})
+  async function cargarConfiguracion() {
+    const { data } = await api.get('/configuracion')
+    configuracion.value = Object.fromEntries(data.map((c) => [c.clave, c.valor]))
+  }
 
   // `productos` real no tiene columnas para agrupar tamaños/colores (grupo_variante, tamano,
   // orden_variante, mostrarEnCatalogo eran mock-only) — se resuelve leyendo la fila
@@ -322,6 +330,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     esPromoVigente,
     getComboForProduct,
     configuracion,
+    cargarConfiguracion,
     productosDestacados,
     productosCatalogo,
     productosFabricacionPropia,
