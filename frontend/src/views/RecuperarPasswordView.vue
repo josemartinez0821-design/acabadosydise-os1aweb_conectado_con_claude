@@ -4,6 +4,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '../composables/useToast'
 import api from '../services/api'
+import logoUrl from '../assets/logo.png'
 
 const router = useRouter()
 const { showToast } = useToast()
@@ -190,8 +191,8 @@ function irALogin() {
     <div class="auth-form-panel">
       <div class="auth-form-inner">
         <div class="auth-form-logo">
-          <span class="brand-icon"><i class="ri-paint-brush-line"></i></span>
-          ACABADOS <span class="text-primary">1A</span>
+          <span class="brand-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+          ACABADOS Y DISEÑOS <span class="text-primary">1A</span>
         </div>
 
         <div class="auth-form-top">

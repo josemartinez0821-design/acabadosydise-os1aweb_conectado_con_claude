@@ -66,6 +66,14 @@ export const useCatalogStore = defineStore('catalog', () => {
     const { data } = await api.get('/promociones')
     promociones.value = data
   }
+  // Tabla real sin datos sensibles (nombre/valor de cada tarifa) - antes se resolvía contra
+  // MockData.impuestos, cuyos ids ya no coinciden con los reales (ver ImpuestoController.java).
+  const impuestos = ref([])
+  async function cargarImpuestos() {
+    const { data } = await api.get('/impuestos')
+    impuestos.value = data
+  }
+
   const configuracion = ref(MockData.configuracion)
 
   // `productos` real no tiene columnas para agrupar tamaños/colores (grupo_variante, tamano,
@@ -203,12 +211,32 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
   const productosFabricacionPropia = computed(() => productosCatalogo.value.filter(esFabricacionPropia))
 
-  function getActivePromoForProduct(id_producto) {
-    // Solo promos tipo "descuento" representan un % aplicable al precio de este producto
-    // individual (los combos tienen un precio especial de paquete, no aplican aquí).
-    // `productos` es un arreglo (un combo puede traer varios) — antes era un solo id_producto.
-    return promociones.value.find((p) => p.activo && p.tipo === 'descuento' && p.productos?.includes(Number(id_producto))) || null
+  // Vigente = activa Y dentro de fecha_inicio/fecha_fin (si la promo los tiene — son opcionales,
+  // una promo sin fecha de fin no vence). Antes solo se validaba `activo`, dejando pasar promos ya
+  // vencidas o programadas a futuro en el sitio público.
+  function esPromoVigente(promo) {
+    if (!promo.activo) return false
+    const hoy = new Date().toISOString().slice(0, 10)
+    if (promo.fecha_inicio && hoy < promo.fecha_inicio) return false
+    if (promo.fecha_fin && hoy > promo.fecha_fin) return false
+    return true
   }
+
+  function getActivePromoForProduct(id_producto) {
+    // Solo promos tipo "descuento" representan un % o precio especial aplicable al precio de este
+    // producto individual (los combos tienen su propio precio de paquete — ver getComboForProduct).
+    // `productos` es un arreglo (un combo puede traer varios) — antes era un solo id_producto.
+    return promociones.value.find((p) => esPromoVigente(p) && p.tipo === 'descuento' && p.productos?.includes(Number(id_producto))) || null
+  }
+
+  function getComboForProduct(id_producto) {
+    return promociones.value.find((p) => esPromoVigente(p) && p.tipo === 'combo' && p.productos?.includes(Number(id_producto))) || null
+  }
+
+  // Para el slider "Promociones del Mes" del Home — antes mostraba TODAS las promociones sin
+  // filtrar (ni por activo/fechas ni por relevancia), lo que sacaba promos vencidas o inactivas.
+  // `destacado` es la curación manual del admin sobre cuáles van en ese espacio limitado.
+  const promocionesDestacadas = computed(() => promociones.value.filter((p) => esPromoVigente(p) && p.destacado))
 
   // Recomendador servicios <-> productos: qué tipos de servicio tienen sentido según la
   // categoría del producto (ej. pinturas -> aplicación de pintura; drywall -> instalación de drywall).
@@ -252,6 +280,25 @@ export const useCatalogStore = defineStore('catalog', () => {
     await cargarServicios()
   }
 
+  // ── CRUD de promociones (panel admin) — mismo patrón de resync que productos/servicios. El
+  // borrado es hard-delete real (a diferencia de productos/servicios): promocion_productos tiene
+  // ON DELETE CASCADE contra promociones y nada más referencia id_promocion (confirmado en
+  // information_schema), así que no hace falta soft-delete aquí.
+  async function crearPromocion(datos) {
+    await api.post('/promociones', datos)
+    await cargarPromociones()
+  }
+
+  async function actualizarPromocion(id_promocion, datos) {
+    await api.put(`/promociones/${id_promocion}`, datos)
+    await cargarPromociones()
+  }
+
+  async function eliminarPromocion(id_promocion) {
+    await api.delete(`/promociones/${id_promocion}`)
+    await cargarPromociones()
+  }
+
   return {
     categorias,
     cargarCategorias,
@@ -267,8 +314,13 @@ export const useCatalogStore = defineStore('catalog', () => {
     cargarGruposVariante,
     movimientosInventario,
     cargarMovimientos,
+    impuestos,
+    cargarImpuestos,
     promociones,
     cargarPromociones,
+    promocionesDestacadas,
+    esPromoVigente,
+    getComboForProduct,
     configuracion,
     productosDestacados,
     productosCatalogo,
@@ -293,5 +345,8 @@ export const useCatalogStore = defineStore('catalog', () => {
     crearServicio,
     actualizarServicio,
     eliminarServicio,
+    crearPromocion,
+    actualizarPromocion,
+    eliminarPromocion,
   }
 })

@@ -7,6 +7,7 @@ import { usePqrsStore } from '../../stores/pqrs'
 import { useVentasStore } from '../../stores/ventas'
 import { extraerFechaDeseada } from '../../composables/useFormat'
 import { useCenterMessage } from '../../composables/useCenterMessage'
+import logoUrl from '../../assets/logo.png'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -47,9 +48,16 @@ onMounted(() => {
   pqrsStore.cargarPqrs()
 })
 
+// Mismo criterio que el saludo de bienvenida (LoginView.vue): frase al azar en vez de un texto
+// fijo siempre igual. El nombre se guarda antes de logout() porque este limpia auth.usuario.
+const FRASES_DESPEDIDA = [
+  (n) => `Hasta luego, ${n}. Sesión cerrada correctamente.`,
+  (n) => `Sesión cerrada, ${n}. Que tengas un buen resto del día.`,
+]
 function cerrarSesion() {
+  const nombre = auth.usuario?.nombre?.split(' ')[0] || ''
   auth.logout()
-  mostrarMensajeCentral('Has cerrado sesión correctamente.', {
+  mostrarMensajeCentral(FRASES_DESPEDIDA[Math.floor(Math.random() * FRASES_DESPEDIDA.length)](nombre), {
     icono: 'ri-shield-check-line',
     tipo: 'despedida',
     duracion: 2200,
@@ -64,8 +72,8 @@ function cerrarSesion() {
 
     <aside class="admin-sidebar" :class="{ open: sidebarAbierto }">
       <RouterLink to="/admin/dashboard" class="admin-logo">
-        <span class="admin-logo-icon"><i class="ri-paint-brush-line"></i></span>
-        ACABADOS <span class="admin-logo-accent">1A</span>
+        <span class="admin-logo-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+        <span class="admin-logo-text">ACABADOS Y DISEÑOS <span class="admin-logo-accent">1A</span></span>
       </RouterLink>
 
       <nav class="admin-nav">
@@ -77,6 +85,9 @@ function cerrarSesion() {
         </RouterLink>
         <RouterLink to="/admin/servicios" class="admin-nav-item" @click="sidebarAbierto = false">
           <i class="ri-tools-line"></i> Servicios
+        </RouterLink>
+        <RouterLink to="/admin/promociones" class="admin-nav-item" @click="sidebarAbierto = false">
+          <i class="ri-price-tag-3-line"></i> Promociones
         </RouterLink>
         <RouterLink to="/admin/inventario" class="admin-nav-item" @click="sidebarAbierto = false">
           <i class="ri-archive-2-line"></i> Inventario
@@ -137,12 +148,15 @@ function cerrarSesion() {
 }
 .admin-logo {
   display: flex; align-items: center; gap: 10px; padding: 22px 22px 20px;
-  font-family: var(--font-main); font-weight: 900; font-size: 1.05rem; color: white; white-space: nowrap;
+  font-family: var(--font-main); font-weight: 900; color: white;
 }
+.admin-logo-text { font-size: 0.88rem; line-height: 1.25; }
 .admin-logo-icon {
-  width: 34px; height: 34px; background: var(--primary); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0;
+  width: 36px; height: 36px; background: white; border-radius: 8px; padding: 4px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
+.admin-logo-icon img { width: 100%; height: 100%; object-fit: contain; }
 .admin-logo-accent { color: var(--primary); }
 
 .admin-nav { display: flex; flex-direction: column; padding: 10px 14px; gap: 3px; flex: 1; overflow-y: auto; }

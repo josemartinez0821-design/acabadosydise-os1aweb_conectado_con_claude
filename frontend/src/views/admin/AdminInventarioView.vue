@@ -520,7 +520,7 @@ async function guardarUmbrales() {
 
             <div class="form-group">
               <label class="form-label required">Tipo de movimiento</label>
-              <select v-model="formMovimiento.tipo_movimiento" class="form-control">
+              <select v-model="formMovimiento.tipo_movimiento" class="form-control" required>
                 <option value="entrada">Entrada</option>
                 <option value="salida">Salida</option>
                 <option value="ajuste">Ajuste por conteo</option>
@@ -528,8 +528,8 @@ async function guardarUmbrales() {
               </select>
             </div>
             <div class="form-group" v-if="formMovimiento.tipo_movimiento === 'ajuste'">
-              <label class="form-label">Dirección del ajuste</label>
-              <select v-model="formMovimiento.direccionAjuste" class="form-control">
+              <label class="form-label required">Dirección del ajuste</label>
+              <select v-model="formMovimiento.direccionAjuste" class="form-control" required>
                 <option value="aumentar">Aumenta el stock</option>
                 <option value="disminuir">Disminuye el stock</option>
               </select>
@@ -537,12 +537,13 @@ async function guardarUmbrales() {
 
             <div class="form-group" :class="{ full: formMovimiento.tipo_movimiento !== 'ajuste' }">
               <label class="form-label required">Cantidad</label>
-              <input v-model.number="formMovimiento.cantidad" type="number" min="1" class="form-control" />
+              <input v-model.number="formMovimiento.cantidad" type="number" min="1" class="form-control" required />
             </div>
 
             <div class="form-group full">
               <label class="form-label">Descripción</label>
               <textarea v-model="formMovimiento.descripcion" class="form-control" rows="2" placeholder="Ej. Reposición de proveedor, corrección de conteo..."></textarea>
+              <span class="form-hint">Opcional — si la dejas vacía, queda registrada como "Movimiento manual registrado por el administrador".</span>
             </div>
 
             <div class="form-actions full">
@@ -566,16 +567,17 @@ async function guardarUmbrales() {
 
           <form class="form-grid-2" @submit.prevent="guardarUmbrales">
             <div class="form-group">
-              <label class="form-label">Stock mínimo</label>
-              <input v-model.number="formUmbrales.stock_minimo" type="number" min="0" class="form-control" />
+              <label class="form-label required">Stock mínimo</label>
+              <input v-model.number="formUmbrales.stock_minimo" type="number" min="0" class="form-control" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Stock máximo</label>
-              <input v-model.number="formUmbrales.stock_maximo" type="number" min="0" class="form-control" />
+              <label class="form-label required">Stock máximo</label>
+              <input v-model.number="formUmbrales.stock_maximo" type="number" min="0" class="form-control" required />
             </div>
             <div class="form-group full">
               <label class="form-label">Ubicación en bodega</label>
               <input v-model="formUmbrales.ubicacion_bodega" type="text" class="form-control" placeholder="Ej. Bodega A - Estante 3" />
+              <span class="form-hint">Opcional — solo si manejas varias bodegas o estantes.</span>
             </div>
 
             <div class="form-actions full">

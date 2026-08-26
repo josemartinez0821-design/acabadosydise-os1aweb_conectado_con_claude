@@ -21,7 +21,15 @@ public class Venta {
     // El ENUM real de `ventas.metodo_pago` también admite 'pendiente', pero la app nunca lo
     // escribe (siempre manda un método real desde el formulario) - se omite aquí a propósito
     // para poder compartir este mismo enum con `pagos.metodo_pago`, que no tiene ese valor.
-    public enum MetodoPago { efectivo, transferencia, tarjeta, nequi, daviplata }
+    // 'contraentrega' sí es real en los dos (agregado junto con metodo_envio) - solo se usa cuando
+    // metodoEnvio=envio (el cliente paga al recoger en el local de la transportadora, no en
+    // nuestra tienda), ver VentaService.
+    public enum MetodoPago { efectivo, transferencia, tarjeta, nequi, daviplata, contraentrega }
+
+    // Qué elige el cliente en el checkout - antes se calculaba el costo con esto pero no quedaba
+    // guardado en ningún lado, así que un pedido ya hecho no se podía distinguir de otro (RF de
+    // seguimiento de pedidos). 'envio' es la única compatible con MetodoPago.contraentrega.
+    public enum MetodoEnvio { envio, recogida }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,6 +69,19 @@ public class Venta {
     @Enumerated(EnumType.STRING)
     @Column(name = "metodo_pago")
     private MetodoPago metodoPago;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metodo_envio", nullable = false)
+    private MetodoEnvio metodoEnvio;
+
+    // Los llena el admin al despachar un pedido de envío (ver VentaService.actualizarEstado) - se
+    // guardan tal cual los entrega la transportadora en papel/PDF, no hay integración con ninguna
+    // API de transportadora.
+    @Column(name = "numero_guia", length = 100)
+    private String numeroGuia;
+
+    @Column(name = "transportadora", length = 100)
+    private String transportadora;
 
     @Column(name = "notas_cliente")
     private String notasCliente;

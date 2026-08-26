@@ -29,6 +29,9 @@ public class VentaResponse {
     private final BigDecimal total;
     private final String estado;
     private final String metodoPago;
+    private final String metodoEnvio;
+    private final String numeroGuia;
+    private final String transportadora;
     private final String notasCliente;
     private final String notasInternas;
     private final LocalDate fechaEntregaEstimada;
@@ -49,6 +52,9 @@ public class VentaResponse {
         this.total = v.getTotal();
         this.estado = v.getEstado() != null ? v.getEstado().name() : null;
         this.metodoPago = v.getMetodoPago() != null ? v.getMetodoPago().name() : null;
+        this.metodoEnvio = v.getMetodoEnvio() != null ? v.getMetodoEnvio().name() : null;
+        this.numeroGuia = v.getNumeroGuia();
+        this.transportadora = v.getTransportadora();
         this.notasCliente = v.getNotasCliente();
         this.notasInternas = v.getNotasInternas();
         this.fechaEntregaEstimada = v.getFechaEntregaEstimada();

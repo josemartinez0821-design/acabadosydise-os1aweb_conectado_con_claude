@@ -25,7 +25,7 @@ backend/    Spring Boot 4 (Java 21) + MariaDB
 - Ventas: checkout real, anticipos de cotización, gestión desde el panel admin
 - PQRS: radicación y gestión con respuesta del equipo
 - Inventario: umbrales de stock y movimientos manuales (entrada/salida/ajuste/devolución)
-- Autenticación con verificación de correo y recuperación de contraseña (JWT, roles Administrador/Cliente/Vendedor)
+- Autenticación con verificación de correo y recuperación de contraseña (JWT, roles Administrador/Cliente)
 - Panel de administración: dashboard, productos, servicios, inventario, ventas, cotizaciones, PQRS, reportes
 
 ## Cómo correr el proyecto

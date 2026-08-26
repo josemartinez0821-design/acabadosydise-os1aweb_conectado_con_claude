@@ -213,7 +213,7 @@ onMounted(animateCounters)
   </section>
 
   <!-- PROMOCIONES -->
-  <section class="section" style="background:white;">
+  <section v-if="catalog.promocionesDestacadas.length" class="section" style="background:white;">
     <div class="container">
       <div class="section-header">
         <span class="section-eyebrow">Ofertas especiales</span>
@@ -222,7 +222,7 @@ onMounted(animateCounters)
       </div>
 
       <Swiper class="promo-swiper" :modules="[Pagination, Autoplay]" loop :speed="700" :autoplay="{ delay: 5000, disableOnInteraction: false }" :slides-per-view="1" :space-between="24" :pagination="{ clickable: true }">
-        <SwiperSlide v-for="promo in catalog.promociones" :key="promo.id_promocion">
+        <SwiperSlide v-for="promo in catalog.promocionesDestacadas" :key="promo.id_promocion">
           <RouterLink :to="promoLink(promo)" class="promo-card">
             <img :src="promo.imagen_url" :alt="promo.titulo" />
             <div class="promo-overlay">
@@ -297,9 +297,12 @@ onMounted(animateCounters)
           <div class="product-card" :class="{ 'product-card-promo': catalog.getActivePromoForProduct(p.id_producto) }">
             <div class="product-card-img">
               <img :src="p.imagen_url" :alt="p.nombre" loading="lazy" />
-              <div v-if="catalog.getActivePromoForProduct(p.id_producto)" class="product-card-badges">
-                <span class="badge badge-green">
-                  <i class="ri-error-warning-fill"></i> ¡Promoción! -{{ catalog.getActivePromoForProduct(p.id_producto).descuento_porcentaje }}%
+              <div v-if="catalog.getActivePromoForProduct(p.id_producto) || catalog.getComboForProduct(p.id_producto)" class="product-card-badges">
+                <span v-if="catalog.getActivePromoForProduct(p.id_producto)" class="badge badge-yellow">
+                  <i class="ri-price-tag-3-fill"></i> -{{ catalog.getActivePromoForProduct(p.id_producto).descuento_porcentaje }}%
+                </span>
+                <span v-if="catalog.getComboForProduct(p.id_producto)" class="badge badge-red">
+                  <i class="ri-gift-fill"></i> Combo
                 </span>
               </div>
               <div class="product-actions-hover">

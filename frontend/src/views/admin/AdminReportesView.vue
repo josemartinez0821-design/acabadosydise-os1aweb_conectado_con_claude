@@ -257,9 +257,17 @@ const productosMasVendidos = computed(() => {
     .sort((a, b) => b.cantidad - a.cantidad)
 })
 
-// ── Promociones — estado real basado en el flag `activo`, igual que
-// catalog.getActivePromoForProduct() (que tampoco valida fecha_inicio/fecha_fin), para no
-// contradecir lo que el sitio público ya muestra con una regla de vigencia inventada aquí. ──
+// ── Promociones — mismo cálculo de vigencia que ya usa el sitio público
+// (catalog.esPromoVigente: activo + dentro de fecha_inicio/fecha_fin), para que este reporte no
+// contradiga lo que un cliente realmente ve. "Programada"/"Vencida" son estados calculados aquí,
+// igual que "Vencida" en Cotizaciones — no existen como tal en el ENUM real de la BD. ──
+function estadoPromo(promo) {
+  if (!promo.activo) return { label: 'Inactiva', clase: 'badge-gray' }
+  const hoy = new Date().toISOString().slice(0, 10)
+  if (promo.fecha_inicio && hoy < promo.fecha_inicio) return { label: 'Programada', clase: 'badge-blue' }
+  if (promo.fecha_fin && hoy > promo.fecha_fin) return { label: 'Vencida', clase: 'badge-gray' }
+  return { label: 'Vigente', clase: 'badge-green' }
+}
 function aplicaA(promo) {
   // `productos` es un arreglo (un combo puede traer varios, ej. Estuco + Rodillo + Brocha).
   if (promo.productos?.length) {
@@ -281,6 +289,7 @@ const promocionesResumen = computed(() =>
     valor: valorPromo(p),
     vigencia: `${formatDate(p.fecha_inicio)} – ${formatDate(p.fecha_fin)}`,
     tipoLabel: TIPO_PROMO_LABEL[p.tipo] || p.tipo,
+    estado: estadoPromo(p),
   }))
 )
 
@@ -317,7 +326,7 @@ async function onExportar(tipo) {
             titulo: p.titulo,
             tipo: p.tipoLabel,
             vigencia: p.vigencia,
-            estado: p.activo ? 'Activa' : 'Inactiva',
+            estado: p.estado.label,
           })),
         },
         nombreArchivo.value
@@ -537,7 +546,7 @@ async function onExportar(tipo) {
               <td>{{ p.aplicaA }}</td>
               <td>{{ p.valor }}</td>
               <td>{{ p.vigencia }}</td>
-              <td><span class="badge" :class="p.activo ? 'badge-green' : 'badge-gray'">{{ p.activo ? 'Activa' : 'Inactiva' }}</span></td>
+              <td><span class="badge" :class="p.estado.clase">{{ p.estado.label }}</span></td>
             </tr>
           </tbody>
         </table>

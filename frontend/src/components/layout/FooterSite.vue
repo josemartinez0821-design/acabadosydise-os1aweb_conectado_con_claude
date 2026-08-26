@@ -9,7 +9,7 @@ const catalog = useCatalogStore()
     <div class="container">
       <div class="footer-grid">
         <div>
-          <div class="footer-brand">ACABADOS <span>1A</span></div>
+          <div class="footer-brand">ACABADOS Y DISEÑOS <span>1A</span></div>
           <p class="footer-desc">Empresa especializada en materiales de acabados, pinturas y servicios de instalación para hogares y empresas del Huila.</p>
           <p class="footer-desc" style="margin-bottom:16px;font-style:italic;">"Calidad y servicio en cada proyecto"</p>
           <div class="footer-socials">

@@ -6,8 +6,13 @@ import { useAuthStore } from '../stores/auth'
 import { useCotizacionesStore } from '../stores/cotizaciones'
 import { useVentasStore } from '../stores/ventas'
 import { useToast } from '../composables/useToast'
-import { MockData } from '../data/mockData'
+import api from '../services/api'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
+
+// Conjunto cerrado y pequeño (2 roles reales, "Vendedor" se quitó de la BD el 25/08/2026 por no
+// tener ningún requisito funcional real detrás - ver RF15-19/RF01-23) - no vale la pena pedirlo
+// al backend, solo se necesita el nombre para mostrarlo junto al badge.
+const NOMBRES_ROL = { 1: 'Administrador', 2: 'Cliente' }
 
 const auth = useAuthStore()
 const cotizStore = useCotizacionesStore()
@@ -25,11 +30,9 @@ const iniciales = computed(() => {
 const primerNombre = computed(() => auth.usuario?.nombre?.split(' ')[0] || '')
 
 const rolInfo = computed(() => {
-  const rol = MockData.roles.find((r) => r.id_rol === auth.usuario?.id_rol)
-  const nombre = rol?.nombre_rol || 'Cliente'
+  const nombre = NOMBRES_ROL[auth.usuario?.id_rol] || 'Cliente'
   const estilos = {
     Administrador: { badge: 'role-admin', icon: 'ri-shield-star-line' },
-    Vendedor: { badge: 'role-vendedor', icon: 'ri-briefcase-4-line' },
     Cliente: { badge: 'role-cliente', icon: 'ri-user-3-line' },
   }
   return { nombre, ...(estilos[nombre] || estilos.Cliente) }
@@ -62,18 +65,13 @@ function cancelarEdicion() {
   editando.value = false
 }
 
-function persistirUsuario(actualizado) {
-  const idx = MockData.usuarios.findIndex((u) => u.id_usuario === actualizado.id_usuario)
-  if (idx !== -1) MockData.usuarios[idx] = actualizado
-  auth.setSession(auth.token, actualizado)
-}
-
 // ── Foto de perfil ────────────────────────────────────────────
 const avatarInput = ref(null)
+const subiendoFoto = ref(false)
 function elegirFoto() {
   avatarInput.value?.click()
 }
-function onFotoSeleccionada(e) {
+async function onFotoSeleccionada(e) {
   const file = e.target.files?.[0]
   e.target.value = ''
   if (!file) return
@@ -86,22 +84,49 @@ function onFotoSeleccionada(e) {
     return
   }
   const lector = new FileReader()
-  lector.onload = () => {
-    persistirUsuario({ ...auth.usuario, avatar: lector.result })
-    showToast('¡Foto de perfil actualizada!', 'success')
+  lector.onload = async () => {
+    subiendoFoto.value = true
+    try {
+      const { data } = await api.put(`/usuarios/${auth.usuario.id_usuario}/avatar`, { avatar: lector.result })
+      auth.setSession(auth.token, data)
+      showToast('¡Foto de perfil actualizada!', 'success')
+    } catch (err) {
+      showToast(err.response?.data?.mensaje || 'No se pudo actualizar la foto.', 'danger')
+    } finally {
+      subiendoFoto.value = false
+    }
   }
   lector.readAsDataURL(file)
 }
 
-function guardarPersonal() {
+const guardandoPersonal = ref(false)
+async function guardarPersonal() {
   if (!form.value.nombre?.trim() || !form.value.apellido?.trim()) {
     showToast('El nombre y el apellido son obligatorios.', 'danger')
     return
   }
   form.value.telefono = form.value.whatsapp
-  persistirUsuario({ ...auth.usuario, ...form.value, email: auth.usuario.email })
-  editando.value = false
-  showToast('¡Perfil actualizado correctamente!', 'success')
+  guardandoPersonal.value = true
+  try {
+    const { data } = await api.put(`/usuarios/${auth.usuario.id_usuario}`, {
+      nombre: form.value.nombre,
+      apellido: form.value.apellido,
+      tipo_identificacion: form.value.tipo_identificacion,
+      numero_identificacion: form.value.numero_identificacion,
+      telefono: form.value.telefono,
+      whatsapp: form.value.whatsapp,
+      direccion: form.value.direccion,
+      ciudad: form.value.ciudad,
+      departamento: form.value.departamento,
+    })
+    auth.setSession(auth.token, data)
+    editando.value = false
+    showToast('¡Perfil actualizado correctamente!', 'success')
+  } catch (err) {
+    showToast(err.response?.data?.mensaje || 'No se pudo actualizar el perfil.', 'danger')
+  } finally {
+    guardandoPersonal.value = false
+  }
 }
 
 const camposBasicos = computed(() => {
@@ -143,11 +168,8 @@ const fuerzaPassword = computed(() => {
   return { nivel: 'fuerte', label: 'Muy segura', pct: '100%' }
 })
 
-function cambiarPassword() {
-  if (passActual.value !== auth.usuario.password) {
-    showToast('La contraseña actual es incorrecta.', 'danger')
-    return
-  }
+const cambiandoPassword = ref(false)
+async function cambiarPassword() {
   if (passNueva.value.length < 8) {
     showToast('La nueva contraseña debe tener mínimo 8 caracteres.', 'warning')
     return
@@ -156,11 +178,21 @@ function cambiarPassword() {
     showToast('Las contraseñas nuevas no coinciden.', 'danger')
     return
   }
-  persistirUsuario({ ...auth.usuario, password: passNueva.value })
-  passActual.value = ''
-  passNueva.value = ''
-  passConfirmar.value = ''
-  showToast('¡Contraseña actualizada con éxito!', 'success')
+  cambiandoPassword.value = true
+  try {
+    await api.put(`/usuarios/${auth.usuario.id_usuario}/password`, {
+      password_actual: passActual.value,
+      password_nueva: passNueva.value,
+    })
+    passActual.value = ''
+    passNueva.value = ''
+    passConfirmar.value = ''
+    showToast('¡Contraseña actualizada con éxito!', 'success')
+  } catch (err) {
+    showToast(err.response?.data?.mensaje || 'No se pudo cambiar la contraseña.', 'danger')
+  } finally {
+    cambiandoPassword.value = false
+  }
 }
 
 </script>
@@ -192,9 +224,10 @@ function cambiarPassword() {
       <!-- Cabecera de perfil -->
       <div class="perfil-card">
         <div class="perfil-avatar-wrap">
-          <div class="perfil-avatar" :style="auth.usuario?.avatar ? { backgroundImage: `url(${auth.usuario.avatar})` } : {}" @click="elegirFoto">
-            <span v-if="!auth.usuario?.avatar">{{ iniciales }}</span>
-            <div class="perfil-avatar-overlay"><i class="ri-camera-line"></i></div>
+          <div class="perfil-avatar" :style="auth.usuario?.avatar ? { backgroundImage: `url(${auth.usuario.avatar})` } : {}" :class="{ 'is-loading': subiendoFoto }" @click="!subiendoFoto && elegirFoto()">
+            <span v-if="!auth.usuario?.avatar && !subiendoFoto">{{ iniciales }}</span>
+            <i v-if="subiendoFoto" class="ri-loader-4-line perfil-avatar-spinner"></i>
+            <div v-else class="perfil-avatar-overlay"><i class="ri-camera-line"></i></div>
           </div>
           <input ref="avatarInput" type="file" accept="image/*" class="perfil-avatar-input" @change="onFotoSeleccionada" />
         </div>
@@ -313,8 +346,10 @@ function cambiarPassword() {
             </div>
 
             <div class="form-actions full">
-              <button type="button" class="btn btn-outline-red btn-sm" @click="cancelarEdicion">Cancelar</button>
-              <button type="submit" class="btn btn-primary btn-sm"><i class="ri-save-line"></i> Guardar cambios</button>
+              <button type="button" class="btn btn-outline-red btn-sm" :disabled="guardandoPersonal" @click="cancelarEdicion">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="guardandoPersonal">
+                <i class="ri-save-line"></i> {{ guardandoPersonal ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
             </div>
           </form>
         </div>
@@ -367,7 +402,9 @@ function cambiarPassword() {
                   <i class="toggle-pass" :class="verPass.confirmar ? 'ri-eye-line' : 'ri-eye-off-line'" @click="verPass.confirmar = !verPass.confirmar"></i>
                 </div>
               </div>
-              <button type="submit" class="btn btn-primary"><i class="ri-save-line"></i> Actualizar contraseña</button>
+              <button type="submit" class="btn btn-primary" :disabled="cambiandoPassword">
+                <i class="ri-save-line"></i> {{ cambiandoPassword ? 'Actualizando...' : 'Actualizar contraseña' }}
+              </button>
             </form>
 
             <aside class="seguridad-tips">
@@ -432,6 +469,8 @@ function cambiarPassword() {
   opacity: 0; transition: var(--transition);
 }
 .perfil-avatar:hover .perfil-avatar-overlay { opacity: 1; }
+.perfil-avatar.is-loading { cursor: default; }
+.perfil-avatar-spinner { font-size: 1.5rem; animation: spin 1s linear infinite; }
 .perfil-card-info { flex: 1; min-width: 180px; }
 .perfil-nombre { font-family: var(--font-main); font-weight: 800; font-size: 1.35rem; color: var(--secondary); margin-bottom: 4px; }
 .perfil-email { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 10px; }
@@ -441,7 +480,6 @@ function cambiarPassword() {
   text-transform: uppercase; letter-spacing: 0.4px;
 }
 .role-admin { background: rgba(192,57,43,0.1); color: var(--primary); }
-.role-vendedor { background: rgba(41,128,185,0.1); color: var(--info); }
 .role-cliente { background: rgba(39,174,96,0.1); color: var(--success); }
 
 .perfil-stats { display: flex; gap: 32px; flex-wrap: wrap; }

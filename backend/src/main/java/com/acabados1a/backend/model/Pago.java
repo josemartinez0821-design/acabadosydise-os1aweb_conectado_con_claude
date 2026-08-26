@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Pago {
 
-    public enum Estado { completado, fallido, reversado }
+    // 'pendiente' es real desde que existe contraentrega: ese pago no se recibe en el momento de
+    // crear la venta (el simulador de pago solo aplica a los métodos que sí se cobran en línea),
+    // se completa cuando el admin marca el pedido de recogida como entregado (ver VentaService).
+    public enum Estado { pendiente, completado, fallido, reversado }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

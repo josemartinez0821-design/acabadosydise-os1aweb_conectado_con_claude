@@ -54,12 +54,37 @@ watch(
   }
 )
 
+// Todo el formulario es obligatorio menos "Precio mayorista" (pedido explícito del admin: sin
+// esto, quien lo llena asume que solo Nombre/Precio de venta son obligatorios y deja el resto en
+// blanco). Un solo arreglo en vez de un if por campo, para no repetir el mismo mensaje 9 veces.
+const CAMPOS_OBLIGATORIOS = [
+  { campo: 'nombre', label: 'Nombre del producto' },
+  { campo: 'id_categoria', label: 'Categoría' },
+  { campo: 'marca', label: 'Marca' },
+  { campo: 'unidad_medida', label: 'Unidad de medida' },
+  { campo: 'presentacion', label: 'Presentación' },
+  { campo: 'color', label: 'Color' },
+  { campo: 'acabado', label: 'Acabado' },
+  { campo: 'imagen_url', label: 'Imagen (URL)' },
+  { campo: 'precio_venta', label: 'Precio de venta' },
+  { campo: 'stock_inicial', label: 'Stock' },
+  { campo: 'descripcion', label: 'Descripción' },
+]
+
+function campoVacio(valor) {
+  if (valor === null || valor === undefined) return true
+  if (typeof valor === 'string') return !valor.trim()
+  return false // 0 es un stock/precio válido, no cuenta como vacío
+}
+
 async function guardar() {
-  if (!form.value.nombre?.trim()) {
-    error.value = 'El nombre del producto es obligatorio.'
-    return
+  for (const { campo, label } of CAMPOS_OBLIGATORIOS) {
+    if (campoVacio(form.value[campo])) {
+      error.value = `Llena el campo "${label}" antes de guardar.`
+      return
+    }
   }
-  if (!form.value.precio_venta || form.value.precio_venta <= 0) {
+  if (form.value.precio_venta <= 0) {
     error.value = 'Ingresa un precio de venta válido.'
     return
   }
@@ -97,39 +122,39 @@ async function guardar() {
             </div>
 
             <div class="form-group">
-              <label class="form-label">Categoría</label>
-              <select v-model.number="form.id_categoria" class="form-control">
+              <label class="form-label required">Categoría</label>
+              <select v-model.number="form.id_categoria" class="form-control" required>
                 <option v-for="c in catalog.categorias" :key="c.id_categoria" :value="c.id_categoria">{{ c.nombre }}</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Marca</label>
-              <input v-model="form.marca" type="text" class="form-control" placeholder="Ej. Pintuco" />
+              <label class="form-label required">Marca</label>
+              <input v-model="form.marca" type="text" class="form-control" placeholder="Ej. Pintuco" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Unidad de medida</label>
-              <select v-model="form.unidad_medida" class="form-control">
+              <label class="form-label required">Unidad de medida</label>
+              <select v-model="form.unidad_medida" class="form-control" required>
                 <option v-for="u in UNIDADES" :key="u.value" :value="u.value">{{ u.label }}</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Presentación</label>
-              <input v-model="form.presentacion" type="text" class="form-control" placeholder="Ej. 1 Galón" />
+              <label class="form-label required">Presentación</label>
+              <input v-model="form.presentacion" type="text" class="form-control" placeholder="Ej. 1 Galón" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Color</label>
-              <input v-model="form.color" type="text" class="form-control" placeholder="Ej. Blanco" />
+              <label class="form-label required">Color</label>
+              <input v-model="form.color" type="text" class="form-control" placeholder="Ej. Blanco" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Acabado</label>
-              <input v-model="form.acabado" type="text" class="form-control" placeholder="Ej. Mate" />
+              <label class="form-label required">Acabado</label>
+              <input v-model="form.acabado" type="text" class="form-control" placeholder="Ej. Mate" required />
             </div>
 
             <div class="form-group full">
-              <label class="form-label">Imagen (URL)</label>
-              <input v-model="form.imagen_url" type="text" class="form-control" placeholder="https://..." />
+              <label class="form-label required">Imagen (URL)</label>
+              <input v-model="form.imagen_url" type="text" class="form-control" placeholder="https://..." required />
             </div>
 
             <div class="form-group">
@@ -142,13 +167,13 @@ async function guardar() {
             </div>
 
             <div class="form-group full">
-              <label class="form-label">{{ producto ? 'Stock disponible' : 'Stock inicial' }}</label>
-              <input v-model.number="form.stock_inicial" type="number" min="0" class="form-control" />
+              <label class="form-label required">{{ producto ? 'Stock disponible' : 'Stock inicial' }}</label>
+              <input v-model.number="form.stock_inicial" type="number" min="0" class="form-control" required />
             </div>
 
             <div class="form-group full">
-              <label class="form-label">Descripción</label>
-              <textarea v-model="form.descripcion" class="form-control" rows="3" placeholder="Descripción del producto..."></textarea>
+              <label class="form-label required">Descripción</label>
+              <textarea v-model="form.descripcion" class="form-control" rows="3" placeholder="Descripción del producto..." required></textarea>
             </div>
 
             <div class="form-group full">

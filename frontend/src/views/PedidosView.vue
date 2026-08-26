@@ -5,7 +5,7 @@
 import { computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
-import { useVentasStore } from '../stores/ventas'
+import { useVentasStore, ESTADOS_VENTA, labelEstadoVenta } from '../stores/ventas'
 import { formatCOP, formatDateTime } from '../composables/useFormat'
 
 const auth = useAuthStore()
@@ -72,10 +72,14 @@ const totalProductos = computed(() =>
           <div class="pedido-grupo-header">
             <div class="pedido-grupo-info">
               <span class="pedido-grupo-numero">{{ p.numero_venta }}</span>
+              <span class="badge" :class="ESTADOS_VENTA[p.estado]?.badge"><i :class="ESTADOS_VENTA[p.estado]?.icon"></i> {{ labelEstadoVenta(p) }}</span>
               <span class="pedido-grupo-fecha"><i class="ri-time-line"></i> {{ formatDateTime(p.fecha) }}</span>
             </div>
             <strong class="pedido-grupo-total">{{ formatCOP(p.total) }}</strong>
           </div>
+          <p v-if="p.numero_guia" class="pedido-guia-info">
+            <i class="ri-truck-line"></i> Guía de envío: <strong>{{ p.numero_guia }}</strong><span v-if="p.transportadora"> — {{ p.transportadora }}</span>
+          </p>
 
           <div class="pedido-productos-grid">
             <RouterLink
@@ -123,6 +127,8 @@ const totalProductos = computed(() =>
   flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px dashed var(--border);
 }
 .pedido-grupo-info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pedido-guia-info { font-size: 0.82rem; color: var(--text-light); margin: -8px 0 18px; }
+.pedido-guia-info i { color: var(--primary); margin-right: 4px; }
 .pedido-grupo-numero {
   font-family: var(--font-main); font-weight: 800; font-size: 0.85rem; color: var(--primary);
   background: rgba(192,57,43,0.08); padding: 6px 14px; border-radius: 20px; letter-spacing: 0.3px;

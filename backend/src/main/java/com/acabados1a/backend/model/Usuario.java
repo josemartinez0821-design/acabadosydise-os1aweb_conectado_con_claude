@@ -59,6 +59,13 @@ public class Usuario {
     @Column(name = "departamento", length = 100)
     private String departamento;
 
+    // data URL base64 (ej. "data:image/png;base64,...") - mismo formato que ya generaba
+    // FileReader.readAsDataURL() en el frontend mock, así no hay que montar almacenamiento de
+    // archivos aparte para un puñado de usuarios reales. MEDIUMTEXT porque el frontend permite
+    // hasta 2MB de imagen (~2.7MB en base64).
+    @Column(name = "avatar", columnDefinition = "MEDIUMTEXT")
+    private String avatar;
+
     // Nunca se expone tal cual en un DTO de respuesta — ver UsuarioResponse.
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;

@@ -1,17 +1,18 @@
 <script setup>
 // RF12 - panel de administración: métricas clave, ventas (día/mes), stock bajo, productos más
-// vendidos, actividad reciente. Todo calculado a partir de MockData real (no hay backend todavía).
+// vendidos, actividad reciente. Ventas/cotizaciones/PQRS ya vienen del backend real.
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useCatalogStore } from '../../stores/catalog'
 import { useVentasStore } from '../../stores/ventas'
+import { useCotizacionesStore } from '../../stores/cotizaciones'
 import { usePqrsStore } from '../../stores/pqrs'
-import { MockData } from '../../data/mockData'
 import { formatCOP, formatDate, formatDateTime } from '../../composables/useFormat'
 
 const auth = useAuthStore()
 const catalog = useCatalogStore()
 const ventasStore = useVentasStore()
+const cotizStore = useCotizacionesStore()
 const pqrsStore = usePqrsStore()
 
 const primerNombre = computed(() => auth.usuario?.nombre?.split(' ')[0] || '')
@@ -234,11 +235,6 @@ const productosMasVendidos = computed(() => {
 })
 
 // ── Actividad reciente (pedidos + cotizaciones, ordenados por fecha real) ──
-function nombreUsuario(id_usuario) {
-  const u = MockData.usuarios.find((x) => x.id_usuario === id_usuario)
-  return u ? `${u.nombre} ${u.apellido}` : 'Cliente'
-}
-
 const actividadReciente = computed(() => {
   const pedidos = ventasStore.ventas.map((v) => ({
     tipo: 'pedido',
@@ -249,11 +245,11 @@ const actividadReciente = computed(() => {
     color: 'azul',
     etiqueta: 'PEDIDOS',
   }))
-  const cotizaciones = MockData.cotizaciones.map((c) => ({
+  const cotizaciones = cotizStore.cotizaciones.map((c) => ({
     tipo: 'cotizacion',
     fecha: c.fecha,
     titulo: `Cotización ${c.numero_cotizacion} — ${c.estado.replace('_', ' ')}`,
-    detalle: `${nombreUsuario(c.id_usuario)} · ${formatCOP(c.total_estimado)}`,
+    detalle: `${c.usuario.nombre} ${c.usuario.apellido} · ${formatCOP(c.total_estimado)}`,
     icono: 'ri-file-list-3-line',
     color: 'verde',
     etiqueta: 'COTIZACIONES',
@@ -263,8 +259,12 @@ const actividadReciente = computed(() => {
     .slice(0, 6)
 })
 
+// `fecha` de ventas/cotizaciones siempre trae hora (DATETIME real) - formatDateTime() ya es seguro
+// para los dos formatos que puede traer (con espacio o con "T"), su propio replace(' ', 'T') no
+// hace nada si ya viene en ISO. El viejo `fecha.includes(' ')` fallaba con fechas reales (vienen
+// con "T", no espacio) y cortaba a formatDate(), que no sabe leer una hora -> "Invalid Date".
 function fechaActividad(fecha) {
-  return fecha.includes(' ') ? formatDateTime(fecha) : formatDate(fecha)
+  return formatDateTime(fecha)
 }
 </script>
 

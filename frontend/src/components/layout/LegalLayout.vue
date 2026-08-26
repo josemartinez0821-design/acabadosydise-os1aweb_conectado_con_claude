@@ -1,5 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import logoUrl from '../../assets/logo.png'
 
 defineProps({
   title: { type: String, required: true },
@@ -32,8 +33,8 @@ function volverAtras() {
   <div class="legal-page">
     <header class="legal-topbar">
       <RouterLink to="/" class="legal-topbar-logo">
-        <span class="brand-icon"><i class="ri-paint-brush-line"></i></span>
-        ACABADOS <span class="text-primary">1A</span>
+        <span class="brand-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+        ACABADOS Y DISEÑOS <span class="text-primary">1A</span>
       </RouterLink>
       <button class="legal-back-btn" @click="volverAtras"><i class="ri-arrow-left-line"></i> Volver</button>
     </header>

@@ -21,7 +21,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const { mostrarModalLogin: mostrarModalLoginCotizar, irACotizar, irALogin: irALoginCotizar } = useCotizarGate()
 
-const envio = computed(() => (cart.total >= 150000 || cart.total === 0 ? 0 : 8000))
+const envio = computed(() => (cart.total >= 400000 || cart.total === 0 ? 0 : 8000))
 const totalConEnvio = computed(() => cart.total + envio.value)
 
 // ¿Nuestro equipo puede aplicar/instalar lo que llevas en el carrito?
@@ -132,7 +132,7 @@ function irALogin() {
               <span>{{ envio === 0 ? 'Gratis' : formatCOP(envio) }}</span>
             </div>
             <p v-if="envio > 0" class="text-muted" style="font-size:0.78rem;margin:-6px 0 10px;">
-              Envío gratis en pedidos mayores a $150.000
+              Envío gratis en pedidos mayores a $400.000
             </p>
             <div class="order-summary-row total"><span>Total</span><span class="value">{{ formatCOP(totalConEnvio) }}</span></div>
             <button class="btn btn-primary btn-lg btn-block mt-20" @click="irACheckout">

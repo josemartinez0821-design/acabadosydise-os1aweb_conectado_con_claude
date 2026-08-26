@@ -4,9 +4,9 @@
 // muerta (api.get('/admin/ventas')) — ahora lee del store reactivo `ventas`, así que un pedido
 // que se acaba de pagar en el checkout aparece aquí al instante, igual que ya pasa con
 // Productos/Inventario/Cotizaciones.
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'
-import { useVentasStore, ESTADOS_VENTA } from '../../stores/ventas'
+import { useVentasStore, ESTADOS_VENTA, labelEstadoVenta } from '../../stores/ventas'
 import { useAuthStore } from '../../stores/auth'
 import { useToast } from '../../composables/useToast'
 import { formatCOP, formatDateTime, extraerDireccionEntrega, extraerNotaClienteVenta } from '../../composables/useFormat'
@@ -51,12 +51,23 @@ function esPedidoActivo(venta) {
   return !ESTADOS_TERMINALES.includes(venta.estado)
 }
 
+// Un pedido admite cancelar/devolver mientras no esté ya cerrado por esa misma vía - "en proceso"
+// se cancela (nunca se despachó), "entregado" se devuelve (el cliente ya lo tenía en sus manos y
+// lo regresa). Nunca los dos a la vez, así el admin no tiene que escoger entre dos opciones donde
+// solo una tiene sentido según en qué punto va el pedido.
+function puedeCancelarODevolver(venta) {
+  return !['cancelado', 'devuelto'].includes(venta.estado)
+}
+
 const hoyStr = new Date().toISOString().slice(0, 10)
 const ventasHoy = computed(() => ventasStore.ventas.filter((v) => v.fecha.startsWith(hoyStr)))
 const totalVentasHoy = computed(() => ventasHoy.value.reduce((s, v) => s + v.total, 0))
 const totalEnProceso = computed(() => ventasStore.ventas.filter(esPedidoActivo).length)
 const totalEntregados = computed(() => ventasStore.ventas.filter((v) => v.estado === 'entregado').length)
-const totalCancelados = computed(() => ventasStore.ventas.filter((v) => ['cancelado', 'devuelto'].includes(v.estado)).length)
+// Separados (antes un solo número combinado) - "cancelado" y "devuelto" son cosas distintas para
+// el negocio (nunca se despachó vs. el cliente ya lo tenía y lo regresó) y se estaban confundiendo.
+const totalCancelados = computed(() => ventasStore.ventas.filter((v) => v.estado === 'cancelado').length)
+const totalDevueltos = computed(() => ventasStore.ventas.filter((v) => v.estado === 'devuelto').length)
 
 // ── Ventas de los últimos 30 días ──────────────────────────────
 const CHART_W = 600
@@ -124,7 +135,8 @@ const donaSegmentos = computed(() => {
   const grupos = [
     { key: 'proceso', label: 'En proceso', color: 'var(--info)', count: totalEnProceso.value },
     { key: 'entregado', label: 'Despachados', color: 'var(--success)', count: totalEntregados.value },
-    { key: 'cancelado', label: 'Cancelados/Devueltos', color: 'var(--primary)', count: totalCancelados.value },
+    { key: 'cancelado', label: 'Cancelados', color: 'var(--primary)', count: totalCancelados.value },
+    { key: 'devuelto', label: 'Devueltos', color: '#8E44AD', count: totalDevueltos.value },
   ]
   const RADIO = 60
   const CIRCUNFERENCIA = 2 * Math.PI * RADIO
@@ -143,10 +155,17 @@ const RADIO_DONA = 60
 const CIRC_DONA = 2 * Math.PI * RADIO_DONA
 
 // ── Pestañas + filtros de la tabla de pedidos ───────────────────
-// En vez de un selector con los 9 estados reales, solo 2 pestañas: los pedidos que todavía
-// necesitan atención ("En proceso") y los que ya se cerraron ("Entregados", incluye
-// cancelados/devueltos) — así el admin ve de una lo que falta por hacer.
+// 5 pestañas en vez de las 2 de antes ("En proceso" / "Entregados", donde "Entregados" en
+// realidad mezclaba despachados+cancelados+devueltos sin distinguirlos) - ahora cada pestaña
+// muestra exactamente un estado real, más "Todos" para no perder la vista completa.
 const tabActiva = ref('proceso')
+const TAB_TITULOS = {
+  todos: 'Todos los pedidos',
+  proceso: 'Pedidos en proceso',
+  entregado: 'Pedidos despachados',
+  cancelado: 'Pedidos cancelados',
+  devuelto: 'Pedidos devueltos',
+}
 const busqueda = ref('')
 const filtroMetodo = ref('')
 const fechaDesde = ref('')
@@ -154,16 +173,21 @@ const fechaHasta = ref('')
 const paginaActual = ref(1)
 const POR_PAGINA = 8
 
+function coincideTab(v) {
+  if (tabActiva.value === 'todos') return true
+  if (tabActiva.value === 'proceso') return esPedidoActivo(v)
+  return v.estado === tabActiva.value // 'entregado' | 'cancelado' | 'devuelto'
+}
+
 const pedidosFiltrados = computed(() => {
   const term = busqueda.value.trim().toLowerCase()
   return [...ventasStore.ventas]
     .filter((v) => {
-      const coincideTab = tabActiva.value === 'proceso' ? esPedidoActivo(v) : !esPedidoActivo(v)
       const coincideTerm = !term || v.numero_venta.toLowerCase().includes(term) || nombreCliente(v.id_usuario).toLowerCase().includes(term)
       const coincideMetodo = !filtroMetodo.value || v.metodo_pago === filtroMetodo.value
       const coincideDesde = !fechaDesde.value || v.fecha.slice(0, 10) >= fechaDesde.value
       const coincideHasta = !fechaHasta.value || v.fecha.slice(0, 10) <= fechaHasta.value
-      return coincideTab && coincideTerm && coincideMetodo && coincideDesde && coincideHasta
+      return coincideTab(v) && coincideTerm && coincideMetodo && coincideDesde && coincideHasta
     })
     .sort((a, b) => new Date(b.fecha.replace(' ', 'T')) - new Date(a.fecha.replace(' ', 'T')))
 })
@@ -182,8 +206,37 @@ function limpiarFiltros() {
 }
 function irAPagina(n) { paginaActual.value = Math.min(Math.max(1, n), totalPaginas.value) }
 
+// Las 5 tarjetas de arriba y las 5 pestañas de la tabla comparten esta misma función - filtran
+// y de paso bajan la pantalla hasta la tabla, para que el clic se sienta como que "hizo algo" de
+// una vez, no solo cambió un estado invisible más abajo.
+const tablaRef = ref(null)
+function filtrarPor(tab) {
+  tabActiva.value = tab
+  nextTick(() => tablaRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+function verVentasHoy() {
+  fechaDesde.value = hoyStr
+  fechaHasta.value = hoyStr
+  filtrarPor('todos')
+}
+
 // Simplificado a 2 acciones del día a día (en vez de exponer los 9 estados uno por uno): marcar
 // entregado, o cancelar/devolver (que es lo único que de verdad repone stock y requiere confirmar).
+// Un pedido de envío pide número de guía primero (se le manda al cliente por correo); uno de
+// recogida no pasa por transportadora, así que sigue siendo un solo clic.
+const TRANSPORTADORAS = ['Servientrega', 'Coordinadora', 'TCC', 'Envía', 'Interrapidísimo', 'Otra']
+const pedidoADespachar = ref(null)
+const guiaForm = ref({ numero_guia: '', transportadora: '' })
+
+function abrirMarcarEntregado(venta) {
+  if (venta.metodo_envio === 'recogida') {
+    marcarEntregado(venta)
+    return
+  }
+  pedidoADespachar.value = venta
+  guiaForm.value = { numero_guia: '', transportadora: '' }
+}
+
 async function marcarEntregado(venta) {
   try {
     await ventasStore.actualizarEstadoVenta(venta.id_venta, 'entregado')
@@ -191,22 +244,56 @@ async function marcarEntregado(venta) {
     showToast(e.response?.data?.mensaje || 'No se pudo actualizar el pedido.', 'danger')
     return
   }
-  showToast(`Pedido ${venta.numero_venta} marcado como despachado.`, 'success')
+  showToast(`Pedido ${venta.numero_venta} marcado como entregado. Se notificó al cliente por correo.`, 'success')
 }
 
-const pedidoACancelar = ref(null)
-function abrirCancelarPedido(venta) {
-  pedidoACancelar.value = venta
-}
-async function confirmarCancelacion(tipo) {
-  const venta = pedidoACancelar.value
+async function confirmarDespacho() {
+  if (!guiaForm.value.numero_guia.trim()) {
+    showToast('Ingresa el número de guía.', 'danger')
+    return
+  }
+  if (!guiaForm.value.transportadora) {
+    showToast('Selecciona la transportadora.', 'danger')
+    return
+  }
+  const venta = pedidoADespachar.value
   try {
-    await ventasStore.actualizarEstadoVenta(venta.id_venta, tipo)
+    await ventasStore.actualizarEstadoVenta(venta.id_venta, 'entregado', {
+      numero_guia: guiaForm.value.numero_guia.trim(),
+      transportadora: guiaForm.value.transportadora,
+    })
   } catch (e) {
     showToast(e.response?.data?.mensaje || 'No se pudo actualizar el pedido.', 'danger')
     return
   }
-  showToast(`Pedido ${venta.numero_venta} marcado como ${ESTADOS_VENTA[tipo].label.toLowerCase()} — el stock se repuso en Inventario.`, 'info')
+  showToast(`Pedido ${venta.numero_venta} marcado como despachado. Se notificó al cliente por correo con la guía.`, 'success')
+  pedidoADespachar.value = null
+}
+
+// El pedido ya "sabe" cuál de las dos acciones aplica según dónde va (ver puedeCancelarODevolver):
+// todavía en proceso -> cancelar, ya entregado -> devolver. El admin no elige entre las dos, solo
+// confirma la única que tiene sentido en ese momento - así no hay opción "rara" que no aplica.
+const pedidoACancelar = ref(null)
+const tipoAccionCancelar = computed(() => (pedidoACancelar.value?.estado === 'entregado' ? 'devuelto' : 'cancelado'))
+const motivoCancelar = ref('')
+function abrirCancelarPedido(venta) {
+  pedidoACancelar.value = venta
+  motivoCancelar.value = ''
+}
+async function confirmarCancelacion() {
+  const venta = pedidoACancelar.value
+  const tipo = tipoAccionCancelar.value
+  if (!motivoCancelar.value.trim()) {
+    showToast('Escribe el motivo antes de continuar.', 'danger')
+    return
+  }
+  try {
+    await ventasStore.actualizarEstadoVenta(venta.id_venta, tipo, { motivo: motivoCancelar.value.trim() })
+  } catch (e) {
+    showToast(e.response?.data?.mensaje || 'No se pudo actualizar el pedido.', 'danger')
+    return
+  }
+  showToast(`Pedido ${venta.numero_venta} marcado como ${ESTADOS_VENTA[tipo].label.toLowerCase()} — el stock se repuso en Inventario y se notificó al cliente por correo.`, 'info')
   pedidoACancelar.value = null
 }
 
@@ -264,9 +351,13 @@ const clientesFrecuentes = computed(() => {
 
 // ── Exportar CSV (real, sin backend) ────────────────────────────
 function exportarCSV() {
-  const filas = [['Número', 'Cliente', 'Email', 'Fecha', 'Total', 'Estado', 'Método de pago']]
+  const filas = [['Número', 'Cliente', 'Email', 'Fecha', 'Total', 'Estado', 'Método de pago', 'Método de envío', 'Guía']]
   pedidosFiltrados.value.forEach((v) => {
-    filas.push([v.numero_venta, nombreCliente(v.id_usuario), clienteDe(v.id_usuario)?.email || '', v.fecha, v.total, ESTADOS_VENTA[v.estado].label, v.metodo_pago])
+    filas.push([
+      v.numero_venta, nombreCliente(v.id_usuario), clienteDe(v.id_usuario)?.email || '', v.fecha, v.total,
+      labelEstadoVenta(v), v.metodo_pago, v.metodo_envio === 'recogida' ? 'Recogida en tienda' : 'Envío',
+      v.numero_guia || '',
+    ])
   })
   const csv = filas.map((fila) => fila.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -288,12 +379,12 @@ onMounted(async () => {
   const { data } = await api.get('/usuarios/clientes')
   clientesDisponibles.value = data
 })
-const formVenta = ref({ id_usuario: '', metodo_pago: 'efectivo', notas_cliente: '' })
+const formVenta = ref({ id_usuario: '', metodo_pago: 'efectivo', metodo_envio: 'recogida', notas_cliente: '' })
 const itemsVenta = ref([])
 const itemSeleccionado = ref({ id_producto: '', cantidad: 1 })
 
 function abrirNuevaVenta() {
-  formVenta.value = { id_usuario: '', metodo_pago: 'efectivo', notas_cliente: '' }
+  formVenta.value = { id_usuario: '', metodo_pago: 'efectivo', metodo_envio: 'recogida', notas_cliente: '' }
   itemsVenta.value = []
   itemSeleccionado.value = { id_producto: '', cantidad: 1 }
   mostrarModalVenta.value = true
@@ -330,6 +421,7 @@ async function guardarVentaManual() {
       id_usuario: Number(formVenta.value.id_usuario),
       items: itemsVenta.value,
       metodo_pago: formVenta.value.metodo_pago,
+      metodo_envio: formVenta.value.metodo_envio,
       notas_cliente: formVenta.value.notas_cliente.trim() || null,
     })
   } catch (e) {
@@ -353,28 +445,33 @@ async function guardarVentaManual() {
     </div>
   </div>
 
-  <!-- ESTADÍSTICAS -->
-  <div class="admin-stats-grid">
-    <div class="admin-stat-card">
+  <!-- ESTADÍSTICAS — cada tarjeta es un botón real: filtra la tabla de abajo y baja hasta ella -->
+  <div class="admin-stats-grid ventas-stats-grid">
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="verVentasHoy">
       <div class="admin-stat-top"><span class="admin-stat-icon icon-rojo"><i class="ri-bank-card-2-line"></i></span></div>
       <strong class="admin-stat-value">{{ formatCOP(totalVentasHoy) }}</strong>
       <span class="admin-stat-label">Ventas de hoy</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarPor('proceso')">
       <div class="admin-stat-top"><span class="admin-stat-icon icon-azul"><i class="ri-truck-line"></i></span></div>
       <strong class="admin-stat-value">{{ totalEnProceso }}</strong>
       <span class="admin-stat-label">En proceso</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarPor('entregado')">
       <div class="admin-stat-top"><span class="admin-stat-icon icon-verde"><i class="ri-checkbox-circle-line"></i></span></div>
       <strong class="admin-stat-value">{{ totalEntregados }}</strong>
       <span class="admin-stat-label">Despachados</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarPor('cancelado')">
       <div class="admin-stat-top"><span class="admin-stat-icon icon-rojo"><i class="ri-close-circle-line"></i></span></div>
       <strong class="admin-stat-value">{{ totalCancelados }}</strong>
-      <span class="admin-stat-label">Cancelados / Devueltos</span>
-    </div>
+      <span class="admin-stat-label">Cancelados</span>
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarPor('devuelto')">
+      <div class="admin-stat-top"><span class="admin-stat-icon icon-morado"><i class="ri-arrow-go-back-line"></i></span></div>
+      <strong class="admin-stat-value">{{ totalDevueltos }}</strong>
+      <span class="admin-stat-label">Devueltos</span>
+    </button>
   </div>
 
   <!-- GRÁFICO 30 DÍAS + DONA DE ESTADOS -->
@@ -434,13 +531,22 @@ async function guardarVentaManual() {
     </div>
   </div>
 
-  <!-- PESTAÑAS: EN PROCESO / ENTREGADOS -->
+  <!-- PESTAÑAS: TODOS / EN PROCESO / DESPACHADOS / CANCELADOS / DEVUELTOS -->
   <div class="admin-tabs">
-    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'proceso' }" @click="tabActiva = 'proceso'">
+    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'todos' }" @click="filtrarPor('todos')">
+      <i class="ri-list-check-2"></i> Todos <span class="badge-count">{{ ventasStore.ventas.length }}</span>
+    </button>
+    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'proceso' }" @click="filtrarPor('proceso')">
       <i class="ri-truck-line"></i> En proceso <span class="badge-count">{{ totalEnProceso }}</span>
     </button>
-    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'entregados' }" @click="tabActiva = 'entregados'">
-      <i class="ri-checkbox-circle-line"></i> Despachados <span class="badge-count">{{ ventasStore.ventas.length - totalEnProceso }}</span>
+    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'entregado' }" @click="filtrarPor('entregado')">
+      <i class="ri-checkbox-circle-line"></i> Despachados <span class="badge-count">{{ totalEntregados }}</span>
+    </button>
+    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'cancelado' }" @click="filtrarPor('cancelado')">
+      <i class="ri-close-circle-line"></i> Cancelados <span class="badge-count">{{ totalCancelados }}</span>
+    </button>
+    <button type="button" class="admin-tab" :class="{ active: tabActiva === 'devuelto' }" @click="filtrarPor('devuelto')">
+      <i class="ri-arrow-go-back-line"></i> Devueltos <span class="badge-count">{{ totalDevueltos }}</span>
     </button>
   </div>
 
@@ -456,6 +562,7 @@ async function guardarVentaManual() {
       <option value="tarjeta">Tarjeta</option>
       <option value="nequi">Nequi</option>
       <option value="daviplata">Daviplata</option>
+      <option value="contraentrega">Contraentrega</option>
     </select>
     <input v-model="fechaDesde" type="date" class="form-control" style="max-width:150px;" title="Desde" />
     <input v-model="fechaHasta" type="date" class="form-control" style="max-width:150px;" title="Hasta" />
@@ -465,9 +572,9 @@ async function guardarVentaManual() {
   </div>
 
   <!-- TABLA DE PEDIDOS -->
-  <div class="admin-card">
+  <div class="admin-card" ref="tablaRef">
     <div class="admin-card-header">
-      <h2>{{ tabActiva === 'proceso' ? 'Pedidos en proceso' : 'Pedidos despachados' }}</h2>
+      <h2>{{ TAB_TITULOS[tabActiva] }}</h2>
       <span>{{ pedidosFiltrados.length }} registros encontrados</span>
     </div>
 
@@ -507,16 +614,17 @@ async function guardarVentaManual() {
               </td>
               <td>{{ formatCOP(v.total) }}</td>
               <td>
-                <span class="badge" :class="ESTADOS_VENTA[v.estado].badge"><i :class="ESTADOS_VENTA[v.estado].icon"></i> {{ ESTADOS_VENTA[v.estado].label }}</span>
+                <span class="badge" :class="ESTADOS_VENTA[v.estado].badge"><i :class="ESTADOS_VENTA[v.estado].icon"></i> {{ labelEstadoVenta(v) }}</span>
+                <br v-if="v.metodo_envio === 'recogida'" /><span v-if="v.metodo_envio === 'recogida'" class="ventas-cotiz-tag">Recogida en tienda</span>
               </td>
               <td style="text-transform:capitalize;">{{ v.metodo_pago }}</td>
               <td>
                 <div class="admin-actions-cell">
-                  <button v-if="esPedidoActivo(v)" type="button" class="admin-action-btn" title="Marcar como despachado" @click="marcarEntregado(v)">
+                  <button v-if="esPedidoActivo(v)" type="button" class="admin-action-btn" :title="v.metodo_envio === 'recogida' ? 'Marcar como entregado' : 'Marcar como despachado'" @click="abrirMarcarEntregado(v)">
                     <i class="ri-checkbox-circle-line"></i>
                   </button>
-                  <button v-if="esPedidoActivo(v)" type="button" class="admin-action-btn danger" title="Cancelar pedido" @click="abrirCancelarPedido(v)">
-                    <i class="ri-close-circle-line"></i>
+                  <button v-if="puedeCancelarODevolver(v)" type="button" class="admin-action-btn danger" :title="v.estado === 'entregado' ? 'Registrar devolución' : 'Cancelar pedido'" @click="abrirCancelarPedido(v)">
+                    <i :class="v.estado === 'entregado' ? 'ri-arrow-go-back-line' : 'ri-close-circle-line'"></i>
                   </button>
                   <button type="button" class="admin-action-btn" title="Ver detalle" @click="toggleDetalle(v)">
                     <i :class="pedidoExpandido === v.id_venta ? 'ri-arrow-up-s-line' : 'ri-arrow-down-s-line'"></i>
@@ -534,6 +642,7 @@ async function guardarVentaManual() {
                       <strong class="ventas-detalle-monto">{{ formatCOP(item.subtotal) }}</strong>
                     </div>
                     <p v-if="extraerDireccionEntrega(v.notas_cliente)" class="ventas-detalle-direccion"><i class="ri-map-pin-line"></i> <strong>Entregar en:</strong> {{ extraerDireccionEntrega(v.notas_cliente) }}</p>
+                    <p v-if="v.numero_guia" class="ventas-detalle-direccion"><i class="ri-truck-line"></i> <strong>Guía:</strong> {{ v.numero_guia }}<span v-if="v.transportadora"> — {{ v.transportadora }}</span></p>
                     <p v-if="extraerNotaClienteVenta(v.notas_cliente)" class="ventas-detalle-nota"><strong>Nota del cliente:</strong> {{ extraerNotaClienteVenta(v.notas_cliente) }}</p>
 
                     <h4 style="margin-top:16px;">Historial de pago</h4>
@@ -601,26 +710,67 @@ async function guardarVentaManual() {
     </div>
   </div>
 
-  <!-- MODAL: CANCELAR / DEVOLVER PEDIDO -->
+  <!-- MODAL: CANCELAR PEDIDO EN PROCESO / REGISTRAR DEVOLUCIÓN DE UNO YA ENTREGADO -->
   <Transition name="confirm-modal-fade">
     <div v-if="pedidoACancelar" class="confirm-modal-overlay" @click.self="pedidoACancelar = null">
       <Transition name="confirm-modal-pop" appear>
         <div class="confirm-modal">
           <button class="confirm-modal-close" aria-label="Cerrar" @click="pedidoACancelar = null"><i class="ri-close-line"></i></button>
-          <div class="confirm-modal-icon" style="background:rgba(192,57,43,0.1);color:var(--primary);"><i class="ri-close-circle-line"></i></div>
-          <h3 class="confirm-modal-title">¿Qué pasó con este pedido?</h3>
-          <p class="confirm-modal-text">
-            Pedido <strong>{{ pedidoACancelar?.numero_venta }}</strong>. En los dos casos el stock de los productos se repone automáticamente en Inventario.
-          </p>
-          <div class="confirm-modal-actions">
-            <button class="btn btn-primary btn-lg btn-block" style="background:var(--danger);" @click="confirmarCancelacion('cancelado')">
-              <i class="ri-close-circle-line"></i> Cancelado (no se despachó)
-            </button>
-            <button class="btn btn-outline-red btn-block" @click="confirmarCancelacion('devuelto')">
-              <i class="ri-arrow-go-back-line"></i> Devuelto (el cliente lo regresó)
-            </button>
-            <button class="btn btn-outline-red btn-block" style="border-color:transparent;" @click="pedidoACancelar = null">Volver</button>
+          <div class="confirm-modal-icon" style="background:rgba(192,57,43,0.1);color:var(--primary);">
+            <i :class="tipoAccionCancelar === 'devuelto' ? 'ri-arrow-go-back-line' : 'ri-close-circle-line'"></i>
           </div>
+          <h3 class="confirm-modal-title">{{ tipoAccionCancelar === 'devuelto' ? '¿Registrar la devolución de este pedido?' : '¿Cancelar este pedido?' }}</h3>
+          <p class="confirm-modal-text">
+            Pedido <strong>{{ pedidoACancelar?.numero_venta }}</strong>. El stock de los productos se repone automáticamente en Inventario
+            {{ tipoAccionCancelar === 'devuelto' ? 'apenas confirmes que el cliente ya lo regresó' : '' }},
+            y le llega un correo al cliente avisándole.
+          </p>
+          <form @submit.prevent="confirmarCancelacion" style="text-align:left;">
+            <div class="form-group">
+              <label class="form-label required">Motivo</label>
+              <input v-model="motivoCancelar" class="form-control" :placeholder="tipoAccionCancelar === 'devuelto' ? 'Ej. Producto defectuoso, talla equivocada...' : 'Ej. Cliente se arrepintió, no había stock real...'" required />
+            </div>
+            <div class="confirm-modal-actions">
+              <button type="submit" class="btn btn-primary btn-lg btn-block" style="background:var(--danger);">
+                <i :class="tipoAccionCancelar === 'devuelto' ? 'ri-arrow-go-back-line' : 'ri-close-circle-line'"></i>
+                {{ tipoAccionCancelar === 'devuelto' ? 'Confirmar devolución' : 'Confirmar cancelación' }}
+              </button>
+              <button type="button" class="btn btn-outline-red btn-block" style="border-color:transparent;" @click="pedidoACancelar = null">Volver</button>
+            </div>
+          </form>
+        </div>
+      </Transition>
+    </div>
+  </Transition>
+
+  <!-- MODAL: MARCAR COMO DESPACHADO (pide la guía, notifica al cliente) -->
+  <Transition name="confirm-modal-fade">
+    <div v-if="pedidoADespachar" class="confirm-modal-overlay" @click.self="pedidoADespachar = null">
+      <Transition name="confirm-modal-pop" appear>
+        <div class="confirm-modal">
+          <button class="confirm-modal-close" aria-label="Cerrar" @click="pedidoADespachar = null"><i class="ri-close-line"></i></button>
+          <div class="confirm-modal-icon" style="background:rgba(39,174,96,0.1);color:var(--success);"><i class="ri-truck-line"></i></div>
+          <h3 class="confirm-modal-title">Marcar pedido como despachado</h3>
+          <p class="confirm-modal-text">
+            Pedido <strong>{{ pedidoADespachar?.numero_venta }}</strong>. Ingresa los datos de la guía que te dio la transportadora — se los enviamos al cliente por correo apenas confirmes.
+          </p>
+          <form @submit.prevent="confirmarDespacho" style="text-align:left;">
+            <div class="form-group">
+              <label class="form-label required">Número de guía</label>
+              <input v-model="guiaForm.numero_guia" class="form-control" placeholder="Ej. 123456789" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Transportadora</label>
+              <select v-model="guiaForm.transportadora" class="form-control" required>
+                <option value="" disabled>Selecciona...</option>
+                <option v-for="t in TRANSPORTADORAS" :key="t" :value="t">{{ t }}</option>
+              </select>
+            </div>
+            <div class="confirm-modal-actions">
+              <button type="submit" class="btn btn-primary btn-lg btn-block"><i class="ri-mail-send-line"></i> Despachar y notificar al cliente</button>
+              <button type="button" class="btn btn-outline-red btn-block" @click="pedidoADespachar = null">Cancelar</button>
+            </div>
+          </form>
         </div>
       </Transition>
     </div>
@@ -638,7 +788,7 @@ async function guardarVentaManual() {
           <div class="form-grid-2">
             <div class="form-group full">
               <label class="form-label required">Cliente</label>
-              <select v-model="formVenta.id_usuario" class="form-control">
+              <select v-model="formVenta.id_usuario" class="form-control" required>
                 <option value="" disabled>Selecciona un cliente</option>
                 <option v-for="u in clientesDisponibles" :key="u.id_usuario" :value="u.id_usuario">{{ u.nombre }} {{ u.apellido }} — {{ u.email }}</option>
               </select>
@@ -668,13 +818,21 @@ async function guardarVentaManual() {
             </div>
 
             <div class="form-group">
-              <label class="form-label">Método de pago</label>
-              <select v-model="formVenta.metodo_pago" class="form-control">
+              <label class="form-label required">Método de envío</label>
+              <select v-model="formVenta.metodo_envio" class="form-control" required>
+                <option value="recogida">Recogida en tienda</option>
+                <option value="envio">Envío</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Método de pago</label>
+              <select v-model="formVenta.metodo_pago" class="form-control" required>
                 <option value="efectivo">Efectivo</option>
                 <option value="transferencia">Transferencia</option>
                 <option value="tarjeta">Tarjeta</option>
                 <option value="nequi">Nequi</option>
                 <option value="daviplata">Daviplata</option>
+                <option value="contraentrega" :disabled="formVenta.metodo_envio !== 'envio'">Contraentrega{{ formVenta.metodo_envio !== 'envio' ? ' (solo envío)' : '' }}</option>
               </select>
             </div>
 
@@ -697,6 +855,16 @@ async function guardarVentaManual() {
 <style scoped>
 .icon-azul { background: rgba(41,128,185,0.1); color: var(--info); }
 .icon-verde { background: rgba(39,174,96,0.1); color: var(--success); }
+.icon-morado { background: rgba(142,68,173,0.1); color: #8E44AD; }
+
+/* Las 5 tarjetas de estadísticas de esta página son botones reales (filtran + bajan a la tabla),
+   por eso necesitan su propio ancho de grilla (5, no las 4 que usa .admin-stats-grid en el resto
+   del panel) y perder los estilos por defecto de <button>. */
+.ventas-stats-grid { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1100px) { .ventas-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .ventas-stats-grid { grid-template-columns: 1fr 1fr; } }
+.admin-stat-card-btn { display: block; width: 100%; text-align: left; cursor: pointer; transition: var(--transition); }
+.admin-stat-card-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: transparent; }
 .icon-alerta { background: rgba(243,156,18,0.12); color: var(--warning); }
 .icon-rojo { background: rgba(192,57,43,0.1); color: var(--primary); }
 

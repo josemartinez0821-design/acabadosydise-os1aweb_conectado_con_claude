@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useCenterMessage } from '../composables/useCenterMessage'
 import { useToast } from '../composables/useToast'
 import api from '../services/api'
+import logoUrl from '../assets/logo.png'
 
 const email = ref('')
 const password = ref('')
@@ -24,6 +25,30 @@ const { showToast } = useToast()
 // así este check no depende de comparar el texto exacto de `mensaje`, que podría cambiar de
 // redacción sin que nadie se acuerde de actualizar los dos lados (ver AuthController.login()).
 const cuentaNoVerificada = computed(() => errorCodigo.value === 'CUENTA_NO_VERIFICADA')
+
+// Mismo criterio que DashboardView.vue's saludoHora: "más amigable que un genérico 'Bienvenido de
+// nuevo' siempre igual". Varias frases por rol + elegida al azar en cada login, para que el
+// mensaje de bienvenida no se sienta como el mismo texto enlatado cada vez.
+function saludoHora() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Buenos días'
+  if (h < 19) return 'Buenas tardes'
+  return 'Buenas noches'
+}
+const iconoHora = () => (new Date().getHours() < 19 ? 'ri-sun-line' : 'ri-moon-clear-line')
+
+const FRASES_CLIENTE = [
+  (n) => `¡${saludoHora()}, ${n}! Qué bueno verte de nuevo por aquí.`,
+  (n) => `¡${saludoHora()}, ${n}! Listos para ayudarte con tu próximo proyecto.`,
+  (n) => `¡${saludoHora()}, ${n}! Gracias por seguir confiando en Acabados y Diseños 1A.`,
+]
+const FRASES_ADMIN = [
+  (n) => `¡${saludoHora()}, ${n}! Tu panel de administración está listo.`,
+  (n) => `¡${saludoHora()}, ${n}! Todo listo para gestionar la tienda.`,
+]
+function fraseAlAzar(frases, nombre) {
+  return frases[Math.floor(Math.random() * frases.length)](nombre)
+}
 
 async function reenviarCodigo() {
   try {
@@ -54,15 +79,15 @@ async function iniciarSesion() {
 
   cargando.value = false
   if (usuario.id_rol === 1) {
-    mostrarMensajeCentral(`Bienvenido de nuevo, ${usuario.nombre}.`, {
+    mostrarMensajeCentral(fraseAlAzar(FRASES_ADMIN, usuario.nombre), {
       icono: 'ri-shield-star-line',
       tipo: 'admin',
       duracion: 2800,
       badge: 'Acceso de Administrador',
     })
   } else {
-    mostrarMensajeCentral(`¡Bienvenido de nuevo, ${usuario.nombre}! Qué gusto tenerte de vuelta.`, {
-      icono: 'ri-emotion-happy-line',
+    mostrarMensajeCentral(fraseAlAzar(FRASES_CLIENTE, usuario.nombre), {
+      icono: iconoHora(),
       tipo: 'bienvenida',
       duracion: 2600,
     })
@@ -99,8 +124,8 @@ async function iniciarSesion() {
     <div class="auth-form-panel">
       <div class="auth-form-inner">
       <div class="auth-form-logo">
-        <span class="brand-icon"><i class="ri-paint-brush-line"></i></span>
-        ACABADOS <span class="text-primary">1A</span>
+        <span class="brand-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+        ACABADOS Y DISEÑOS <span class="text-primary">1A</span>
       </div>
 
       <div class="auth-form-top">

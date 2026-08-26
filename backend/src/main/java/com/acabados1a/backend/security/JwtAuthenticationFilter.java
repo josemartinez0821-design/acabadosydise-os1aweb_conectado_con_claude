@@ -31,11 +31,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String PREFIJO_BEARER = "Bearer ";
 
     // Mismo orden de roles que ya asumen JwtService/AuthService/frontend/src/stores/auth.js
-    // (1 Administrador, 2 Cliente, 3 Vendedor).
+    // (1 Administrador, 2 Cliente) - el id_rol=3 "Vendedor" se quitó de la BD el 25/08/2026, sin
+    // requisito funcional real detrás y sin ningún usuario que lo tuviera asignado.
     private static final Map<Integer, String> AUTORIDAD_POR_ROL = Map.of(
         1, "ROLE_ADMIN",
-        2, "ROLE_CLIENTE",
-        3, "ROLE_VENDEDOR"
+        2, "ROLE_CLIENTE"
     );
 
     private final JwtService jwtService;

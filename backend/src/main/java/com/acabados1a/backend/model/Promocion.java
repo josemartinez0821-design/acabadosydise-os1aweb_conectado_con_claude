@@ -51,8 +51,16 @@ public class Promocion {
     @Column(name = "activo", nullable = false)
     private Boolean activo;
 
-    // Sin entidad Servicio todavía (servicios sigue en MockData) - se guarda como id plano, mismo
-    // criterio que id_categoria/id_impuesto aplanados en ProductoResponse.
+    // Para el slider "Promociones del Mes" del Home: puede haber varias promos activas a la vez,
+    // pero el slider tiene espacio limitado - destacado deja al admin elegir cuáles se muestran ahí
+    // en vez de mostrarlas todas automáticamente. No afecta el resaltado en catálogo/detalle, que
+    // sigue siendo automático para cualquier promo activa y vigente.
+    @Column(name = "destacado", nullable = false)
+    private Boolean destacado;
+
+    // Sí existe entidad Servicio (agregada 2026-08-20, servicios ya no vive en MockData) - se deja
+    // como id plano de todos modos porque no vale la pena una @ManyToOne solo para esto; la
+    // existencia se valida igual en PromocionService vía ServicioRepository.
     @Column(name = "id_servicio")
     private Integer idServicio;
 

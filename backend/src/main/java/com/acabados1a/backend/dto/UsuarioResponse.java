@@ -20,6 +20,7 @@ public class UsuarioResponse {
     private final String direccion;
     private final String ciudad;
     private final String departamento;
+    private final String avatar;
     private final Integer idRol;
     private final Boolean estado;
 
@@ -35,6 +36,7 @@ public class UsuarioResponse {
         this.direccion = usuario.getDireccion();
         this.ciudad = usuario.getCiudad();
         this.departamento = usuario.getDepartamento();
+        this.avatar = usuario.getAvatar();
         this.idRol = usuario.getRol().getIdRol();
         this.estado = usuario.getEstado();
     }

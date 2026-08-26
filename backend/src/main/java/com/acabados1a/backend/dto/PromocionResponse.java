@@ -20,6 +20,7 @@ public class PromocionResponse {
     private final LocalDate fechaInicio;
     private final LocalDate fechaFin;
     private final Boolean activo;
+    private final Boolean destacado;
     private final Integer idServicio;
     private final List<Integer> productos;
 
@@ -34,6 +35,7 @@ public class PromocionResponse {
         this.fechaInicio = p.getFechaInicio();
         this.fechaFin = p.getFechaFin();
         this.activo = p.getActivo();
+        this.destacado = p.getDestacado();
         this.idServicio = p.getIdServicio();
         this.productos = p.getProductos() == null ? List.of() : p.getProductos().stream().map(pr -> pr.getIdProducto()).toList();
     }

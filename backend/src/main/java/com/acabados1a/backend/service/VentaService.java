@@ -10,11 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ public class VentaService {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final CotizacionRepository cotizacionRepository;
+    private final EmailService emailService;
 
     public List<Venta> listarParaUsuario(String email, boolean esAdmin) {
         Usuario actor = resolverUsuario(email);
@@ -59,6 +62,19 @@ public class VentaService {
             throw new IllegalArgumentException("El método de pago indicado no es válido.");
         }
 
+        Venta.MetodoEnvio metodoEnvio;
+        try {
+            metodoEnvio = Venta.MetodoEnvio.valueOf(request.getMetodoEnvio());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El método de envío indicado no es válido.");
+        }
+
+        // Contraentrega es para envío: el cliente paga al recoger el paquete en el local de la
+        // transportadora, no en nuestra tienda (recogida en tienda ya es gratis y sin este paso).
+        if (metodoPago == Venta.MetodoPago.contraentrega && metodoEnvio != Venta.MetodoEnvio.envio) {
+            throw new IllegalArgumentException("Contraentrega solo está disponible para envío.");
+        }
+
         List<VentaRequest.Item> items = request.getItems() != null ? request.getItems() : List.of();
 
         BigDecimal subtotalCalculado = items.stream()
@@ -75,6 +91,7 @@ public class VentaService {
         venta.setTotal(total);
         venta.setEstado(Venta.Estado.pendiente);
         venta.setMetodoPago(metodoPago);
+        venta.setMetodoEnvio(metodoEnvio);
         venta.setNotasCliente(request.getNotasCliente());
 
         if (request.getIdCotizacion() != null) {
@@ -129,13 +146,28 @@ public class VentaService {
             detalleVentaRepository.save(detalle);
         }
 
+        // Los métodos que sí se cobran "en línea" (simulados) quedan completado de una vez, como
+        // siempre. Contraentrega no se cobra hasta que el cliente recoge el pedido y paga en
+        // persona - queda pendiente hasta que VentaService.actualizarEstado() lo complete solo.
         Pago pago = new Pago();
         pago.setVenta(guardada);
         pago.setMetodoPago(metodoPago);
         pago.setValor(total);
-        pago.setEstado(Pago.Estado.completado);
-        pago.setTransaccionId("SIM-" + String.format("%06d", guardada.getIdVenta()));
+        pago.setEstado(metodoPago == Venta.MetodoPago.contraentrega ? Pago.Estado.pendiente : Pago.Estado.completado);
+        pago.setTransaccionId(metodoPago == Venta.MetodoPago.contraentrega ? null : "SIM-" + String.format("%06d", guardada.getIdVenta()));
         pagoRepository.save(pago);
+
+        NumberFormat formatoCOP = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
+        formatoCOP.setMaximumFractionDigits(0);
+        StringBuilder resumenProductos = new StringBuilder();
+        for (VentaRequest.Item item : items) {
+            Producto producto = productosPorId.get(item.getIdProducto());
+            resumenProductos.append("- ").append(producto.getNombre()).append(" x").append(item.getCantidad())
+                .append(": ").append(formatoCOP.format(item.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()))))
+                .append("\n");
+        }
+        emailService.enviarConfirmacionPedido(dueño.getEmail(), guardada.getNumeroVenta(), resumenProductos.toString(),
+            formatoCOP.format(total), metodoPago == Venta.MetodoPago.contraentrega);
 
         return guardada;
     }
@@ -157,21 +189,57 @@ public class VentaService {
         Venta.Estado estadoAnterior = venta.getEstado();
         venta.setEstado(nuevoEstado);
 
-        if (nuevoEstado == Venta.Estado.entregado && venta.getFechaEntregaReal() == null) {
-            venta.setFechaEntregaReal(LocalDate.now());
+        boolean recienEntregado = nuevoEstado == Venta.Estado.entregado && estadoAnterior != Venta.Estado.entregado;
+        if (recienEntregado) {
+            if (venta.getFechaEntregaReal() == null) venta.setFechaEntregaReal(LocalDate.now());
+
+            // La guía solo aplica a envío (un pedido de recogida no pasa por transportadora) - si
+            // el admin la manda igual para un pedido de recogida, se ignora a propósito.
+            if (venta.getMetodoEnvio() == Venta.MetodoEnvio.envio) {
+                if (request.getNumeroGuia() != null && !request.getNumeroGuia().isBlank()) venta.setNumeroGuia(request.getNumeroGuia());
+                if (request.getTransportadora() != null && !request.getTransportadora().isBlank()) venta.setTransportadora(request.getTransportadora());
+            }
+
+            // Contraentrega (siempre de envío): el cliente paga al recoger en el local de la
+            // transportadora, y el negocio no se conecta con ninguna API para saber el momento
+            // exacto en que eso pasa - a propósito, se simplifica marcando el pago como recibido
+            // en el mismo clic de "despachado", sin un paso aparte para confirmarlo después.
+            for (Pago pago : pagoRepository.findByVentaIdVenta(id)) {
+                if (pago.getMetodoPago() == Venta.MetodoPago.contraentrega && pago.getEstado() == Pago.Estado.pendiente) {
+                    pago.setEstado(Pago.Estado.completado);
+                    pagoRepository.save(pago);
+                }
+            }
+
+            emailService.enviarNotificacionDespacho(venta.getUsuario().getEmail(), venta.getNumeroVenta(), venta.getNumeroGuia(), venta.getTransportadora());
         }
 
         boolean esCancelacion = nuevoEstado == Venta.Estado.cancelado || nuevoEstado == Venta.Estado.devuelto;
         boolean yaEstabaCancelada = estadoAnterior == Venta.Estado.cancelado || estadoAnterior == Venta.Estado.devuelto;
         if (esCancelacion && !yaEstabaCancelada) {
-            String motivo = nuevoEstado == Venta.Estado.cancelado ? "Cancelación" : "Devolución";
+            String accion = nuevoEstado == Venta.Estado.cancelado ? "Cancelación" : "Devolución";
+            String motivoCliente = request.getMotivo() != null && !request.getMotivo().isBlank() ? request.getMotivo().trim() : null;
+            String descripcionMovimiento = accion + " del pedido " + venta.getNumeroVenta() + (motivoCliente != null ? ": " + motivoCliente : "");
             for (DetalleVenta detalle : detalleVentaRepository.findByVentaIdVenta(id)) {
-                reponerStock(detalle.getProducto(), detalle.getCantidad(), actor, motivo + " del pedido " + venta.getNumeroVenta());
+                reponerStock(detalle.getProducto(), detalle.getCantidad(), actor, descripcionMovimiento);
             }
+            // Queda también en las notas internas (no solo en el historial de movimientos) para que
+            // se vea de una vez al abrir el pedido en el panel, sin tener que ir a buscarlo en Inventario.
+            if (motivoCliente != null) {
+                String notaMotivo = "Motivo de la " + accion.toLowerCase() + ": " + motivoCliente;
+                venta.setNotasInternas(venta.getNotasInternas() == null || venta.getNotasInternas().isBlank()
+                    ? notaMotivo : venta.getNotasInternas() + "\n" + notaMotivo);
+            }
+            boolean reembolsoPendiente = false;
             for (Pago pago : pagoRepository.findByVentaIdVenta(id)) {
-                pago.setEstado(Pago.Estado.reversado);
-                pagoRepository.save(pago);
+                if (pago.getEstado() != Pago.Estado.pendiente) {
+                    reembolsoPendiente = true;
+                    pago.setEstado(Pago.Estado.reversado);
+                    pagoRepository.save(pago);
+                }
             }
+            emailService.enviarNotificacionCancelacion(venta.getUsuario().getEmail(), venta.getNumeroVenta(),
+                nuevoEstado == Venta.Estado.devuelto, reembolsoPendiente);
         }
 
         return ventaRepository.save(venta);

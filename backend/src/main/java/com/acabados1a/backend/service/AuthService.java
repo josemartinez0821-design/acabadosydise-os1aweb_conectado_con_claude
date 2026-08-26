@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     // id_rol = 2 (Cliente) para todo self-registro — mismo orden de roles que ya asume
-    // frontend/src/stores/auth.js (1 Administrador, 2 Cliente, 3 Vendedor).
+    // frontend/src/stores/auth.js (1 Administrador, 2 Cliente).
     private static final int ID_ROL_CLIENTE = 2;
     private static final int VIGENCIA_CODIGO_MINUTOS = 15;
     private static final int MAX_INTENTOS_CODIGO = 5;

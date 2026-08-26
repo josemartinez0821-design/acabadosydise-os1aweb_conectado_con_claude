@@ -14,6 +14,7 @@ const cart = useCartStore()
 const { showToast } = useToast()
 
 const promo = computed(() => catalog.getActivePromoForProduct(props.producto.id_producto))
+const combo = computed(() => catalog.getComboForProduct(props.producto.id_producto))
 const precioFinal = computed(() => {
   if (!promo.value) return props.producto.precio_venta
   return Math.round(props.producto.precio_venta * (1 - promo.value.descuento_porcentaje / 100))
@@ -33,9 +34,12 @@ function agregar() {
   <div class="product-card" :class="{ 'product-card-promo': promo }">
     <div class="product-card-img">
       <img :src="producto.imagen_url" :alt="producto.nombre" loading="lazy" />
-      <div v-if="promo" class="product-card-badges">
-        <span class="badge badge-green">
-          <i class="ri-error-warning-fill"></i> ¡Promoción! -{{ promo.descuento_porcentaje }}%
+      <div v-if="promo || combo" class="product-card-badges">
+        <span v-if="promo" class="badge badge-yellow">
+          <i class="ri-price-tag-3-fill"></i> -{{ promo.descuento_porcentaje }}%
+        </span>
+        <span v-if="combo" class="badge badge-red">
+          <i class="ri-gift-fill"></i> Combo
         </span>
       </div>
       <div class="product-actions-hover">
@@ -66,5 +70,5 @@ function agregar() {
 </template>
 
 <style scoped>
-.product-card-promo { border-color: var(--success); box-shadow: 0 0 0 1px var(--success); }
+.product-card-promo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 </style>

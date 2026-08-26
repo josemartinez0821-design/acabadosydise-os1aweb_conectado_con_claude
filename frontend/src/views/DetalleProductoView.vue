@@ -89,6 +89,19 @@ const precioConDescuento = computed(() => {
   return Math.round(producto.value.precio_venta * (1 - promoActiva.value.descuento_porcentaje / 100))
 })
 
+// Un combo no cambia el precio individual de este producto (ese sigue siendo precio_venta) - es
+// un panel informativo aparte con el precio del paquete completo, no un descuento por unidad.
+const comboActivo = computed(() => producto.value ? catalog.getComboForProduct(producto.value.id_producto) : null)
+const productosCombo = computed(() => {
+  if (!comboActivo.value) return []
+  return comboActivo.value.productos.map((id) => catalog.getProductById(id)).filter(Boolean)
+})
+const ahorroCombo = computed(() => {
+  if (!comboActivo.value) return 0
+  const sumaIndividual = productosCombo.value.reduce((acc, p) => acc + Number(p.precio_venta), 0)
+  return Math.max(0, sumaIndividual - Number(comboActivo.value.precio_especial))
+})
+
 const atributos = computed(() => {
   if (!producto.value) return []
   const p = producto.value
@@ -214,7 +227,7 @@ async function publicarResena() {
 const preguntasFrecuentes = computed(() => {
   if (!producto.value) return []
   const p = producto.value
-  const impuesto = MockData.impuestos.find((i) => i.id_impuesto === p.id_impuesto)
+  const impuesto = catalog.impuestos.find((i) => i.id_impuesto === p.id_impuesto)
   const ivaTexto = impuesto && impuesto.valor === 0
     ? 'Este producto está exento de IVA. El precio mostrado es el precio final.'
     : `El precio incluye ${impuesto ? impuesto.nombre : 'IVA'} según la tarifa vigente.`
@@ -259,8 +272,11 @@ function toggleFaq(i) {
                 :alt="producto.nombre"
                 :style="!esVarianteColor && variantesTamano.length > 1 ? { transform: `scale(${escalaImagen})` } : {}"
               />
-              <span v-if="promoActiva" class="badge badge-green detalle-oferta-badge">
-                <i class="ri-error-warning-fill"></i> ¡En promoción! -{{ promoActiva.descuento_porcentaje }}%
+              <span v-if="promoActiva" class="badge badge-yellow detalle-oferta-badge">
+                <i class="ri-price-tag-3-fill"></i> ¡En promoción! -{{ promoActiva.descuento_porcentaje }}%
+              </span>
+              <span v-else-if="comboActivo" class="badge badge-red detalle-oferta-badge">
+                <i class="ri-gift-fill"></i> Parte de un combo
               </span>
             </div>
             <div class="detalle-galeria-thumbs">
@@ -302,6 +318,33 @@ function toggleFaq(i) {
               </template>
               <span v-else class="detalle-precio">{{ formatCOP(producto.precio_venta) }}</span>
             </div>
+
+            <div v-if="comboActivo" class="combo-panel">
+              <div class="combo-panel-header">
+                <i class="ri-gift-2-fill"></i>
+                <div>
+                  <strong>{{ comboActivo.titulo }}</strong>
+                  <p v-if="comboActivo.descripcion">{{ comboActivo.descripcion }}</p>
+                </div>
+              </div>
+              <div class="combo-panel-items">
+                <RouterLink
+                  v-for="cp in productosCombo"
+                  :key="cp.id_producto"
+                  :to="`/productos/${cp.id_producto}`"
+                  class="combo-panel-item"
+                  :class="{ activo: cp.id_producto === producto.id_producto }"
+                >
+                  <img :src="cp.imagen_url" :alt="cp.nombre" />
+                  <span>{{ cp.nombre }}</span>
+                </RouterLink>
+              </div>
+              <div class="combo-panel-price">
+                <span class="combo-panel-total"><strong>{{ formatCOP(comboActivo.precio_especial) }}</strong> por el combo completo</span>
+                <span v-if="ahorroCombo > 0" class="combo-panel-ahorro">Ahorras {{ formatCOP(ahorroCombo) }}</span>
+              </div>
+            </div>
+
             <div v-if="variantesTamano.length > 1" class="detalle-variantes">
               <div class="detalle-variantes-label">{{ esVarianteColor ? 'Elige un color:' : 'Elige un tamaño:' }}</div>
               <div class="filter-chips">
@@ -585,6 +628,21 @@ function toggleFaq(i) {
 
 .detalle-precio-box { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
 .detalle-precio { font-family: var(--font-main); font-weight: 800; font-size: 2rem; color: var(--primary); }
+
+.combo-panel { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 20px; }
+.combo-panel-header { display: flex; gap: 12px; margin-bottom: 14px; }
+.combo-panel-header i { font-size: 1.3rem; color: var(--primary); flex-shrink: 0; margin-top: 2px; }
+.combo-panel-header strong { display: block; font-family: var(--font-main); font-weight: 800; color: var(--secondary); margin-bottom: 3px; }
+.combo-panel-header p { font-size: 0.84rem; color: var(--text-light); line-height: 1.4; }
+.combo-panel-items { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.combo-panel-item { display: flex; align-items: center; gap: 8px; background: white; border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 14px 5px 5px; font-size: 0.8rem; font-weight: 600; color: var(--secondary); transition: var(--transition); }
+.combo-panel-item:hover { border-color: var(--primary); color: var(--primary); }
+.combo-panel-item.activo { border-color: var(--primary); background: rgba(192,57,43,0.06); }
+.combo-panel-item img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.combo-panel-price { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px dashed var(--border); }
+.combo-panel-total { font-size: 0.9rem; color: var(--text-light); }
+.combo-panel-total strong { font-family: var(--font-main); font-weight: 800; font-size: 1.3rem; color: var(--primary); margin-right: 4px; }
+.combo-panel-ahorro { font-size: 0.78rem; font-weight: 700; color: var(--success); background: rgba(39,174,96,0.12); padding: 3px 10px; border-radius: 20px; }
 
 .detalle-attrs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
 .detalle-attr { background: var(--off-white); border-radius: var(--radius-sm); padding: 10px 14px; }

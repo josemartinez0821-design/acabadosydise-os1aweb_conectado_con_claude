@@ -31,6 +31,9 @@ public class VentaRequest {
     @NotBlank(message = "El método de pago es obligatorio.")
     private String metodoPago;
 
+    @NotBlank(message = "El método de envío es obligatorio.")
+    private String metodoEnvio;
+
     private Integer idCotizacion;
     private String notasCliente;
 

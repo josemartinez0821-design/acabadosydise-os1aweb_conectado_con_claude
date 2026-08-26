@@ -6,9 +6,11 @@ import { useCartStore } from '../stores/cart'
 import { useCotizacionesStore } from '../stores/cotizaciones'
 import { useVentasStore } from '../stores/ventas'
 import { useAuthStore } from '../stores/auth'
+import { useCatalogStore } from '../stores/catalog'
 import { useToast } from '../composables/useToast'
 import { formatCOP, empacarDireccionEntrega } from '../composables/useFormat'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
+import logoUrl from '../assets/logo.png'
 
 const cart = useCartStore()
 const router = useRouter()
@@ -16,6 +18,7 @@ const route = useRoute()
 const cotizStore = useCotizacionesStore()
 const ventasStore = useVentasStore()
 const auth = useAuthStore()
+const catalog = useCatalogStore()
 const { showToast } = useToast()
 
 const paso = ref(1) // 1 dirección, 2 pago, 3 confirmar
@@ -33,9 +36,30 @@ const direccion = reactive({
   ciudad: auth.usuario?.ciudad || '',
   direccionExacta: auth.usuario?.direccion || '',
   complemento: '',
-  instrucciones: '',
 })
-const metodoEnvio = ref('estandar')
+const metodoEnvio = ref('envio')
+
+// Elegir entre la dirección ya guardada en la cuenta (departamento/ciudad/dirección de `usuarios`)
+// o escribir una distinta solo para este pedido. Si la cuenta no tiene dirección guardada todavía
+// (cliente nuevo, esos 3 campos vacíos) no tiene sentido ofrecer esa opción - se arranca directo en
+// "otra dirección", que es como se comportaba el checkout antes de este cambio.
+const tieneDireccionGuardada = computed(() => !!(auth.usuario?.direccion && auth.usuario?.ciudad && auth.usuario?.departamento))
+const fuenteDireccion = ref(tieneDireccionGuardada.value ? 'cuenta' : 'otra')
+
+function elegirFuenteDireccion(valor) {
+  fuenteDireccion.value = valor
+  if (valor === 'cuenta') {
+    direccion.departamento = auth.usuario?.departamento || 'Huila'
+    direccion.ciudad = auth.usuario?.ciudad || ''
+    direccion.direccionExacta = auth.usuario?.direccion || ''
+    direccion.complemento = ''
+  } else {
+    direccion.departamento = 'Huila'
+    direccion.ciudad = ''
+    direccion.direccionExacta = ''
+    direccion.complemento = ''
+  }
+}
 
 const municipiosDisponibles = computed(() => MUNICIPIOS_POR_DEPARTAMENTO[direccion.departamento] || [])
 
@@ -48,8 +72,14 @@ watch(() => direccion.departamento, () => {
 const metodoPago = ref('tarjeta')
 const tarjeta = reactive({ numero: '', vencimiento: '', cvv: '', nombre: '' })
 
-const costoEnvio = computed(() => (metodoEnvio.value === 'recogida' ? 0 : cart.total >= 150000 ? 0 : 8000))
-const total = computed(() => cart.total + costoEnvio.value)
+// El producto siempre se paga aquí, de una vez, sin importar el método de envío - "contraentrega"
+// no es una forma de pagar el pedido, es solo que el costo del ENVÍO (costoEnvio abajo) se paga
+// aparte, directo a la transportadora al recibirlo. Por eso no se toca metodoPago según metodoEnvio.
+
+// costoEnvio es solo informativo (para el aviso del Paso 1) - nunca se suma al total que cobra el
+// sitio, porque ese costo no lo cobra Acabados 1A sino la transportadora al momento de la entrega.
+const costoEnvio = computed(() => (metodoEnvio.value === 'recogida' ? 0 : cart.total >= 400000 ? 0 : 8000))
+const total = computed(() => cart.total)
 
 onMounted(() => {
   if (!cart.items.length && !resultado.value) {
@@ -89,7 +119,8 @@ async function confirmarPago() {
       subtotal: cart.total,
       total: total.value,
       metodo_pago: metodoPago.value,
-      notas_cliente: empacarDireccionEntrega(direccionLegible, direccion.instrucciones || null),
+      metodo_envio: metodoEnvio.value,
+      notas_cliente: empacarDireccionEntrega(direccionLegible, null),
     })
   } catch (e) {
     resultado.value = 'error'
@@ -106,6 +137,7 @@ async function confirmarPago() {
     fecha: new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
     total: total.value,
     metodo: metodoPago.value === 'tarjeta' ? `Tarjeta •••• ${tarjeta.numero.slice(-4) || '0000'}` : metodoPago.value,
+    esEnvio: metodoEnvio.value === 'envio',
   }
   cart.vaciarCarrito()
 
@@ -131,9 +163,12 @@ function reintentar() {
   <div class="checkout-page">
     <div class="checkout-topbar">
       <div class="checkout-topbar-inner">
-        <span class="checkout-brand">ACABADOS 1A</span>
-        <span class="checkout-secure"><i class="ri-lock-line"></i> Compra 100% segura</span>
-        <RouterLink to="/carrito" class="checkout-close"><i class="ri-close-line"></i></RouterLink>
+        <div class="checkout-brand-group">
+          <span class="checkout-logo"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+          <span class="checkout-brand">ACABADOS Y DISEÑOS <span class="checkout-brand-accent">1A</span></span>
+        </div>
+        <span class="checkout-secure"><i class="ri-shield-check-fill"></i> <span class="checkout-secure-text">Compra 100% segura</span></span>
+        <RouterLink to="/carrito" class="checkout-close" aria-label="Cerrar"><i class="ri-close-line"></i></RouterLink>
       </div>
     </div>
 
@@ -144,7 +179,10 @@ function reintentar() {
           <div class="result-icon success"><i class="ri-check-line"></i></div>
           <span class="badge badge-green mb-16">¡Pedido Exitoso!</span>
           <h2 class="section-title">¡Tu pedido fue confirmado!</h2>
-          <p class="section-subtitle">Hemos recibido tu solicitud correctamente. Te enviaremos los detalles a tu correo registrado.</p>
+          <p class="section-subtitle">
+            <template v-if="pedidoConfirmado.esEnvio">Gracias por tu compra. Te enviaremos tu pedido lo más pronto posible — la guía y todos los detalles llegarán a tu correo registrado.</template>
+            <template v-else>Hemos recibido tu solicitud correctamente. Te enviaremos los detalles a tu correo registrado.</template>
+          </p>
 
           <div class="result-box">
             <div class="d-flex justify-between mb-16">
@@ -159,6 +197,10 @@ function reintentar() {
             <p class="mb-16 text-primary font-main fw-800">{{ formatCOP(pedidoConfirmado.total) }}</p>
             <p class="text-muted" style="font-size:0.78rem;">MÉTODO</p>
             <p>{{ pedidoConfirmado.metodo }}</p>
+            <template v-if="pedidoConfirmado.esEnvio">
+              <p class="text-muted" style="font-size:0.78rem;margin-top:16px;">ENVÍO</p>
+              <p>Se paga aparte, directo a la transportadora al recibir tu pedido.</p>
+            </template>
           </div>
 
           <div class="d-flex gap-16" style="justify-content:center;flex-wrap:wrap;">
@@ -218,46 +260,79 @@ function reintentar() {
                     <input v-model="direccion.cedula" class="form-control" required />
                   </div>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                  <div class="form-group">
-                    <label class="form-label required">Departamento</label>
-                    <select v-model="direccion.departamento" class="form-control" required>
-                      <option value="" disabled>Seleccionar...</option>
-                      <option v-for="depto in DEPARTAMENTOS" :key="depto" :value="depto">{{ depto }}</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label required">Ciudad</label>
-                    <select v-model="direccion.ciudad" class="form-control" required :disabled="!direccion.departamento">
-                      <option value="" disabled>{{ direccion.departamento ? 'Seleccionar...' : 'Elige primero un departamento' }}</option>
-                      <option v-for="mun in municipiosDisponibles" :key="mun" :value="mun">{{ mun }}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label class="form-label required">Dirección exacta</label>
-                  <input v-model="direccion.direccionExacta" class="form-control" placeholder="Calle 5 # 12-34, Barrio Centro" required />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Complemento (opcional)</label>
-                  <input v-model="direccion.complemento" class="form-control" placeholder="Apto, oficina, piso..." />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Instrucciones de entrega</label>
-                  <textarea v-model="direccion.instrucciones" class="form-control" rows="2"></textarea>
+                <h3 class="font-main fw-700 mb-16" style="font-size:1rem;">¿A dónde entregamos?</h3>
+                <div class="d-flex gap-16 mb-16" style="flex-wrap:wrap;">
+                  <label v-if="tieneDireccionGuardada" class="shipping-option" :class="{ selected: fuenteDireccion === 'cuenta' }">
+                    <span><input type="radio" :checked="fuenteDireccion === 'cuenta'" @change="elegirFuenteDireccion('cuenta')" /> Mi dirección guardada</span>
+                  </label>
+                  <label class="shipping-option" :class="{ selected: fuenteDireccion === 'otra' }">
+                    <span><input type="radio" :checked="fuenteDireccion === 'otra'" @change="elegirFuenteDireccion('otra')" /> Entregar en otra dirección</span>
+                  </label>
                 </div>
 
+                <div v-if="fuenteDireccion === 'cuenta'" class="mb-24" style="background:var(--off-white);border-radius:var(--radius-sm);padding:16px;">
+                  <p style="font-size:0.9rem;line-height:1.6;">
+                    {{ auth.usuario?.direccion }}<br />
+                    {{ auth.usuario?.ciudad }}, {{ auth.usuario?.departamento }}
+                  </p>
+                  <RouterLink to="/perfil" class="text-primary" style="font-size:0.82rem;">¿No es correcta? Actualízala en tu perfil</RouterLink>
+                </div>
+                <template v-else>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                      <label class="form-label required">Departamento</label>
+                      <select v-model="direccion.departamento" class="form-control" required>
+                        <option value="" disabled>Seleccionar...</option>
+                        <option v-for="depto in DEPARTAMENTOS" :key="depto" :value="depto">{{ depto }}</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label required">Ciudad</label>
+                      <select v-model="direccion.ciudad" class="form-control" required :disabled="!direccion.departamento">
+                        <option value="" disabled>{{ direccion.departamento ? 'Seleccionar...' : 'Elige primero un departamento' }}</option>
+                        <option v-for="mun in municipiosDisponibles" :key="mun" :value="mun">{{ mun }}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label required">Dirección exacta</label>
+                    <input v-model="direccion.direccionExacta" class="form-control" placeholder="Calle 5 # 12-34, Barrio Centro" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Complemento (opcional)</label>
+                    <input v-model="direccion.complemento" class="form-control" placeholder="Apto, oficina, piso..." />
+                  </div>
+                </template>
+
                 <h3 class="font-main fw-700 mb-16" style="font-size:1rem;">Método de envío</h3>
-                <div class="d-flex gap-16 mb-24" style="flex-wrap:wrap;">
-                  <label class="shipping-option" :class="{ selected: metodoEnvio === 'estandar' }">
-                    <span><input v-model="metodoEnvio" type="radio" value="estandar" /> Envío estándar &middot; 3 a 5 días</span>
-                    <strong>{{ cart.total >= 150000 ? 'Gratis' : '$8.000' }}</strong>
+                <div class="alert alert-success mb-16">
+                  <i class="ri-truck-line"></i>
+                  <span>Por compras superiores a $400.000, el envío es gratis a todo el país.</span>
+                </div>
+                <div class="d-flex gap-16 mb-16" style="flex-wrap:wrap;">
+                  <label class="shipping-option" :class="{ selected: metodoEnvio === 'envio' }">
+                    <span><input v-model="metodoEnvio" type="radio" value="envio" /> Envío contraentrega</span>
                   </label>
                   <label class="shipping-option" :class="{ selected: metodoEnvio === 'recogida' }">
                     <span><input v-model="metodoEnvio" type="radio" value="recogida" /> Recogida en tienda</span>
-                    <strong class="text-primary">Gratis</strong>
                   </label>
                 </div>
+                <div v-if="metodoEnvio === 'envio'" class="alert alert-warning mb-24" style="flex-direction:column;align-items:stretch;">
+                  <div style="display:flex;gap:10px;">
+                    <i class="ri-error-warning-line"></i>
+                    <span>
+                      El producto lo pagas ahora, en el siguiente paso. El costo del envío se paga aparte, directo a la transportadora cuando te entreguen el pedido.
+                      Te enviaremos la guía a tu correo registrado apenas lo despachemos.
+                    </span>
+                  </div>
+                  <a :href="`https://wa.me/${catalog.configuracion.whatsapp}?text=Hola!%20Tengo%20una%20duda%20sobre%20mi%20pedido`" target="_blank" rel="noopener" class="btn btn-success" style="margin-top:10px;align-self:flex-start;">
+                    <i class="ri-whatsapp-line"></i> ¿Dudas? Escríbenos al {{ catalog.configuracion.telefono }}
+                  </a>
+                </div>
+                <p v-else class="text-muted mb-24" style="font-size:0.8rem;display:flex;align-items:center;gap:8px;">
+                  <i class="ri-mail-line text-primary"></i>
+                  <span>Te enviaremos la confirmación de tu pedido a tu correo registrado.</span>
+                </p>
 
                 <button type="submit" class="btn btn-primary btn-lg btn-block">Continuar al Método de Pago <i class="ri-arrow-right-line"></i></button>
               </form>
@@ -306,7 +381,8 @@ function reintentar() {
                 </label>
 
                 <p class="text-muted mb-24" style="font-size:0.8rem;display:flex;align-items:center;gap:8px;margin-top:12px;">
-                  <i class="ri-shield-check-line text-primary"></i> Tu información financiera está protegida con cifrado SSL de 256 bits.
+                  <i class="ri-shield-check-line text-primary"></i>
+                  <span>Tu información financiera está protegida con cifrado SSL de 256 bits.</span>
                 </p>
 
                 <div class="d-flex gap-12">
@@ -358,8 +434,9 @@ function reintentar() {
               <span class="fw-700">{{ formatCOP(item.precio_venta * item.cantidad) }}</span>
             </div>
             <div class="order-summary-row"><span>Subtotal</span><span>{{ formatCOP(cart.total) }}</span></div>
-            <div class="order-summary-row"><span>Envío</span><span>{{ costoEnvio === 0 ? 'Gratis' : formatCOP(costoEnvio) }}</span></div>
+            <div v-if="metodoEnvio === 'recogida'" class="order-summary-row"><span>Envío</span><span>Gratis</span></div>
             <div class="order-summary-row total"><span>Total</span><span class="value">{{ formatCOP(total) }}</span></div>
+            <p v-if="metodoEnvio === 'envio'" class="text-muted" style="font-size:0.78rem;margin-top:-8px;">El envío se paga aparte, directo a la transportadora al recibir tu pedido.</p>
           </aside>
         </div>
       </template>

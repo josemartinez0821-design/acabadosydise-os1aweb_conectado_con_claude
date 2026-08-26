@@ -62,10 +62,23 @@ watch(
   }
 )
 
+// Mismo criterio que ProductoFormModal.vue: 0 es una duración válida (ej. una asesoría rápida),
+// no cuenta como "vacío" - solo null/undefined sí.
+const CAMPOS_OBLIGATORIOS = [
+  { campo: 'nombre_servicio', label: 'Nombre del servicio' },
+  { campo: 'imagen_url', label: 'Imagen (URL)' },
+  { campo: 'descripcion', label: 'Descripción' },
+  { campo: 'duracion_estimada_horas', label: 'Duración estimada' },
+]
+
 async function guardar() {
-  if (!form.value.nombre_servicio?.trim()) {
-    error.value = 'El nombre del servicio es obligatorio.'
-    return
+  for (const { campo, label } of CAMPOS_OBLIGATORIOS) {
+    const valor = form.value[campo]
+    const vacio = valor === null || valor === undefined || (typeof valor === 'string' && !valor.trim())
+    if (vacio) {
+      error.value = `Llena el campo "${label}" antes de guardar.`
+      return
+    }
   }
   if (!form.value.precio || form.value.precio <= 0) {
     error.value = 'Ingresa un precio válido.'
@@ -111,19 +124,19 @@ async function guardar() {
             </div>
 
             <div class="form-group">
-              <label class="form-label">Tipo de servicio</label>
-              <select v-model="form.tipo_servicio" class="form-control">
+              <label class="form-label required">Tipo de servicio</label>
+              <select v-model="form.tipo_servicio" class="form-control" required>
                 <option v-for="t in TIPOS" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Duración estimada (horas)</label>
-              <input v-model.number="form.duracion_estimada_horas" type="number" min="0" class="form-control" placeholder="Ej. 4" />
+              <label class="form-label required">Duración estimada (horas)</label>
+              <input v-model.number="form.duracion_estimada_horas" type="number" min="0" class="form-control" placeholder="Ej. 4" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Se cobra</label>
-              <select v-model="form.tipo_precio" class="form-control">
+              <label class="form-label required">Se cobra</label>
+              <select v-model="form.tipo_precio" class="form-control" required>
                 <option v-for="t in TIPOS_PRECIO" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
             </div>
@@ -133,13 +146,13 @@ async function guardar() {
             </div>
 
             <div class="form-group full">
-              <label class="form-label">Imagen (URL)</label>
-              <input v-model="form.imagen_url" type="text" class="form-control" placeholder="https://..." />
+              <label class="form-label required">Imagen (URL)</label>
+              <input v-model="form.imagen_url" type="text" class="form-control" placeholder="https://..." required />
             </div>
 
             <div class="form-group full">
-              <label class="form-label">Descripción</label>
-              <textarea v-model="form.descripcion" class="form-control" rows="3" placeholder="Descripción del servicio..."></textarea>
+              <label class="form-label required">Descripción</label>
+              <textarea v-model="form.descripcion" class="form-control" rows="3" placeholder="Descripción del servicio..." required></textarea>
             </div>
 
             <div class="form-group full">

@@ -38,6 +38,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/servicios").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/servicios/*").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/servicios/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/promociones").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/promociones/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/promociones/*").hasRole("ADMIN")
                 // Cotizaciones no es catálogo público - cualquier usuario logueado puede crear/ver/
                 // actuar sobre lo suyo, pero "esto es tuyo o eres admin" lo decide CotizacionService,
                 // no esta regla (aquí solo se exige estar autenticado, sin importar el rol).
@@ -52,6 +55,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/ventas/*/estado").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/ventas/*/notas").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/clientes").hasRole("ADMIN")
+                // Perfil propio (datos, foto, contraseña) - ownership (uno mismo o admin, salvo
+                // contraseña que es siempre uno mismo) lo decide UsuarioService, aquí solo se exige
+                // estar autenticado, igual que cotizaciones/ventas.
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/avatar").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/password").authenticated()
                 // PQRS: privado por usuario (radicar/listar), gestionar (cambiar estado/responder)
                 // es solo-admin - mismo patrón que estado/notas de ventas.
                 .requestMatchers(HttpMethod.GET, "/api/pqrs").authenticated()

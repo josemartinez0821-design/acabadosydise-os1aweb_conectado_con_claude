@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Refleja la tabla `usuarios` + `roles` de la BD (id_rol: 1 Administrador, 2 Cliente, 3 Vendedor)
+// Refleja la tabla `usuarios` + `roles` de la BD (id_rol: 1 Administrador, 2 Cliente - el rol
+// "Vendedor" que existió como id_rol=3 se quitó de la BD el 25/08/2026, nunca tuvo un requisito
+// funcional real detrás, ver REQUISITOS FUNCIONALES Y NO FUNCIONALES.pdf: solo describe
+// Administrador y Cliente, y ningún usuario real llegó a tener ese rol asignado)
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || null)
   const usuario = ref(JSON.parse(localStorage.getItem('usuario') || 'null'))

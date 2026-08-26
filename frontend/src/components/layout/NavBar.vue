@@ -5,6 +5,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useCartStore } from '../../stores/cart'
 import { usePqrsStore } from '../../stores/pqrs'
 import { useCenterMessage } from '../../composables/useCenterMessage'
+import logoUrl from '../../assets/logo.png'
 
 const auth = useAuthStore()
 const cart = useCartStore()
@@ -29,9 +30,17 @@ function closeMobile() {
   mobileOpen.value = false
 }
 
+// Mismo criterio que el saludo de bienvenida (LoginView.vue): frase al azar en vez de un texto
+// fijo siempre igual. El nombre se guarda antes de logout() porque este limpia auth.usuario.
+const FRASES_DESPEDIDA = [
+  (n) => `¡Hasta pronto, ${n}! Gracias por tu visita.`,
+  (n) => `Sesión cerrada. Te esperamos de vuelta pronto, ${n}.`,
+  (n) => `¡Nos vemos pronto, ${n}! Que tengas un excelente día.`,
+]
 function logout() {
+  const nombre = auth.usuario?.nombre?.split(' ')[0] || ''
   auth.logout()
-  mostrarMensajeCentral('Has cerrado sesión correctamente.', {
+  mostrarMensajeCentral(FRASES_DESPEDIDA[Math.floor(Math.random() * FRASES_DESPEDIDA.length)](nombre), {
     icono: 'ri-shield-check-line',
     tipo: 'despedida',
     duracion: 2200,
@@ -43,8 +52,8 @@ function logout() {
   <nav class="navbar" :class="{ scrolled }">
     <div class="navbar-inner">
       <RouterLink to="/" class="navbar-brand">
-        <span class="brand-icon"><i class="ri-paint-brush-line"></i></span>
-        ACABADOS <span class="brand-highlight">&nbsp;1A</span>
+        <span class="brand-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+        ACABADOS Y DISEÑOS <span class="brand-highlight">&nbsp;1A</span>
       </RouterLink>
 
       <div class="navbar-nav">

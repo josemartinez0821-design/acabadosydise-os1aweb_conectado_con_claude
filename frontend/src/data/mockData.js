@@ -10,8 +10,7 @@ export const MockData = {
   // ── ROLES ──────────────────────────────────────────────────
   roles: [
     { id_rol: 1, nombre_rol: 'Administrador', descripcion: 'Acceso total al sistema' },
-    { id_rol: 2, nombre_rol: 'Cliente', descripcion: 'Puede comprar y ver su historial' },
-    { id_rol: 3, nombre_rol: 'Vendedor', descripcion: 'Empleado que gestiona ventas' }
+    { id_rol: 2, nombre_rol: 'Cliente', descripcion: 'Puede comprar y ver su historial' }
   ],
 
   // ── USUARIOS ───────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { useToast } from '../composables/useToast'
 import { MockData } from '../data/mockData'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
 import api from '../services/api'
+import logoUrl from '../assets/logo.png'
 
 // Borrador del formulario: al hacer clic en "términos y condiciones" o "política de privacidad"
 // (RouterLink normal, no target="_blank") Vue destruye este componente por completo y lo vuelve a
@@ -284,8 +285,8 @@ async function reenviarCodigo() {
     <div class="auth-form-panel">
       <div class="auth-form-inner">
         <div class="auth-form-logo">
-          <span class="brand-icon"><i class="ri-paint-brush-line"></i></span>
-          ACABADOS <span class="text-primary">1A</span>
+          <span class="brand-icon"><img :src="logoUrl" alt="Acabados y Diseños 1A" /></span>
+          ACABADOS Y DISEÑOS <span class="text-primary">1A</span>
         </div>
 
         <div class="auth-form-top" v-if="paso === 1">
