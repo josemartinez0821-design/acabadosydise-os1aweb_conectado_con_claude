@@ -276,6 +276,13 @@ async function confirmarDespacho() {
 const pedidoACancelar = ref(null)
 const tipoAccionCancelar = computed(() => (pedidoACancelar.value?.estado === 'entregado' ? 'devuelto' : 'cancelado'))
 const motivoCancelar = ref('')
+// Suma de lo que ya se cobró de verdad (pagos "completado") en este pedido - hoy el sistema no
+// devuelve esa plata solo (no hay pasarela real conectada), así que el admin necesita ver el
+// monto para saber cuánto tiene que coordinar por fuera con el cliente. Antes esta cifra solo
+// estaba visible en el historial de pagos del detalle expandido, no en el momento de confirmar.
+const montoReembolsoPendiente = computed(() =>
+  (pedidoACancelar.value?.pagos || []).filter((p) => p.estado === 'completado').reduce((s, p) => s + p.valor, 0)
+)
 function abrirCancelarPedido(venta) {
   pedidoACancelar.value = venta
   motivoCancelar.value = ''
@@ -725,6 +732,10 @@ async function guardarVentaManual() {
             {{ tipoAccionCancelar === 'devuelto' ? 'apenas confirmes que el cliente ya lo regresó' : '' }},
             y le llega un correo al cliente avisándole.
           </p>
+          <div v-if="montoReembolsoPendiente > 0" class="alert alert-warning" style="text-align:left;">
+            <i class="ri-money-dollar-circle-line"></i>
+            <span>Este pedido tiene <strong>{{ formatCOP(montoReembolsoPendiente) }}</strong> ya cobrados. El sistema no lo devuelve solo — al confirmar, queda marcado como pendiente de reembolso y debes coordinar la devolución del dinero directamente con el cliente.</span>
+          </div>
           <form @submit.prevent="confirmarCancelacion" style="text-align:left;">
             <div class="form-group">
               <label class="form-label required">Motivo</label>

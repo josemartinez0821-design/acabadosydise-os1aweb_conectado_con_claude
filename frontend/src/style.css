@@ -438,6 +438,15 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 .service-card-rating span { color: var(--text-muted); font-weight: 500; }
 .service-card-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.76rem; color: var(--text-muted); margin-bottom: 14px; }
 .service-card-meta span { display: flex; align-items: center; gap: 5px; }
+
+/* Nuestros Servicios (Home): la descripción de cada servicio varía de largo, así que las
+   tarjetas del carrusel quedaban de distinta altura una junto a otra. Se estiran a la altura
+   del slide más alto y el precio/botón se ancla siempre abajo, sin importar cuánto texto tenga. */
+.featured-services-swiper .swiper-wrapper { align-items: stretch; }
+.featured-services-swiper .swiper-slide { height: auto; align-self: stretch; }
+.featured-services-swiper .service-card { height: 100%; display: flex; flex-direction: column; }
+.featured-services-swiper .service-card-body { flex: 1; display: flex; flex-direction: column; }
+.featured-services-swiper .service-card-body > .d-flex { margin-top: auto; }
 .service-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
 
 /* ── SERVICIOS: hero + tarjeta de estadísticas flotante ───────── */
@@ -1730,17 +1739,20 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 /* Swipers sobre fondo claro: los puntos necesitan su propio color (no blanco)
    y espacio reservado abajo para no quedar encima de las tarjetas. */
 .swiper.featured-products-swiper,
+.swiper.featured-services-swiper,
 .swiper.testimonials-swiper,
 .swiper.carrito-productos-swiper {
   padding-bottom: 40px;
 }
 .featured-products-swiper .swiper-pagination-bullet,
+.featured-services-swiper .swiper-pagination-bullet,
 .testimonials-swiper .swiper-pagination-bullet,
 .carrito-productos-swiper .swiper-pagination-bullet {
   background: var(--border);
   opacity: 1;
 }
 .featured-products-swiper .swiper-pagination-bullet-active,
+.featured-services-swiper .swiper-pagination-bullet-active,
 .testimonials-swiper .swiper-pagination-bullet-active,
 .carrito-productos-swiper .swiper-pagination-bullet-active {
   background: var(--primary);
