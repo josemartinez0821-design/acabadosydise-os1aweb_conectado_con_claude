@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
 import { useToast } from '../composables/useToast'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
+import api from '../services/api'
 
 const auth = useAuthStore()
 const catalog = useCatalogStore()
@@ -41,10 +42,15 @@ watch(() => form.value.departamento, () => {
 
 async function enviarMensaje() {
   enviando.value = true
-  await new Promise((r) => setTimeout(r, 500))
-  enviando.value = false
-  showToast('¡Mensaje enviado! Te responderemos en máximo 24 horas hábiles.', 'success')
-  form.value.mensaje = ''
+  try {
+    await api.post('/contacto', { ...form.value })
+    showToast('¡Mensaje enviado! Te responderemos en máximo 24 horas hábiles.', 'success')
+    form.value.mensaje = ''
+  } catch (e) {
+    showToast(e.response?.data?.mensaje || 'No se pudo enviar el mensaje. Intenta de nuevo.', 'danger')
+  } finally {
+    enviando.value = false
+  }
 }
 
 // ── Horario: abierto/cerrado en vivo, Lunes a Sábado 8am-6pm (según configuración real) ──

@@ -236,6 +236,28 @@ public class EmailService {
             + htmlCerrar();
     }
 
+    // Se dispara desde ContactoService.enviar() - a diferencia de los otros correos (siempre
+    // salen del negocio hacia un cliente), este entra: alguien llenó el formulario público de
+    // Contacto y el negocio necesita verlo. setReplyTo() con el correo de quien escribió, así
+    // quien lo reciba puede darle "Responder" directamente sin copiar el correo a mano.
+    @Async
+    public void enviarMensajeContacto(String destinatario, String motivo, String nombre, String telefono,
+                                       String emailRemitente, String ciudad, String departamento, String mensaje) {
+        SimpleMailMessage correo = new SimpleMailMessage();
+        correo.setTo(destinatario);
+        correo.setReplyTo(emailRemitente);
+        correo.setSubject("Nuevo mensaje de contacto (" + motivo + ") - " + nombre);
+        String ubicacion = (ciudad != null && !ciudad.isBlank()) ? ciudad + (departamento != null && !departamento.isBlank() ? ", " + departamento : "") : null;
+        correo.setText("Nuevo mensaje desde el formulario de Contacto del sitio.\n\n"
+            + "Motivo: " + motivo + "\n"
+            + "Nombre: " + nombre + "\n"
+            + "Teléfono: " + telefono + "\n"
+            + "Correo: " + emailRemitente + "\n"
+            + (ubicacion != null ? "Ubicación: " + ubicacion + "\n" : "")
+            + "\nMensaje:\n" + mensaje);
+        mailSender.send(correo);
+    }
+
     private void enviar(String destinatario, String asunto, String cuerpo) {
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(destinatario);
