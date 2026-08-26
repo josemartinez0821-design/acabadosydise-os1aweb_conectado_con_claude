@@ -8,4 +8,5 @@ import java.util.List;
 public interface CotizacionRepository extends JpaRepository<Cotizacion, Integer> {
     List<Cotizacion> findByUsuarioIdUsuario(Integer idUsuario);
     boolean existsByNumeroCotizacion(String numeroCotizacion);
+    List<Cotizacion> findByEstadoAndRecordatorioEnviadoFalse(Cotizacion.Estado estado);
 }

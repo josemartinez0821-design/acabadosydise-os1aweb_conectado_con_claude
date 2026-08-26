@@ -90,13 +90,10 @@ function fechaLarga(fecha) {
 }
 
 // Cuenta regresiva de validez, visible siempre desde que se aprueba (no solo escondida en los
-// últimos días) — ver TODO más abajo sobre el recordatorio por correo a los 5 días, que todavía
-// no existe porque el sitio no tiene backend/envío de correos. Devuelve también el % transcurrido
-// de los `validez_dias` para la barra de progreso.
-// TODO(backend): cuando haya backend real con envío de correos, agregar un job que revise a diario
-// las cotizaciones "aprobada" y, quede exactamente 5 días para vencer (diasParaVencer === 5), le
-// mande al cliente un correo automático recordándole que pague/confirme la cotización que el admin
-// ya aprobó. Hoy esa fecha límite solo se ve si el cliente entra al sitio.
+// últimos días). Devuelve también el % transcurrido de los `validez_dias` para la barra de progreso.
+// El recordatorio por correo a los 5 días ya es real (backend/CotizacionService.java,
+// enviarRecordatoriosVencimiento, job diario) — este cálculo de acá es solo lo que ve el cliente
+// si entra al sitio, es independiente del correo.
 function diasRestantesInfo(cot) {
   if (cot.estado !== 'aprobada' || cotizStore.estaVencida(cot)) return null
   const dias = cotizStore.diasParaVencer(cot)

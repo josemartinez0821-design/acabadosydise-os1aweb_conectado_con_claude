@@ -57,17 +57,8 @@ public class EmailService {
     // --accent #F39C12), mismo patrón de "chip blanco redondeado" que ya usa el logo en el navbar/
     // topbar del checkout (ver .checkout-logo en style.css) - no es una identidad nueva.
     private String plantillaVerificacionHtml(String codigo) {
-        return "<!doctype html><html><body style=\"margin:0;padding:0;background-color:#F0F1F4;\">"
-            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F1F4;padding:32px 16px;font-family:'Nunito',Arial,sans-serif;\">"
-            + "<tr><td align=\"center\">"
-            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:480px;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);\">"
-            // Header
-            + "<tr><td style=\"background-color:#1A1A2E;padding:28px 32px;text-align:center;\">"
-            + "<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:0 auto 12px;\"><tr><td style=\"background-color:#ffffff;border-radius:10px;padding:6px;\">"
-            + "<img src=\"cid:logoAcabados\" width=\"48\" height=\"48\" alt=\"Acabados y Diseños 1A\" style=\"display:block;border-radius:6px;\">"
-            + "</td></tr></table>"
-            + "<span style=\"color:#ffffff;font-size:15px;font-weight:800;letter-spacing:0.5px;\">ACABADOS Y DISEÑOS <span style=\"color:#F39C12;\">1A</span></span>"
-            + "</td></tr>"
+        return htmlAbrir()
+            + htmlHeader()
             // Título + saludo
             + "<tr><td style=\"padding:36px 32px 6px;text-align:center;\">"
             + "<h1 style=\"margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Verifica tu cuenta</h1>"
@@ -92,12 +83,41 @@ public class EmailService {
             + "Si no solicitaste este código, puedes ignorar este mensaje. No compartas este código con nadie."
             + "</td></tr></table>"
             + "</td></tr>"
-            // Pie
-            + "<tr><td style=\"background-color:#1A1A2E;padding:22px 32px;text-align:center;\">"
+            + htmlFooter()
+            + htmlCerrar();
+    }
+
+    // Envoltorio exterior (fondo gris + tarjeta blanca centrada) compartido por todos los
+    // correos con plantilla HTML — separado de htmlHeader()/htmlFooter() porque cada correo
+    // pone contenido distinto entre header y footer, pero el marco siempre es el mismo.
+    private String htmlAbrir() {
+        return "<!doctype html><html><body style=\"margin:0;padding:0;background-color:#F0F1F4;\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#F0F1F4;padding:32px 16px;font-family:'Nunito',Arial,sans-serif;\">"
+            + "<tr><td align=\"center\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:480px;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);\">";
+    }
+
+    private String htmlCerrar() {
+        return "</table></td></tr></table></body></html>";
+    }
+
+    // Chip blanco redondeado con el logo (cid:logoAcabados, adjuntado inline por cada método
+    // @Async que use esta plantilla) + nombre de marca sobre fondo navy — mismo header en todo
+    // correo HTML del proyecto, para que se vean como un solo sistema, no plantillas sueltas.
+    private String htmlHeader() {
+        return "<tr><td style=\"background-color:#1A1A2E;padding:28px 32px;text-align:center;\">"
+            + "<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:0 auto 12px;\"><tr><td style=\"background-color:#ffffff;border-radius:10px;padding:6px;\">"
+            + "<img src=\"cid:logoAcabados\" width=\"48\" height=\"48\" alt=\"Acabados y Diseños 1A\" style=\"display:block;border-radius:6px;\">"
+            + "</td></tr></table>"
+            + "<span style=\"color:#ffffff;font-size:15px;font-weight:800;letter-spacing:0.5px;\">ACABADOS Y DISEÑOS <span style=\"color:#F39C12;\">1A</span></span>"
+            + "</td></tr>";
+    }
+
+    private String htmlFooter() {
+        return "<tr><td style=\"background-color:#1A1A2E;padding:22px 32px;text-align:center;\">"
             + "<p style=\"margin:0 0 3px;font-size:13px;color:#ffffff;font-weight:700;\">Acabados y Diseños 1A</p>"
             + "<p style=\"margin:0;font-size:12px;color:#a9a9c0;\">Grandes ideas que inspiran grandes Diseños</p>"
-            + "</td></tr>"
-            + "</table></td></tr></table></body></html>";
+            + "</td></tr>";
     }
 
     @Async
@@ -160,6 +180,60 @@ public class EmailService {
         enviar(destinatario,
             (esDevolucion ? "Devolución registrada" : "Pedido cancelado") + " - " + numeroVenta + " - Acabados y Diseños 1A",
             cuerpo);
+    }
+
+    // Se dispara desde CotizacionService.enviarRecordatoriosVencimiento() (job diario) cuando a
+    // una cotización aprobada le quedan exactamente 5 días antes de vencer. Plantilla HTML igual
+    // que la de verificación (pedido explícito del usuario: "más bonito elegante y no tan
+    // genérico") — reusa htmlAbrir/htmlHeader/htmlFooter en vez de duplicar el marco de tabla.
+    @Async
+    public void enviarRecordatorioCotizacion(String destinatario, String numeroCotizacion, String totalFormateado) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setTo(destinatario);
+            helper.setSubject("Tu cotización " + numeroCotizacion + " está por vencer - Acabados y Diseños 1A");
+            helper.setText(plantillaRecordatorioTexto(numeroCotizacion, totalFormateado), plantillaRecordatorioHtml(numeroCotizacion, totalFormateado));
+            helper.addInline("logoAcabados", new ClassPathResource("email/logo-acabados.png"));
+            mailSender.send(mensaje);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo enviar el correo de recordatorio de cotización.", e);
+        }
+    }
+
+    private String plantillaRecordatorioTexto(String numeroCotizacion, String totalFormateado) {
+        return "¡Hola! Tu cotización " + numeroCotizacion + " por " + totalFormateado + " está por vencer.\n\n"
+            + "Te quedan 5 días para confirmar y pagar antes de que pierda su validez. "
+            + "Ingresa a tu cuenta en Acabados y Diseños 1A para revisarla y continuar.\n\n"
+            + "Si tienes dudas, escríbenos por WhatsApp y con gusto te ayudamos.";
+    }
+
+    private String plantillaRecordatorioHtml(String numeroCotizacion, String totalFormateado) {
+        return htmlAbrir()
+            + htmlHeader()
+            + "<tr><td style=\"padding:36px 32px 6px;text-align:center;\">"
+            + "<h1 style=\"margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Tu cotización está por vencer</h1>"
+            + "<p style=\"margin:0 0 4px;font-size:15px;color:#444444;line-height:1.6;\">¡Hola! Queremos recordarte que tu cotización sigue esperando por ti.</p>"
+            + "<p style=\"margin:0 0 8px;font-size:15px;color:#444444;line-height:1.6;\">Te quedan <strong>5 días</strong> para confirmarla y pagarla antes de que pierda su validez.</p>"
+            + "</td></tr>"
+            // Tarjeta con el resumen de la cotización
+            + "<tr><td style=\"padding:20px 32px 4px;\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border:1.5px solid #C0392B;border-radius:12px;\">"
+            + "<tr><td style=\"padding:22px 20px;text-align:center;\">"
+            + "<p style=\"margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:2px;color:#C0392B;text-transform:uppercase;font-family:Arial,sans-serif;\">Cotización</p>"
+            + "<p style=\"margin:0 0 14px;font-size:26px;font-weight:800;letter-spacing:1px;color:#1A1A2E;font-family:'Nunito',Arial,sans-serif;\">" + numeroCotizacion + "</p>"
+            + "<p style=\"margin:0;font-size:15px;color:#444444;\">Total estimado: <strong style=\"color:#1A1A2E;\">" + totalFormateado + "</strong></p>"
+            + "</td></tr></table>"
+            + "</td></tr>"
+            // Aviso de vencimiento (mismo tono ámbar que otros avisos del sitio)
+            + "<tr><td style=\"padding:24px 32px 32px;\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;\">"
+            + "<tr><td style=\"padding:14px 16px;font-size:13px;color:#8a5c06;line-height:1.5;\">"
+            + "Después de esta fecha, la cotización dejará de estar disponible para pagar. Ingresa a tu cuenta en Acabados y Diseños 1A para revisarla, o escríbenos por WhatsApp si necesitas ayuda."
+            + "</td></tr></table>"
+            + "</td></tr>"
+            + htmlFooter()
+            + htmlCerrar();
     }
 
     private void enviar(String destinatario, String asunto, String cuerpo) {

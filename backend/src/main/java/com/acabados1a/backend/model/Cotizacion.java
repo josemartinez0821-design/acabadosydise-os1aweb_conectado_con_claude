@@ -51,4 +51,9 @@ public class Cotizacion {
 
     @Column(name = "fecha_aprobacion")
     private LocalDate fechaAprobacion;
+
+    // Evita que CotizacionService.enviarRecordatoriosVencimiento() mande el mismo correo dos
+    // veces si el job corre más de una vez el mismo día (reinicio del server, etc.).
+    @Column(name = "recordatorio_enviado", nullable = false)
+    private Boolean recordatorioEnviado = false;
 }

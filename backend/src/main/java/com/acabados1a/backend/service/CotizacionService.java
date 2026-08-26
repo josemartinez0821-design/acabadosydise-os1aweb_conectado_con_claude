@@ -5,12 +5,16 @@ import com.acabados1a.backend.dto.CotizacionRequest;
 import com.acabados1a.backend.model.*;
 import com.acabados1a.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 // Cabecera + ítems (productos/servicios) se crean juntos en varias tablas - @Transactional a
@@ -27,6 +31,7 @@ public class CotizacionService {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final ServicioRepository servicioRepository;
+    private final EmailService emailService;
 
     public List<Cotizacion> listarParaUsuario(String email, boolean esAdmin) {
         Usuario usuario = resolverUsuario(email);
@@ -130,6 +135,27 @@ public class CotizacionService {
         }
 
         return cotizacionRepository.save(cotizacion);
+    }
+
+    // Job diario: le avisa por correo al cliente cuando a una cotización aprobada le quedan
+    // exactamente 5 días antes de vencer (validez_dias contados desde fecha_aprobacion). Se
+    // envía una sola vez por cotización (recordatorioEnviado) - sin eso, si el job corriera dos
+    // veces el mismo día (reinicio del server, etc.) el cliente recibiría el correo duplicado.
+    @Scheduled(cron = "0 0 8 * * *")
+    public void enviarRecordatoriosVencimiento() {
+        NumberFormat formatoCOP = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
+        formatoCOP.setMaximumFractionDigits(0);
+
+        for (Cotizacion c : cotizacionRepository.findByEstadoAndRecordatorioEnviadoFalse(Cotizacion.Estado.aprobada)) {
+            if (c.getFechaAprobacion() == null) continue;
+            int validez = c.getValidezDias() != null ? c.getValidezDias() : 15;
+            long diasRestantes = ChronoUnit.DAYS.between(LocalDate.now(), c.getFechaAprobacion().plusDays(validez));
+            if (diasRestantes == 5) {
+                emailService.enviarRecordatorioCotizacion(c.getUsuario().getEmail(), c.getNumeroCotizacion(), formatoCOP.format(c.getTotalEstimado()));
+                c.setRecordatorioEnviado(true);
+                cotizacionRepository.save(c);
+            }
+        }
     }
 
     private Usuario resolverUsuario(String email) {
