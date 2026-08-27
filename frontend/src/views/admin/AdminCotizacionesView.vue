@@ -65,6 +65,26 @@ function ciudadCliente(usuario) {
   return usuario?.ciudad ? `${usuario.ciudad}, ${usuario.departamento}` : 'Sin registrar'
 }
 
+// Ubicación de ESTA solicitud (puede ser distinta de la dirección registrada del cliente) - con
+// fallback al perfil para cotizaciones creadas antes de que este campo existiera.
+function ubicacionSolicitud(cot) {
+  return cot.ciudad ? `${cot.ciudad}, ${cot.departamento}` : ciudadCliente(cot.usuario)
+}
+
+// Igual que fueraDeZona() en CotizacionesView.vue (cliente) pero contra los servicios ya guardados
+// de la cotización, para resaltarlo de inmediato en la lista del admin sin tener que abrir el
+// detalle. Solo aplica si algún ítem es un servicio - los productos no tienen zona de cobertura.
+function fueraDeZonaAdmin(cot) {
+  const ciudad = cot.ciudad || cot.usuario?.ciudad
+  if (!ciudad) return false
+  return (cot.servicios || []).some((s) => {
+    const servicio = catalog.getServiceById(s.id_servicio)
+    if (!servicio?.zona_cobertura) return false
+    const zonas = servicio.zona_cobertura.split(',').map((z) => z.trim().toLowerCase())
+    return !zonas.includes(ciudad.trim().toLowerCase())
+  })
+}
+
 const listaOrdenada = computed(() =>
   [...cotizStore.cotizaciones].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
 )
@@ -358,6 +378,11 @@ function seleccionarDia(dia) {
           </span>
         </div>
 
+        <div v-if="fueraDeZonaAdmin(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
+          <i class="ri-map-pin-range-line"></i>
+          <div><span>Fuera de nuestra zona habitual</span><strong>Evaluar distancia / costo de desplazamiento</strong></div>
+        </div>
+
         <div v-if="extraerFechaDeseada(cot.observaciones)" class="cotiz-fecha-destacada">
           <i class="ri-calendar-event-fill"></i>
           <div><span>Fecha elegida por el cliente</span><strong>{{ formatDate(extraerFechaDeseada(cot.observaciones)) }}</strong></div>
@@ -373,7 +398,7 @@ function seleccionarDia(dia) {
 
         <div class="cotiz-card-meta">
           <div class="cotiz-card-meta-item destacado"><span>Total estimado</span><strong>{{ formatCOP(cot.total_estimado) }}</strong></div>
-          <div class="cotiz-card-meta-item"><span>Ciudad del cliente</span><strong>{{ ciudadCliente(cot.usuario) }}</strong></div>
+          <div class="cotiz-card-meta-item"><span>Ubicación de la solicitud</span><strong>{{ ubicacionSolicitud(cot) }}</strong></div>
           <div class="cotiz-card-meta-item"><span>Validez</span><strong>{{ cot.validez_dias }} días</strong></div>
         </div>
 
@@ -678,6 +703,11 @@ function seleccionarDia(dia) {
 .cotiz-fecha-destacada > i { font-size: 1.5rem; color: var(--primary); flex-shrink: 0; }
 .cotiz-fecha-destacada span { display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
 .cotiz-fecha-destacada strong { display: block; font-family: var(--font-main); font-weight: 800; font-size: 1.05rem; color: var(--secondary); }
+
+/* Misma tarjeta destacada, en ámbar en vez de rojo - es una advertencia (fuera de zona), no un
+   dato neutro como la fecha elegida. */
+.cotiz-zona-destacada { background: linear-gradient(135deg, rgba(243,156,18,0.1), rgba(243,156,18,0.03)); border-color: rgba(243,156,18,0.35); }
+.cotiz-zona-destacada > i { color: var(--warning); }
 
 .cotiz-modal { text-align: left; }
 .cotiz-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }

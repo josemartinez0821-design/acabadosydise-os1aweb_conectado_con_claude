@@ -23,6 +23,8 @@ public class CotizacionResponse {
     private final String estado;
     private final BigDecimal totalEstimado;
     private final String observaciones;
+    private final String departamento;
+    private final String ciudad;
     private final String respuesta;
     private final Integer validezDias;
     private final LocalDate fechaAprobacion;
@@ -37,6 +39,8 @@ public class CotizacionResponse {
         this.estado = c.getEstado() != null ? c.getEstado().name() : null;
         this.totalEstimado = c.getTotalEstimado();
         this.observaciones = c.getObservaciones();
+        this.departamento = c.getDepartamento();
+        this.ciudad = c.getCiudad();
         this.respuesta = c.getRespuesta();
         this.validezDias = c.getValidezDias();
         this.fechaAprobacion = c.getFechaAprobacion();

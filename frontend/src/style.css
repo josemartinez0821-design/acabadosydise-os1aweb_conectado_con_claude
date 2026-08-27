@@ -1071,6 +1071,12 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 .cotiz-fecha-card-body label { display: block; font-family: var(--font-main); font-weight: 700; font-size: 0.85rem; color: var(--secondary); margin-bottom: 6px; }
 .cotiz-fecha-card-body input[type="date"] { max-width: 220px; }
 
+/* Misma tarjeta que .cotiz-fecha-card, en ámbar (mismo tono que .cotiz-modo-warning/.alert-warning)
+   en vez de rojo — para el aviso de "fuera de zona de cobertura", que es una advertencia, no un
+   dato neutro como la fecha. */
+.cotiz-zona-alerta { background: rgba(243,156,18,0.08); border-color: rgba(243,156,18,0.4); align-items: flex-start; }
+.cotiz-zona-alerta .cotiz-fecha-card-icon { background: var(--warning); }
+
 .cotiz-fecha-deseada-chip {
   display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--secondary);
   background: rgba(192,57,43,0.05); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: 10px;

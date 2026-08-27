@@ -10,6 +10,7 @@ import { useCartStore } from '../stores/cart'
 import { useVentasStore } from '../stores/ventas'
 import { useToast } from '../composables/useToast'
 import { formatCOP, formatDate, empacarFechaDeseada, extraerFechaDeseada, extraerNotaCliente } from '../composables/useFormat'
+import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
 import CotizarLoginModal from '../components/service/CotizarLoginModal.vue'
 
 // Nombre explícito requerido por el <keep-alive :include="['CotizacionesView']"> de App.vue,
@@ -217,6 +218,18 @@ const itemsServiciosSeleccionados = ref(
 const observaciones = ref(borradorInicial?.observaciones || '')
 const fechaDeseada = ref(borradorInicial?.fechaDeseada || '')
 const aceptaTerminos = ref(borradorInicial?.aceptaTerminos || false)
+
+// Ubicación de ESTA solicitud (dónde se necesita el servicio/producto) - precargada desde el
+// perfil si existe, pero editable: puede ser distinta de la dirección registrada del cliente.
+// Mismo patrón de selects en cascada que Registro/Perfil/PQRS/Contacto/Checkout.
+const departamento = ref(borradorInicial?.departamento || auth.usuario?.departamento || '')
+const ciudad = ref(borradorInicial?.ciudad || auth.usuario?.ciudad || '')
+const municipiosDisponibles = computed(() => MUNICIPIOS_POR_DEPARTAMENTO[departamento.value] || [])
+watch(departamento, () => {
+  if (!municipiosDisponibles.value.includes(ciudad.value)) {
+    ciudad.value = ''
+  }
+})
 const enviando = ref(false)
 
 const resultadosPicker = computed(() => {
@@ -280,12 +293,19 @@ function actualizarCantidadServicio(item, nuevaCantidad) {
   }
 }
 
-// Aviso si la ciudad del cliente no está en la zona de cobertura habitual del servicio.
+// Aviso si la ciudad elegida para ESTA solicitud no está en la zona de cobertura habitual del
+// servicio — antes comparaba contra la ciudad del perfil (auth.usuario.ciudad), ahora contra la
+// que el cliente confirma arriba en el formulario, que puede ser distinta.
 function fueraDeZona(servicio) {
-  if (!auth.usuario?.ciudad || !servicio.zona_cobertura) return false
+  if (!ciudad.value || !servicio.zona_cobertura) return false
   const zonas = servicio.zona_cobertura.split(',').map((z) => z.trim().toLowerCase())
-  return !zonas.includes(auth.usuario.ciudad.trim().toLowerCase())
+  return !zonas.includes(ciudad.value.trim().toLowerCase())
 }
+
+// Alerta grande y visible (no solo el aviso chiquito por servicio) cuando al menos uno de los
+// servicios elegidos queda fuera de zona - solo aplica a servicios, los productos se envían a
+// cualquier parte de Colombia por transportadora (ver Checkout), eso no cambia acá.
+const algunFueraDeZona = computed(() => itemsServiciosSeleccionados.value.some((item) => fueraDeZona(item.servicio)))
 
 function quitarProducto(idx) {
   itemsProductosSeleccionados.value.splice(idx, 1)
@@ -302,6 +322,8 @@ function guardarBorrador() {
       observaciones: observaciones.value,
       fechaDeseada: fechaDeseada.value,
       aceptaTerminos: aceptaTerminos.value,
+      departamento: departamento.value,
+      ciudad: ciudad.value,
       productos: itemsProductosSeleccionados.value.map((i) => ({
         id_producto: i.producto.id_producto, cantidad: i.cantidad, precio_unitario: i.precio_unitario, esMayorista: i.esMayorista,
       })),
@@ -312,7 +334,7 @@ function guardarBorrador() {
   )
 }
 watch(
-  [tabActiva, itemsProductosSeleccionados, itemsServiciosSeleccionados, observaciones, fechaDeseada, aceptaTerminos],
+  [tabActiva, itemsProductosSeleccionados, itemsServiciosSeleccionados, observaciones, fechaDeseada, aceptaTerminos, departamento, ciudad],
   guardarBorrador,
   { deep: true }
 )
@@ -373,11 +395,15 @@ const MIN_OBSERVACIONES = 15
 const hayItems = computed(() => itemsProductosSeleccionados.value.length > 0 || itemsServiciosSeleccionados.value.length > 0)
 const requiereFecha = computed(() => itemsServiciosSeleccionados.value.length > 0)
 const observacionesValidas = computed(() => observaciones.value.trim().length >= MIN_OBSERVACIONES)
-const puedeEnviar = computed(() => hayItems.value && aceptaTerminos.value && observacionesValidas.value && (!requiereFecha.value || fechaDeseada.value))
+const puedeEnviar = computed(() => hayItems.value && aceptaTerminos.value && observacionesValidas.value && !!departamento.value && !!ciudad.value && (!requiereFecha.value || fechaDeseada.value))
 
 async function enviarSolicitud() {
   if (!hayItems.value) {
     showToast('Agrega al menos un producto o servicio a tu solicitud.', 'danger')
+    return
+  }
+  if (!departamento.value || !ciudad.value) {
+    showToast('Indica el departamento y la ciudad donde necesitas esto.', 'danger')
     return
   }
   if (!observacionesValidas.value) {
@@ -393,7 +419,6 @@ async function enviarSolicitud() {
     return
   }
   enviando.value = true
-  await new Promise((r) => setTimeout(r, 500))
 
   const observacionesFinal = fechaDeseada.value
     ? empacarFechaDeseada(fechaDeseada.value, observaciones.value.trim() || null)
@@ -404,6 +429,8 @@ async function enviarSolicitud() {
       itemsProductos: itemsProductosSeleccionados.value,
       itemsServicios: itemsServiciosSeleccionados.value,
       observaciones: observacionesFinal,
+      departamento: departamento.value,
+      ciudad: ciudad.value,
     })
   } catch (e) {
     showToast(e.response?.data?.mensaje || 'No se pudo enviar la cotización. Intenta de nuevo.', 'danger')
@@ -787,6 +814,36 @@ async function enviarSolicitud() {
                 <span class="value">{{ formatCOP(totalSolicitud) }}</span>
               </div>
             </template>
+
+            <div class="auth-form-row" style="margin-top:18px;">
+              <div class="form-group">
+                <label class="form-label required">Departamento</label>
+                <select v-model="departamento" class="form-control" required>
+                  <option value="" disabled>Seleccionar...</option>
+                  <option v-for="depto in DEPARTAMENTOS" :key="depto" :value="depto">{{ depto }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Ciudad / Municipio</label>
+                <select v-model="ciudad" class="form-control" required :disabled="!departamento">
+                  <option value="" disabled>{{ departamento ? 'Seleccionar...' : 'Elige primero un departamento' }}</option>
+                  <option v-for="mun in municipiosDisponibles" :key="mun" :value="mun">{{ mun }}</option>
+                </select>
+              </div>
+            </div>
+            <p class="cotiz-obs-hint">¿Dónde necesitas esto? Puede ser distinto a tu dirección registrada.</p>
+
+            <div v-if="algunFueraDeZona" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
+              <div class="cotiz-fecha-card-icon"><i class="ri-map-pin-range-line"></i></div>
+              <div class="cotiz-fecha-card-body">
+                <label>Fuera de nuestra zona habitual de cobertura</label>
+                <p style="margin:0;font-size:0.85rem;line-height:1.5;">
+                  Nuestra zona habitual es Tesalia, Pitalito, La Plata, Neiva y alrededores del suroccidente del Huila.
+                  Igual puedes enviar tu solicitud — evaluaremos la distancia antes de confirmar, y el servicio podría
+                  tener un costo adicional de desplazamiento.
+                </p>
+              </div>
+            </div>
 
             <div v-if="requiereFecha" class="cotiz-fecha-card" style="margin-top:18px;">
               <div class="cotiz-fecha-card-icon"><i class="ri-calendar-event-line"></i></div>

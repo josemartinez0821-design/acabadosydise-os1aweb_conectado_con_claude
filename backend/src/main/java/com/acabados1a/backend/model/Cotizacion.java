@@ -56,4 +56,13 @@ public class Cotizacion {
     // veces si el job corre más de una vez el mismo día (reinicio del server, etc.).
     @Column(name = "recordatorio_enviado", nullable = false)
     private Boolean recordatorioEnviado = false;
+
+    // Ubicación de ESTA solicitud, no necesariamente la del perfil del cliente (puede pedir un
+    // servicio en un lugar distinto a su dirección registrada) - nullable porque las cotizaciones
+    // creadas antes de este campo no lo tienen. Mismo patrón que Pqrs.departamento/ciudad.
+    @Column(name = "departamento", length = 100)
+    private String departamento;
+
+    @Column(name = "ciudad", length = 100)
+    private String ciudad;
 }

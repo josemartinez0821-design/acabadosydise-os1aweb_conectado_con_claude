@@ -84,9 +84,11 @@ export const useCotizacionesStore = defineStore('cotizaciones', () => {
   // ── Crear / responder cotizaciones — llama al backend real y resincroniza con
   // cargarCotizaciones() en vez de parchar el array local, mismo patrón que productos/servicios.
   // id_usuario ya no se manda: el backend lo saca del token, nunca del body.
-  async function crearCotizacion({ itemsProductos, itemsServicios, observaciones }) {
+  async function crearCotizacion({ itemsProductos, itemsServicios, observaciones, departamento, ciudad }) {
     const payload = {
       observaciones: observaciones || null,
+      departamento: departamento || null,
+      ciudad: ciudad || null,
       productos: itemsProductos.map((i) => ({ id_producto: i.producto.id_producto, cantidad: i.cantidad, precio_unitario: i.precio_unitario })),
       servicios: itemsServicios.map((i) => ({ id_servicio: i.servicio.id_servicio, cantidad: i.cantidad, precio_estimado: i.precio_estimado })),
     }

@@ -53,6 +53,8 @@ public class CotizacionService {
         cotizacion.setUsuario(usuario);
         cotizacion.setEstado(Cotizacion.Estado.pendiente);
         cotizacion.setObservaciones(request.getObservaciones());
+        cotizacion.setDepartamento(request.getDepartamento());
+        cotizacion.setCiudad(request.getCiudad());
         cotizacion.setValidezDias(15);
 
         BigDecimal totalProductos = sinProductos ? BigDecimal.ZERO : request.getProductos().stream()

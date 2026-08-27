@@ -13,6 +13,8 @@ import java.util.List;
 public class CotizacionRequest {
 
     private String observaciones;
+    private String departamento;
+    private String ciudad;
     private List<ItemProducto> productos;
     private List<ItemServicio> servicios;
 
