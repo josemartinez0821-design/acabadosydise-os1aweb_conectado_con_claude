@@ -4,6 +4,28 @@
 import { ref, watch } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'
 
+// Selección curada (16, no los 100 completos de data/paletaColores.js — se sentían "demasiados"
+// en un formulario de creación) de los mismos hex reales usados en el selector de color del
+// cliente, no valores inventados aparte. Repartidos entre las 5 familias de esa paleta.
+const COLORES_CURADOS = [
+  { nombre: 'Blanco Nube', hex: '#FFFFFF' },
+  { nombre: 'Gris Claro', hex: '#E3E1DC' },
+  { nombre: 'Gris Carbón', hex: '#5A5854' },
+  { nombre: 'Negro Grafito', hex: '#2B2B2B' },
+  { nombre: 'Terracota', hex: '#C1633D' },
+  { nombre: 'Rojo Óxido', hex: '#8C3A28' },
+  { nombre: 'Amarillo Dorado', hex: '#E5B93A' },
+  { nombre: 'Café Chocolate', hex: '#3E2B1F' },
+  { nombre: 'Azul Pastel', hex: '#A9C6DC' },
+  { nombre: 'Azul Rey', hex: '#2E5C8A' },
+  { nombre: 'Verde Esmeralda', hex: '#2E7D5B' },
+  { nombre: 'Morado Uva', hex: '#6C4A85' },
+  { nombre: 'Rosa Palo', hex: '#E8C4C4' },
+  { nombre: 'Amarillo Pastel', hex: '#FBF0C9' },
+  { nombre: 'Beige Cálido', hex: '#D8C3A5' },
+  { nombre: 'Verde Oliva', hex: '#6E6B3A' },
+]
+
 const props = defineProps({
   mostrar: { type: Boolean, default: false },
   producto: { type: Object, default: null }, // null = crear, objeto = editar
@@ -36,11 +58,20 @@ const form = ref(vacio())
 const guardando = ref(false)
 const error = ref('')
 
+// Imagen: el archivo real elegido (lo que de verdad se sube) y una vista previa - la imagen ya
+// guardada si se está editando, o una vista previa local del archivo recién elegido.
+const archivoImagen = ref(null)
+const previewImagenUrl = ref('')
+// Color: si el color ya guardado del producto no está entre los 16 curados, se abre directo en
+// modo "Otro..." con el texto que ya tenía, en vez de que parezca que el color se perdió.
+const mostrarColorOtro = ref(false)
+
 watch(
   () => props.mostrar,
   (val) => {
     if (!val) return
     error.value = ''
+    archivoImagen.value = null
     if (props.producto) {
       const inv = catalog.inventario.find((i) => i.id_producto === props.producto.id_producto)
       form.value = {
@@ -48,11 +79,23 @@ watch(
         stock_inicial: inv?.cantidad_disponible ?? 0,
         activo: !!props.producto.activo,
       }
+      previewImagenUrl.value = props.producto.imagen_url || ''
+      mostrarColorOtro.value = !COLORES_CURADOS.some((c) => c.nombre === props.producto.color)
     } else {
       form.value = vacio()
+      previewImagenUrl.value = ''
+      mostrarColorOtro.value = false
     }
   }
 )
+
+function onArchivoSeleccionado(e) {
+  const archivo = e.target.files[0]
+  if (!archivo) return
+  archivoImagen.value = archivo
+  if (previewImagenUrl.value.startsWith('blob:')) URL.revokeObjectURL(previewImagenUrl.value)
+  previewImagenUrl.value = URL.createObjectURL(archivo)
+}
 
 // Todo el formulario es obligatorio menos "Precio mayorista" (pedido explícito del admin: sin
 // esto, quien lo llena asume que solo Nombre/Precio de venta son obligatorios y deja el resto en
@@ -65,7 +108,6 @@ const CAMPOS_OBLIGATORIOS = [
   { campo: 'presentacion', label: 'Presentación' },
   { campo: 'color', label: 'Color' },
   { campo: 'acabado', label: 'Acabado' },
-  { campo: 'imagen_url', label: 'Imagen (URL)' },
   { campo: 'precio_venta', label: 'Precio de venta' },
   { campo: 'stock_inicial', label: 'Stock' },
   { campo: 'descripcion', label: 'Descripción' },
@@ -88,13 +130,21 @@ async function guardar() {
     error.value = 'Ingresa un precio de venta válido.'
     return
   }
+  // La imagen solo es obligatoria al crear - al editar, si no se elige una nueva, se conserva
+  // la que ya tenía (no se manda como texto, se sube aparte con subirImagenProducto()).
+  if (!props.producto && !archivoImagen.value) {
+    error.value = 'Selecciona una imagen para el producto.'
+    return
+  }
   guardando.value = true
   error.value = ''
   try {
     if (props.producto) {
       await catalog.actualizarProducto(props.producto.id_producto, form.value)
+      if (archivoImagen.value) await catalog.subirImagenProducto(props.producto.id_producto, archivoImagen.value)
     } else {
-      await catalog.crearProducto(form.value)
+      const creado = await catalog.crearProducto(form.value)
+      await catalog.subirImagenProducto(creado.id_producto, archivoImagen.value)
     }
   } catch (e) {
     error.value = e.response?.data?.mensaje || 'No se pudo guardar el producto. Intenta de nuevo.'
@@ -143,18 +193,46 @@ async function guardar() {
               <input v-model="form.presentacion" type="text" class="form-control" placeholder="Ej. 1 Galón" required />
             </div>
 
-            <div class="form-group">
+            <div class="form-group full">
               <label class="form-label required">Color</label>
-              <input v-model="form.color" type="text" class="form-control" placeholder="Ej. Blanco" required />
+              <div class="producto-color-paleta">
+                <button
+                  v-for="c in COLORES_CURADOS" :key="c.nombre" type="button"
+                  class="producto-color-swatch" :class="{ active: !mostrarColorOtro && form.color === c.nombre }"
+                  :style="{ background: c.hex }" :title="c.nombre"
+                  @click="form.color = c.nombre; mostrarColorOtro = false"
+                >
+                  <i v-if="!mostrarColorOtro && form.color === c.nombre" class="ri-check-line"></i>
+                </button>
+                <button
+                  type="button" class="producto-color-otro-btn" :class="{ active: mostrarColorOtro }"
+                  @click="mostrarColorOtro = true; form.color = ''"
+                >Otro...</button>
+              </div>
+              <input
+                v-if="mostrarColorOtro" v-model="form.color" type="text" class="form-control mt-8"
+                placeholder="Escribe el nombre del color" required
+              />
+              <p v-else class="form-hint">{{ form.color || 'Elige un color de la paleta' }}</p>
             </div>
-            <div class="form-group">
+            <div class="form-group full">
               <label class="form-label required">Acabado</label>
               <input v-model="form.acabado" type="text" class="form-control" placeholder="Ej. Mate" required />
             </div>
 
             <div class="form-group full">
-              <label class="form-label required">Imagen (URL)</label>
-              <input v-model="form.imagen_url" type="text" class="form-control" placeholder="https://..." required />
+              <label class="form-label required">Imagen del producto</label>
+              <div class="producto-imagen-upload">
+                <img v-if="previewImagenUrl" :src="previewImagenUrl" alt="Vista previa" class="producto-imagen-preview" />
+                <div v-else class="producto-imagen-preview producto-imagen-preview-vacia"><i class="ri-image-add-line"></i></div>
+                <div>
+                  <label class="btn btn-outline-red btn-sm producto-imagen-btn">
+                    <i class="ri-upload-2-line"></i> {{ previewImagenUrl ? 'Cambiar imagen' : 'Subir imagen' }}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" style="display:none;" @change="onArchivoSeleccionado" />
+                  </label>
+                  <p class="form-hint">JPG, PNG o WEBP. Máx. 8MB.</p>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">

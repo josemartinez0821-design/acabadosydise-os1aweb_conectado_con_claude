@@ -9,6 +9,12 @@ target/
 # reales locales, que solo viven en esta máquina.
 src/main/resources/application.properties
 
+# Imágenes de producto subidas desde el admin (ProductoService.subirImagen) - se guardan como
+# archivos en esta máquina, no en la base de datos. No es código, es contenido generado en cada
+# instalación (igual que application.properties) - si Juliana corre su propio backend local, sus
+# imágenes subidas tampoco viajan por git hacia acá, ni al revés.
+uploads/
+
 ### STS ###
 .apt_generated
 .classpath

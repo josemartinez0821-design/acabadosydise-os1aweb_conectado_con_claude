@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,6 +52,15 @@ public class ProductoController {
         try {
             productoService.eliminar(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/imagen")
+    public ResponseEntity<?> subirImagen(@PathVariable Integer id, @RequestParam("archivo") MultipartFile archivo) {
+        try {
+            return ResponseEntity.ok(new ProductoResponse(productoService.subirImagen(id, archivo)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }

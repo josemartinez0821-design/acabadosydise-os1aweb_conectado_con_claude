@@ -17,6 +17,11 @@ spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
+# Subida de imágenes de producto - el límite por defecto de Spring (1MB) es muy chico para una
+# foto real de celular sin comprimir.
+spring.servlet.multipart.max-file-size=8MB
+spring.servlet.multipart.max-request-size=8MB
+
 # Secreto para firmar los JWT de sesión (HS256) - generar uno propio, nunca reusar este ejemplo.
 # Puede generarse con: openssl rand -base64 64
 jwt.secret=CAMBIAR_POR_UN_SECRETO_PROPIO_BASE64_DE_AL_MENOS_64_BYTES

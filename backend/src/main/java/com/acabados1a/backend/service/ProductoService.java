@@ -12,8 +12,15 @@ import com.acabados1a.backend.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Set;
 import java.util.UUID;
 
 // Producto+Inventario se crean/actualizan juntos (dos repositorios) - @Transactional a nivel de
@@ -29,6 +36,12 @@ public class ProductoService {
     private static final int STOCK_MINIMO_DEFECTO = 10;
     private static final int STOCK_MAXIMO_DEFECTO = 200;
     private static final String BODEGA_DEFECTO = "Bodega A";
+
+    // Relativo a donde corre el proceso del backend (mvnw.cmd se ejecuta desde backend/, ver
+    // launch.json) - no una ruta absoluta, para que funcione igual en cualquier máquina del equipo.
+    private static final Path CARPETA_IMAGENES = Paths.get("uploads", "productos");
+    private static final String PREFIJO_URL_IMAGENES = "/uploads/productos/";
+    private static final Set<String> TIPOS_IMAGEN_PERMITIDOS = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final ProductoRepository productoRepository;
     private final InventarioRepository inventarioRepository;
@@ -122,6 +135,46 @@ public class ProductoService {
             .orElseThrow(() -> new IllegalArgumentException("No existe un producto con id " + id + "."));
         producto.setActivo(false);
         productoRepository.save(producto);
+    }
+
+    // Guarda el archivo real en disco (no en la BD - imagen_url es VARCHAR(255) y el catálogo
+    // público trae los 74+ productos de una sola vez, meter base64 ahí volvería esa respuesta
+    // varias veces más pesada). Se sirve después vía WebConfig ("/uploads/**").
+    public Producto subirImagen(Integer id, MultipartFile archivo) {
+        Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("No existe un producto con id " + id + "."));
+
+        if (archivo == null || archivo.isEmpty()) {
+            throw new IllegalArgumentException("No se recibió ningún archivo.");
+        }
+        String tipo = archivo.getContentType();
+        if (tipo == null || !TIPOS_IMAGEN_PERMITIDOS.contains(tipo)) {
+            throw new IllegalArgumentException("Solo se permiten imágenes JPG, PNG o WEBP.");
+        }
+
+        try {
+            Files.createDirectories(CARPETA_IMAGENES);
+            String extension = switch (tipo) {
+                case "image/png" -> ".png";
+                case "image/webp" -> ".webp";
+                default -> ".jpg";
+            };
+            String nombreArchivo = "producto-" + id + "-" + UUID.randomUUID() + extension;
+            Files.copy(archivo.getInputStream(), CARPETA_IMAGENES.resolve(nombreArchivo), StandardCopyOption.REPLACE_EXISTING);
+
+            // Borra el archivo anterior solo si también era una subida propia - una URL externa
+            // (las fotos de stock que ya traían los productos originales) se deja intacta, no es
+            // un archivo nuestro para borrar.
+            String urlAnterior = producto.getImagenUrl();
+            if (urlAnterior != null && urlAnterior.startsWith(PREFIJO_URL_IMAGENES)) {
+                Files.deleteIfExists(CARPETA_IMAGENES.resolve(urlAnterior.substring(PREFIJO_URL_IMAGENES.length())));
+            }
+
+            producto.setImagenUrl(PREFIJO_URL_IMAGENES + nombreArchivo);
+            return productoRepository.save(producto);
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo guardar la imagen.", e);
+        }
     }
 
     private void aplicarCamposComunes(Producto producto, ProductoRequest request) {

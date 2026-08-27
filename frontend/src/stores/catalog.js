@@ -3,6 +3,17 @@ import { ref, computed } from 'vue'
 import { ServiciosEnriquecimiento } from '../data/serviciosEnriquecimiento'
 import api from '../services/api'
 
+// Las fotos de stock originales ya venían como URL completa (Unsplash) - pero las imágenes
+// subidas de verdad por el admin (ProductoService.subirImagen) guardan una ruta relativa del
+// backend ("/uploads/productos/..."), que un <img> interpretaría relativa al origen del
+// FRONTEND (Vite), no del backend, donde el archivo realmente vive. Se resuelve una sola vez acá,
+// al cargar los productos, en vez de en cada sitio del frontend que muestra una imagen.
+const URL_BASE_BACKEND = import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
+function resolverImagenUrl(url) {
+  if (!url || url.startsWith('http://') || url.startsWith('https://')) return url
+  return URL_BASE_BACKEND + url
+}
+
 // `categorias_productos` real no tiene columna `icono` (era mock-only, solo estas 5 categorías
 // de negocio, prácticamente fijas) — se resuelve por nombre en vez de venir del backend.
 const ICONOS_CATEGORIA = {
@@ -32,7 +43,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   const productos = ref([])
   async function cargarProductos() {
     const { data } = await api.get('/productos')
-    productos.value = data
+    productos.value = data.map((p) => ({ ...p, imagen_url: resolverImagenUrl(p.imagen_url) }))
   }
   const inventario = ref([])
   async function cargarInventario() {
@@ -191,15 +202,29 @@ export const useCatalogStore = defineStore('catalog', () => {
   // detalle_ventas tienen ON DELETE RESTRICT), por eso productosCatalogo/productosDestacados
   // arriba filtran por `activo`.
   async function crearProducto(datos) {
-    await api.post('/productos', datos)
+    // Devuelve el producto creado (antes se descartaba) - ProductoFormModal.vue necesita el
+    // id_producto real para poder subirle la imagen justo después de crearlo.
+    const { data } = await api.post('/productos', datos)
     await cargarProductos()
     await cargarInventario()
+    return data
   }
 
   async function actualizarProducto(id_producto, datos) {
     await api.put(`/productos/${id_producto}`, datos)
     await cargarProductos()
     await cargarInventario()
+  }
+
+  // Sube el archivo real de la imagen (no una URL de texto) - ProductoService.subirImagen la
+  // guarda como archivo en el backend, no en la base de datos.
+  async function subirImagenProducto(id_producto, archivo) {
+    const formData = new FormData()
+    formData.append('archivo', archivo)
+    await api.post(`/productos/${id_producto}/imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    await cargarProductos()
   }
 
   async function eliminarProducto(id_producto) {
@@ -349,6 +374,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     getMovimientosPorProducto,
     actualizarUmbralesStock,
     crearProducto,
+    subirImagenProducto,
     actualizarProducto,
     eliminarProducto,
     crearServicio,
