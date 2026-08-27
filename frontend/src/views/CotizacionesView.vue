@@ -293,19 +293,13 @@ function actualizarCantidadServicio(item, nuevaCantidad) {
   }
 }
 
-// Aviso si la ciudad elegida para ESTA solicitud no está en la zona de cobertura habitual del
-// servicio — antes comparaba contra la ciudad del perfil (auth.usuario.ciudad), ahora contra la
-// que el cliente confirma arriba en el formulario, que puede ser distinta.
-function fueraDeZona(servicio) {
-  if (!ciudad.value || !servicio.zona_cobertura) return false
-  const zonas = servicio.zona_cobertura.split(',').map((z) => z.trim().toLowerCase())
-  return !zonas.includes(ciudad.value.trim().toLowerCase())
-}
-
-// Alerta grande y visible (no solo el aviso chiquito por servicio) cuando al menos uno de los
-// servicios elegidos queda fuera de zona - solo aplica a servicios, los productos se envían a
-// cualquier parte de Colombia por transportadora (ver Checkout), eso no cambia acá.
-const algunFueraDeZona = computed(() => itemsServiciosSeleccionados.value.some((item) => fueraDeZona(item.servicio)))
+// Regla real del negocio (confirmada 2026-08-27, reemplaza una versión anterior basada en
+// zona_cobertura por servicio - dato que era mock, no real): Tesalia (donde está el local) no
+// tiene costo de desplazamiento; cualquier otra ciudad sí lo tiene, pero el valor exacto no lo
+// calcula el sistema - se coordina directamente con el cliente. Aplica igual a cualquier
+// servicio, así que es una sola regla sobre la ciudad elegida, no por servicio.
+const hayServicios = computed(() => itemsServiciosSeleccionados.value.length > 0)
+const tieneCostoDesplazamiento = computed(() => hayServicios.value && !!ciudad.value && ciudad.value.trim().toLowerCase() !== 'tesalia')
 
 function quitarProducto(idx) {
   itemsProductosSeleccionados.value.splice(idx, 1)
@@ -393,7 +387,7 @@ const totalSolicitud = computed(() => {
 const MIN_OBSERVACIONES = 15
 
 const hayItems = computed(() => itemsProductosSeleccionados.value.length > 0 || itemsServiciosSeleccionados.value.length > 0)
-const requiereFecha = computed(() => itemsServiciosSeleccionados.value.length > 0)
+const requiereFecha = computed(() => hayServicios.value)
 const observacionesValidas = computed(() => observaciones.value.trim().length >= MIN_OBSERVACIONES)
 const puedeEnviar = computed(() => hayItems.value && aceptaTerminos.value && observacionesValidas.value && !!departamento.value && !!ciudad.value && (!requiereFecha.value || fechaDeseada.value))
 
@@ -803,10 +797,6 @@ async function enviarSolicitud() {
                   </button>
                 </div>
                 <p class="cotiz-modo-warning"><i class="ri-information-line"></i> {{ ADVERTENCIA_MODO[item.modo] }}</p>
-
-                <p v-if="fueraDeZona(item.servicio)" class="cotiz-zona-warning">
-                  <i class="ri-map-pin-line"></i> Tu ciudad está fuera de la zona habitual de cobertura de este servicio — puede afectar tiempos o costo de desplazamiento. Te contactaremos para confirmarlo.
-                </p>
               </div>
 
               <div class="order-summary-row total" style="margin-top:14px;">
@@ -833,14 +823,14 @@ async function enviarSolicitud() {
             </div>
             <p class="cotiz-obs-hint">¿Dónde necesitas esto? Puede ser distinto a tu dirección registrada.</p>
 
-            <div v-if="algunFueraDeZona" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
+            <div v-if="tieneCostoDesplazamiento" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
               <div class="cotiz-fecha-card-icon"><i class="ri-map-pin-range-line"></i></div>
               <div class="cotiz-fecha-card-body">
-                <label>Fuera de nuestra zona habitual de cobertura</label>
+                <label>Este servicio tiene costo de desplazamiento</label>
                 <p style="margin:0;font-size:0.85rem;line-height:1.5;">
-                  Nuestra zona habitual es Tesalia, Pitalito, La Plata, Neiva y alrededores del suroccidente del Huila.
-                  Igual puedes enviar tu solicitud — evaluaremos la distancia antes de confirmar, y el servicio podría
-                  tener un costo adicional de desplazamiento.
+                  Nuestro local está en Tesalia — para {{ ciudad }} el servicio incluye un costo adicional de
+                  desplazamiento. El valor exacto no queda en este estimado: lo coordinamos directamente contigo
+                  cuando te contactemos.
                 </p>
               </div>
             </div>

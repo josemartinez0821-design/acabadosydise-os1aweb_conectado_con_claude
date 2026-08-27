@@ -71,18 +71,14 @@ function ubicacionSolicitud(cot) {
   return cot.ciudad ? `${cot.ciudad}, ${cot.departamento}` : ciudadCliente(cot.usuario)
 }
 
-// Igual que fueraDeZona() en CotizacionesView.vue (cliente) pero contra los servicios ya guardados
-// de la cotización, para resaltarlo de inmediato en la lista del admin sin tener que abrir el
-// detalle. Solo aplica si algún ítem es un servicio - los productos no tienen zona de cobertura.
-function fueraDeZonaAdmin(cot) {
+// Misma regla real que tieneCostoDesplazamiento() en CotizacionesView.vue (cliente): Tesalia sin
+// costo, cualquier otra ciudad con costo de desplazamiento a coordinar directamente - para
+// resaltarlo de inmediato en la lista del admin sin tener que abrir el detalle. Solo aplica si
+// algún ítem es un servicio (los productos van por transportadora, sin este costo).
+function tieneCostoDesplazamiento(cot) {
   const ciudad = cot.ciudad || cot.usuario?.ciudad
-  if (!ciudad) return false
-  return (cot.servicios || []).some((s) => {
-    const servicio = catalog.getServiceById(s.id_servicio)
-    if (!servicio?.zona_cobertura) return false
-    const zonas = servicio.zona_cobertura.split(',').map((z) => z.trim().toLowerCase())
-    return !zonas.includes(ciudad.trim().toLowerCase())
-  })
+  if (!ciudad || !(cot.servicios || []).length) return false
+  return ciudad.trim().toLowerCase() !== 'tesalia'
 }
 
 const listaOrdenada = computed(() =>
@@ -378,9 +374,9 @@ function seleccionarDia(dia) {
           </span>
         </div>
 
-        <div v-if="fueraDeZonaAdmin(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
+        <div v-if="tieneCostoDesplazamiento(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
           <i class="ri-map-pin-range-line"></i>
-          <div><span>Fuera de nuestra zona habitual</span><strong>Evaluar distancia / costo de desplazamiento</strong></div>
+          <div><span>Tiene costo de desplazamiento</span><strong>Coordinar valor directamente con el cliente</strong></div>
         </div>
 
         <div v-if="extraerFechaDeseada(cot.observaciones)" class="cotiz-fecha-destacada">
