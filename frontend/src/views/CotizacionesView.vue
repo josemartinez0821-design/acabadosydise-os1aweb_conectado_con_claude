@@ -293,13 +293,26 @@ function actualizarCantidadServicio(item, nuevaCantidad) {
   }
 }
 
-// Regla real del negocio (confirmada 2026-08-27, reemplaza una versión anterior basada en
-// zona_cobertura por servicio - dato que era mock, no real): Tesalia (donde está el local) no
-// tiene costo de desplazamiento; cualquier otra ciudad sí lo tiene, pero el valor exacto no lo
-// calcula el sistema - se coordina directamente con el cliente. Aplica igual a cualquier
-// servicio, así que es una sola regla sobre la ciudad elegida, no por servicio.
+// Regla real del negocio (confirmada 2026-08-27, 3 niveles - reemplaza una versión anterior
+// basada en zona_cobertura por servicio, dato que era mock, no real): Tesalia (donde está el
+// local) es gratis; Paicol (al lado) solo tiene costo de desplazamiento a coordinar; cualquier
+// otro lugar (incluidos Pitalito/La Plata/Neiva, antes considerados "zona cubierta") queda fuera
+// de nuestro rango habitual - ahí se avisan las dos cosas juntas: que se evaluará si se puede
+// atender, y que además tiene costo de desplazamiento. El valor del desplazamiento nunca lo
+// calcula el sistema, se coordina directamente con el cliente. Aplica igual a cualquier servicio
+// (no por servicio individual), y solo si hay al menos un servicio en el carrito - los productos
+// van por transportadora, sin este costo.
 const hayServicios = computed(() => itemsServiciosSeleccionados.value.length > 0)
-const tieneCostoDesplazamiento = computed(() => hayServicios.value && !!ciudad.value && ciudad.value.trim().toLowerCase() !== 'tesalia')
+const CIUDADES_SOLO_COSTO = ['paicol']
+const nivelZona = computed(() => {
+  if (!hayServicios.value || !ciudad.value) return null
+  const c = ciudad.value.trim().toLowerCase()
+  if (c === 'tesalia') return 'gratis'
+  if (CIUDADES_SOLO_COSTO.includes(c)) return 'costo'
+  return 'evaluar'
+})
+const tieneCostoDesplazamiento = computed(() => nivelZona.value === 'costo' || nivelZona.value === 'evaluar')
+const fueraDeRangoHabitual = computed(() => nivelZona.value === 'evaluar')
 
 function quitarProducto(idx) {
   itemsProductosSeleccionados.value.splice(idx, 1)
@@ -823,8 +836,19 @@ async function enviarSolicitud() {
             </div>
             <p class="cotiz-obs-hint">¿Dónde necesitas esto? Puede ser distinto a tu dirección registrada.</p>
 
-            <div v-if="tieneCostoDesplazamiento" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
+            <div v-if="fueraDeRangoHabitual" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
               <div class="cotiz-fecha-card-icon"><i class="ri-map-pin-range-line"></i></div>
+              <div class="cotiz-fecha-card-body">
+                <label>Fuera de nuestro rango habitual de trabajo</label>
+                <p style="margin:0;font-size:0.85rem;line-height:1.5;">
+                  Trabajamos habitualmente en Tesalia y Paicol. Para {{ ciudad }} vamos a evaluar la distancia antes
+                  de confirmar si podemos atenderte.
+                </p>
+              </div>
+            </div>
+
+            <div v-if="tieneCostoDesplazamiento" class="cotiz-fecha-card cotiz-zona-alerta" style="margin-top:14px;">
+              <div class="cotiz-fecha-card-icon"><i class="ri-route-line"></i></div>
               <div class="cotiz-fecha-card-body">
                 <label>Este servicio tiene costo de desplazamiento</label>
                 <p style="margin:0;font-size:0.85rem;line-height:1.5;">

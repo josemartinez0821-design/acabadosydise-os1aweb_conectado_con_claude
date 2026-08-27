@@ -71,14 +71,25 @@ function ubicacionSolicitud(cot) {
   return cot.ciudad ? `${cot.ciudad}, ${cot.departamento}` : ciudadCliente(cot.usuario)
 }
 
-// Misma regla real que tieneCostoDesplazamiento() en CotizacionesView.vue (cliente): Tesalia sin
-// costo, cualquier otra ciudad con costo de desplazamiento a coordinar directamente - para
-// resaltarlo de inmediato en la lista del admin sin tener que abrir el detalle. Solo aplica si
-// algún ítem es un servicio (los productos van por transportadora, sin este costo).
-function tieneCostoDesplazamiento(cot) {
+// Misma regla real de 3 niveles que CotizacionesView.vue (cliente): Tesalia gratis, Paicol solo
+// costo de desplazamiento, cualquier otro lugar fuera de nuestro rango habitual (las dos cosas a
+// la vez) - para resaltarlo de inmediato en la lista del admin sin tener que abrir el detalle.
+// Solo aplica si algún ítem es un servicio (los productos van por transportadora, sin esto).
+const CIUDADES_SOLO_COSTO = ['paicol']
+function nivelZona(cot) {
   const ciudad = cot.ciudad || cot.usuario?.ciudad
-  if (!ciudad || !(cot.servicios || []).length) return false
-  return ciudad.trim().toLowerCase() !== 'tesalia'
+  if (!ciudad || !(cot.servicios || []).length) return null
+  const c = ciudad.trim().toLowerCase()
+  if (c === 'tesalia') return 'gratis'
+  if (CIUDADES_SOLO_COSTO.includes(c)) return 'costo'
+  return 'evaluar'
+}
+function tieneCostoDesplazamiento(cot) {
+  const nivel = nivelZona(cot)
+  return nivel === 'costo' || nivel === 'evaluar'
+}
+function fueraDeRangoHabitual(cot) {
+  return nivelZona(cot) === 'evaluar'
 }
 
 const listaOrdenada = computed(() =>
@@ -374,8 +385,13 @@ function seleccionarDia(dia) {
           </span>
         </div>
 
-        <div v-if="tieneCostoDesplazamiento(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
+        <div v-if="fueraDeRangoHabitual(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
           <i class="ri-map-pin-range-line"></i>
+          <div><span>Fuera de nuestro rango habitual</span><strong>Evaluar si se puede atender</strong></div>
+        </div>
+
+        <div v-if="tieneCostoDesplazamiento(cot)" class="cotiz-fecha-destacada cotiz-zona-destacada">
+          <i class="ri-route-line"></i>
           <div><span>Tiene costo de desplazamiento</span><strong>Coordinar valor directamente con el cliente</strong></div>
         </div>
 
