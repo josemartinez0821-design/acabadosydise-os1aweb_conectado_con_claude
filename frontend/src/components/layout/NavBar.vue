@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useCartStore } from '../../stores/cart'
 import { usePqrsStore } from '../../stores/pqrs'
@@ -10,6 +10,7 @@ import logoUrl from '../../assets/logo.png'
 const auth = useAuthStore()
 const cart = useCartStore()
 const pqrsStore = usePqrsStore()
+const router = useRouter()
 const { mostrarMensajeCentral } = useCenterMessage()
 
 // Punto rojo cuando el equipo respondió una PQRS y el cliente todavía no la ha visto (no hay
@@ -45,6 +46,11 @@ function logout() {
     tipo: 'despedida',
     duracion: 2200,
   })
+  // Si estaba parado en una página que requiere sesión (Perfil, Pedidos, cualquier /admin/*), sin
+  // esto se quedaba ahí mismo con todo roto (avatar "??", "0 pedidos"...) porque el guard de rutas
+  // solo corre al navegar, no reacciona a que la sesión se cierre estando ya adentro. Mismo
+  // criterio ya usado en useInactivityLogout.js para el cierre por inactividad.
+  if (router.currentRoute.value.meta.requiresAuth) router.push('/')
 }
 </script>
 
