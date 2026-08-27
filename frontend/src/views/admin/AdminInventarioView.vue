@@ -4,7 +4,7 @@
 // ven los umbrales mínimo/máximo, las alertas, y el historial real de entradas/salidas — que se
 // alimenta solo desde el checkout (venta) y desde el CRUD de Productos (ajuste), además de lo que
 // se registre manual aquí mismo.
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'
 import { useToast } from '../../composables/useToast'
 
@@ -143,6 +143,15 @@ function limpiarFiltros() {
 }
 function irAPagina(n) { paginaActual.value = Math.min(Math.max(1, n), totalPaginas.value) }
 
+// Tarjetas de arriba como filtros reales - mismo patrón ya usado en AdminVentasView.vue (antes
+// eran decorativas, sin @click). "Unidades en inventario" no tiene un estado propio que filtrar,
+// así que solo limpia y baja a la tabla completa.
+const tablaStockRef = ref(null)
+function filtrarInventario(estado) {
+  filtroEstado.value = estado
+  nextTick(() => tablaStockRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+
 function inventarioDe(id_producto) {
   return catalog.inventario.find((i) => i.id_producto === id_producto)
 }
@@ -185,6 +194,14 @@ const movimientosPagina = computed(() => {
 })
 watch(busquedaMovimientos, () => { paginaMovimientos.value = 1 })
 function irAPaginaMov(n) { paginaMovimientos.value = Math.min(Math.max(1, n), totalPaginasMov.value) }
+
+// "Movimientos hoy" solo baja a la tabla (ya viene ordenada del más reciente al más viejo, así
+// que los de hoy quedan arriba de una vez) - no hay un filtro de fecha propio en esta tabla como
+// sí lo tiene Ventas, no hacía falta construir uno solo para esto.
+const tablaMovimientosRef = ref(null)
+function verMovimientosHoy() {
+  nextTick(() => tablaMovimientosRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
 
 // ── Modal: registrar movimiento manual ────────────────────────
 const mostrarModalMovimiento = ref(false)
@@ -271,35 +288,35 @@ async function guardarUmbrales() {
 
   <!-- ESTADÍSTICAS -->
   <div class="admin-stats-grid">
-    <div class="admin-stat-card">
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarInventario('')">
       <div class="admin-stat-top">
         <span class="admin-stat-icon icon-azul"><i class="ri-archive-2-line"></i></span>
       </div>
       <strong class="admin-stat-value">{{ totalUnidades }}</strong>
       <span class="admin-stat-label">Unidades en inventario</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarInventario('stock_bajo')">
       <div class="admin-stat-top">
         <span class="admin-stat-icon icon-alerta"><i class="ri-error-warning-line"></i></span>
       </div>
       <strong class="admin-stat-value">{{ totalStockBajo }}</strong>
       <span class="admin-stat-label">Stock bajo</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="filtrarInventario('agotado')">
       <div class="admin-stat-top">
         <span class="admin-stat-icon icon-rojo"><i class="ri-close-circle-line"></i></span>
         <span v-if="totalAgotados" class="admin-stat-sub" style="background:rgba(192,57,43,0.12);color:var(--primary);">Crítico</span>
       </div>
       <strong class="admin-stat-value">{{ totalAgotados }}</strong>
       <span class="admin-stat-label">Agotados</span>
-    </div>
-    <div class="admin-stat-card">
+    </button>
+    <button type="button" class="admin-stat-card admin-stat-card-btn" @click="verMovimientosHoy">
       <div class="admin-stat-top">
         <span class="admin-stat-icon icon-verde"><i class="ri-exchange-2-line"></i></span>
       </div>
       <strong class="admin-stat-value">{{ movimientosHoy }}</strong>
       <span class="admin-stat-label">Movimientos hoy</span>
-    </div>
+    </button>
   </div>
 
   <!-- GRÁFICO + ALERTAS -->
@@ -387,7 +404,7 @@ async function guardarUmbrales() {
   </div>
 
   <!-- TABLA DE STOCK -->
-  <div class="admin-card">
+  <div class="admin-card" ref="tablaStockRef">
     <div class="admin-card-header">
       <h2>Stock por producto</h2>
       <span>{{ productosFiltrados.length }} registros encontrados</span>
@@ -448,7 +465,7 @@ async function guardarUmbrales() {
   </div>
 
   <!-- HISTORIAL DE MOVIMIENTOS -->
-  <div class="admin-card">
+  <div class="admin-card" ref="tablaMovimientosRef">
     <div class="admin-card-header">
       <h2>Últimos movimientos</h2>
       <input v-model="busquedaMovimientos" type="search" class="form-control inv-mov-search" placeholder="Buscar por producto o código..." />
@@ -592,6 +609,11 @@ async function guardarUmbrales() {
 </template>
 
 <style scoped>
+/* Tarjetas de arriba como botones reales (antes eran decorativas) - mismo patrón/clase que ya
+   usa AdminVentasView.vue, cada vista mantiene su propia copia en vez de una global. */
+.admin-stat-card-btn { display: block; width: 100%; text-align: left; cursor: pointer; transition: var(--transition); }
+.admin-stat-card-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: transparent; }
+
 .icon-azul { background: rgba(41,128,185,0.1); color: var(--info); }
 .icon-verde { background: rgba(39,174,96,0.1); color: var(--success); }
 .icon-alerta { background: rgba(243,156,18,0.12); color: var(--warning); }
