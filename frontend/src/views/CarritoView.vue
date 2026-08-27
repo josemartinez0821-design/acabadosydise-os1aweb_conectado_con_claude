@@ -124,18 +124,18 @@ function irALogin() {
             </div>
           </div>
 
-          <aside class="order-summary">
-            <h3 class="font-main fw-800 mb-16">Resumen del pedido</h3>
-            <div class="order-summary-row"><span>Subtotal</span><span>{{ formatCOP(cart.total) }}</span></div>
-            <div class="order-summary-row">
+          <aside class="order-summary carrito-resumen">
+            <h3 class="carrito-resumen-title">Resumen del pedido</h3>
+            <div class="carrito-resumen-row"><span>Subtotal</span><span>{{ formatCOP(cart.total) }}</span></div>
+            <div class="carrito-resumen-row">
               <span>Envío</span>
               <span>{{ envio === 0 ? 'Gratis' : formatCOP(envio) }}</span>
             </div>
-            <p v-if="envio > 0" class="text-muted" style="font-size:0.78rem;margin:-6px 0 10px;">
-              Envío gratis en pedidos mayores a $400.000
+            <p v-if="envio > 0" class="carrito-resumen-hint">
+              <i class="ri-truck-line"></i> Envío gratis en pedidos mayores a $400.000
             </p>
-            <div class="order-summary-row total"><span>Total</span><span class="value">{{ formatCOP(totalConEnvio) }}</span></div>
-            <button class="btn btn-primary btn-lg btn-block mt-20" @click="irACheckout">
+            <div class="carrito-resumen-total"><span>Total</span><span class="value">{{ formatCOP(totalConEnvio) }}</span></div>
+            <button class="btn btn-primary btn-lg btn-block" @click="irACheckout">
               <i class="ri-lock-line"></i> Proceder al Pago
             </button>
           </aside>

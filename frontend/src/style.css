@@ -1606,6 +1606,21 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 .order-summary-row.total { border-bottom: none; padding-top: 16px; font-family: var(--font-main); font-weight: 800; font-size: 1.2rem; color: var(--secondary); }
 .order-summary-row.total .value { color: var(--primary); }
 
+/* Versión más cuidada del resumen del Carrito específicamente (Checkout/Cotizaciones/Detalle de
+   Servicio siguen usando .order-summary-row tal cual, sin tocar). Mismos datos, más espacio entre
+   secciones y el total destacado con una tarjeta propia en vez de solo una línea más grande. */
+.carrito-resumen-title { font-family: var(--font-main); font-weight: 800; font-size: 1.05rem; color: var(--secondary); margin: 0 0 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.carrito-resumen-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.9rem; color: var(--text-light); }
+.carrito-resumen-hint { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; color: var(--text-muted); margin: 2px 0 4px; }
+.carrito-resumen-hint i { color: var(--success); }
+.carrito-resumen-total {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(192,57,43,0.05); border-radius: var(--radius-sm);
+  padding: 14px 16px; margin: 14px 0 20px;
+  font-family: var(--font-main); font-weight: 800; font-size: 1.1rem; color: var(--secondary);
+}
+.carrito-resumen-total .value { color: var(--primary); font-size: 1.3rem; }
+
 /* ── CHECKOUT ─────────────────────────────────────────────── */
 .checkout-page { background: var(--off-white); min-height: 100vh; }
 .checkout-topbar { background: var(--secondary); padding: 20px 0; display: flex; align-items: center; justify-content: space-between; }
