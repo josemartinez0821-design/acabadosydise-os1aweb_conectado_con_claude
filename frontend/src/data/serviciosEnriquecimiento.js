@@ -3,14 +3,28 @@
 // `grupos_variante_productos` para productos: se queda mock-only, indexado por `codigo_servicio`,
 // y catalog.js lo combina en el cliente con lo que sí viene del backend real. No editable desde
 // el admin (igual que las variantes de tamaño de producto tampoco lo son).
+//
+// `que_incluye`: cada ítem es { t: 'texto', material?: true }. Los marcados `material: true` son
+// insumos que pone el negocio y por eso desaparecen de la lista cuando el cliente elige la
+// modalidad "Solo servicio" en el detalle (ver DetalleServicioView). Solo los servicios con
+// `incluye_materiales` en el backend (drywall, PVC, pisos, estuco, cielo raso) llevan líneas así.
+//
+// `zona_cobertura`: es la misma para todos — Tesalia (sede) y Paicol. Otras zonas se evalúan y
+// tienen costo de desplazamiento a coordinar (regla de 3 niveles, ver CotizacionesView); ese
+// detalle se explica al cotizar, aquí solo va el titular.
 export const ServiciosEnriquecimiento = {
   'SERV-001': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80',
     rating: 4.8, num_resenas: 23, garantia_meses: 6,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata, Neiva',
-    que_incluye: ['Materiales de drywall (láminas y perfilería)', 'Mano de obra especializada', 'Aislamiento acústico básico', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Láminas de drywall y perfilería', material: true },
+      { t: 'Mano de obra especializada' },
+      { t: 'Aislamiento acústico básico' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
-      { titulo: 'Cotiza en línea', descripcion: 'Elige el servicio, indica cuántas horas o días crees que tomará y arma tu solicitud en minutos.' },
+      { titulo: 'Cotiza en línea', descripcion: 'Elige el servicio, indica cuántas horas crees que tomará y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
       { titulo: 'Instalación', descripcion: 'Nuestro equipo instala el drywall siguiendo los estándares de calidad.' },
       { titulo: 'Entrega final', descripcion: 'Revisamos contigo el trabajo terminado y entregamos la garantía.' },
@@ -20,8 +34,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-002': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
     rating: 4.9, num_resenas: 41, garantia_meses: 3,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata, Neiva, Garzón',
-    que_incluye: ['Mano de obra especializada', 'Protección de muebles y pisos', 'Aplicación de 2 manos de pintura', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Mano de obra especializada' },
+      { t: 'Protección de muebles y pisos' },
+      { t: 'Aplicación de 2 manos de pintura' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Elige el servicio, indica cuántas horas crees que tomará y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
@@ -33,8 +52,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-003': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=80',
     rating: 4.7, num_resenas: 15, garantia_meses: 1,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, San Agustín',
-    que_incluye: ['Visita y diagnóstico del espacio', 'Propuesta de paleta de colores', 'Recomendación de materiales y acabados', 'Plano conceptual básico'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Visita y diagnóstico del espacio' },
+      { t: 'Propuesta de paleta de colores' },
+      { t: 'Recomendación de materiales y acabados' },
+      { t: 'Plano conceptual básico' },
+    ],
     como_funciona: [
       { titulo: 'Agenda tu cita', descripcion: 'Coordinamos una visita o videollamada según prefieras.' },
       { titulo: 'Diagnóstico', descripcion: 'Analizamos el espacio, la luz y tus necesidades.' },
@@ -46,8 +70,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-004': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=1200&q=80',
     rating: 4.6, num_resenas: 9, garantia_meses: 12,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia',
-    que_incluye: ['Láminas de PVC y perfilería', 'Mano de obra especializada', 'Sellado de uniones', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Láminas de PVC y perfilería', material: true },
+      { t: 'Mano de obra especializada' },
+      { t: 'Sellado de uniones' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Cuéntanos las medidas aproximadas del área y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
@@ -59,8 +88,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-005': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=1200&q=80',
     rating: 4.5, num_resenas: 12, garantia_meses: 2,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata',
-    que_incluye: ['Diagnóstico del daño o desgaste', 'Mano de obra especializada', 'Materiales menores de reparación', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Diagnóstico del daño o desgaste' },
+      { t: 'Mano de obra especializada' },
+      { t: 'Materiales menores de reparación' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Solicitud', descripcion: 'Nos cuentas qué necesita mantenimiento o reparación.' },
       { titulo: 'Diagnóstico', descripcion: 'Un técnico evalúa el daño y define el alcance del trabajo.' },
@@ -72,8 +106,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-006': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1200&q=80',
     rating: 4.8, num_resenas: 18, garantia_meses: 3,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata',
-    que_incluye: ['Visita y levantamiento del espacio', 'Propuesta de distribución y mobiliario', 'Paleta de colores personalizada', 'Plano 2D del proyecto'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Visita y levantamiento del espacio' },
+      { t: 'Propuesta de distribución y mobiliario' },
+      { t: 'Paleta de colores personalizada' },
+      { t: 'Plano 2D del proyecto' },
+    ],
     como_funciona: [
       { titulo: 'Agenda tu cita', descripcion: 'Coordinamos una visita al espacio a diseñar.' },
       { titulo: 'Diagnóstico', descripcion: 'Analizamos el espacio, la luz y tus necesidades.' },
@@ -85,8 +124,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-007': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=1200&q=80',
     rating: 4.7, num_resenas: 11, garantia_meses: 3,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, San Agustín',
-    que_incluye: ['Visita técnica de fachada', 'Propuesta de colores y acabados exteriores', 'Recomendación de materiales resistentes al clima', 'Render conceptual de la fachada'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Visita técnica de fachada' },
+      { t: 'Propuesta de colores y acabados exteriores' },
+      { t: 'Recomendación de materiales resistentes al clima' },
+      { t: 'Render conceptual de la fachada' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Cuéntanos sobre tu fachada y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el alcance y la fecha en máximo 24 horas.' },
@@ -98,8 +142,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-008': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80',
     rating: 4.6, num_resenas: 14, garantia_meses: 12,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata, Neiva',
-    que_incluye: ['Piso laminado de alta resistencia', 'Instalación con nivelación previa', 'Perfiles y remates incluidos', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Piso laminado de alta resistencia', material: true },
+      { t: 'Perfiles y remates de acabado', material: true },
+      { t: 'Instalación con nivelación previa' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Indica el área aproximada y cuántas horas crees que tomará, y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
@@ -111,8 +160,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-009': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=1200&q=80',
     rating: 4.7, num_resenas: 20, garantia_meses: 6,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata, Neiva',
-    que_incluye: ['Materiales de estuco o graniplast', 'Mano de obra especializada', 'Acabado texturizado uniforme', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Estuco o graniplast', material: true },
+      { t: 'Mano de obra especializada' },
+      { t: 'Acabado texturizado uniforme' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Cuéntanos el tipo de acabado que buscas, indica los días estimados y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
@@ -124,8 +178,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-010': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80',
     rating: 4.5, num_resenas: 8, garantia_meses: 6,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia',
-    que_incluye: ['Láminas de icopor decorativo', 'Perfilería y guías de instalación', 'Mano de obra especializada', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Láminas de icopor decorativo', material: true },
+      { t: 'Perfilería y guías de instalación', material: true },
+      { t: 'Mano de obra especializada' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Cotiza en línea', descripcion: 'Cuéntanos las medidas aproximadas del área y arma tu solicitud en minutos.' },
       { titulo: 'Revisamos y aprobamos', descripcion: 'Nuestro equipo revisa tu solicitud y te confirma el precio final y la fecha en máximo 24 horas.' },
@@ -137,8 +196,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-011': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
     rating: 4.9, num_resenas: 9, garantia_meses: 1,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata, Neiva',
-    que_incluye: ['Diagnóstico técnico del proyecto', 'Recomendaciones de materiales y presupuesto', 'Cronograma estimado de obra', 'Informe escrito de recomendaciones'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Diagnóstico técnico del proyecto' },
+      { t: 'Recomendaciones de materiales y presupuesto' },
+      { t: 'Cronograma estimado de obra' },
+      { t: 'Informe escrito de recomendaciones' },
+    ],
     como_funciona: [
       { titulo: 'Agenda tu cita', descripcion: 'Coordinamos una visita o videollamada según prefieras.' },
       { titulo: 'Diagnóstico', descripcion: 'Analizamos el alcance y el estado actual del proyecto.' },
@@ -150,8 +214,13 @@ export const ServiciosEnriquecimiento = {
   'SERV-012': {
     imagen_detalle_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=80',
     rating: 4.4, num_resenas: 6, garantia_meses: 2,
-    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Pitalito, Tesalia, La Plata',
-    que_incluye: ['Diagnóstico del estado de la fachada', 'Limpieza y reparación de fisuras menores', 'Mano de obra especializada', 'Limpieza del área al finalizar'],
+    horario_atencion: 'Lunes a Sábado: 8:00am - 6:00pm', zona_cobertura: 'Tesalia y Paicol',
+    que_incluye: [
+      { t: 'Diagnóstico del estado de la fachada' },
+      { t: 'Limpieza y reparación de fisuras menores' },
+      { t: 'Mano de obra especializada' },
+      { t: 'Limpieza del área al finalizar' },
+    ],
     como_funciona: [
       { titulo: 'Solicitud', descripcion: 'Nos cuentas qué necesita la fachada.' },
       { titulo: 'Diagnóstico', descripcion: 'Un técnico evalúa el daño y define el alcance del trabajo.' },

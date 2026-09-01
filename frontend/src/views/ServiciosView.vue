@@ -150,8 +150,8 @@ const pasos = [
                 </div>
                 <p class="service-desc">{{ s.descripcion }}</p>
                 <div class="service-card-meta">
-                  <span><i class="ri-time-line"></i> {{ s.duracion_estimada_horas }}h estimadas</span>
-                  <span><i class="ri-shield-check-line"></i> {{ s.garantia_meses }} meses garantía</span>
+                  <span><i class="ri-time-line"></i> Respuesta en 24 h</span>
+                  <span><i class="ri-shield-check-line"></i> {{ s.garantia_meses }} {{ s.garantia_meses === 1 ? 'mes' : 'meses' }} de garantía</span>
                 </div>
                 <div class="d-flex align-center mb-16" style="margin-top:4px;">
                   <span v-if="s.precio_hora" class="service-price">{{ formatCOP(s.precio_hora) }} <small style="font-size:0.7rem;color:var(--text-muted);font-weight:500;">/hora</small></span>

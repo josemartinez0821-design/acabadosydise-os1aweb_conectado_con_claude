@@ -2,7 +2,7 @@
 // RF09 - detalle de servicio: qué incluye, cómo funciona, galería con lightbox, cotización (requiere sesión)
 import { ref, computed } from 'vue'
 import { useCatalogStore } from '../stores/catalog'
-import { unidadServicio, tarifaServicio, ADVERTENCIA_MODO } from '../stores/cotizaciones'
+import { unidadServicio, tarifaServicio } from '../stores/cotizaciones'
 import { formatCOP } from '../composables/useFormat'
 import { useCotizarGate } from '../composables/useCotizarGate'
 import CotizarLoginModal from '../components/service/CotizarLoginModal.vue'
@@ -13,6 +13,15 @@ const { mostrarModalLogin, irACotizar, irALogin } = useCotizarGate()
 
 const servicio = computed(() => catalog.getServiceById(props.id))
 
+// Etiqueta legible del ENUM `tipo_servicio` (con tildes y siglas). Mismas parejas que el
+// filtro de TIPOS en ServiciosView / AdminServiciosView — si algún día se unifican, extraer.
+const TIPO_LABEL = {
+  drywall: 'Drywall', aplicacion_pintura: 'Aplicación de Pintura', asesoria: 'Asesoría',
+  pvc: 'PVC', mantenimiento: 'Mantenimiento', diseño_interiores: 'Diseño de Interiores',
+  diseño_exteriores: 'Diseño de Exteriores', instalacion: 'Instalación', consultoria: 'Consultoría',
+}
+const tipoLegible = (tipo) => TIPO_LABEL[tipo] || (tipo || '').replaceAll('_', ' ')
+
 const horas = ref(1)
 const totalEstimado = computed(() => {
   if (!servicio.value) return 0
@@ -20,12 +29,44 @@ const totalEstimado = computed(() => {
   return tarifaServicio(servicio.value) * horas.value
 })
 
-// El propio incluye_materiales del servicio es solo la preselección: el cliente puede cambiarla.
+// Solo los servicios donde el negocio pone los materiales (incluye_materiales en el backend:
+// drywall, PVC, pisos, estuco, cielo raso) tienen las dos modalidades. En asesorías, consultorías
+// y mantenimientos el negocio nunca pone materiales, así que el toggle no aplica y no se muestra.
+const tieneModalidad = computed(() => !!servicio.value?.incluye_materiales)
+
+// El incluye_materiales del servicio es solo la preselección: si tiene modalidad, el cliente
+// puede cambiarla. Si no la tiene, `modo` queda fijo en 'solo_servicio' (solo mano de obra).
 const modoElegido = ref(null)
-const modo = computed(() => modoElegido.value || (servicio.value?.incluye_materiales ? 'todo_incluido' : 'solo_servicio'))
+const modo = computed(() => {
+  if (!tieneModalidad.value) return 'solo_servicio'
+  return modoElegido.value || 'todo_incluido'
+})
+
+const HINT_MODO = {
+  todo_incluido: 'Nosotros ponemos los materiales y la mano de obra.',
+  solo_servicio: 'Tú pones los materiales; nosotros, la mano de obra.',
+}
+
+// "¿Qué incluye?" concuerda con la modalidad elegida: en "Solo servicio" se ocultan las líneas
+// marcadas como material (las pone el cliente) y se aclara con una línea aparte.
+const materialesLosPoneCliente = computed(() => tieneModalidad.value && modo.value === 'solo_servicio')
+const queIncluye = computed(() => {
+  const items = servicio.value?.que_incluye || []
+  return materialesLosPoneCliente.value ? items.filter((i) => !i.material) : items
+})
+
+const seCobraPorTiempo = computed(() => !!(servicio.value?.precio_hora || servicio.value?.precio_dia))
 
 function solicitarCotizacion() {
-  irACotizar({ tipo: 'servicio', id: servicio.value.id_servicio, horas: horas.value, modo: modo.value })
+  // Solo se arrastran a la cotización los datos que aplican a este servicio: las horas/días si
+  // se cobra por tiempo, y el modo si tiene las dos modalidades (materiales incluidos o no).
+  // En un servicio a precio fijo de proyecto, ninguno de los dos aplica.
+  irACotizar({
+    tipo: 'servicio',
+    id: servicio.value.id_servicio,
+    horas: seCobraPorTiempo.value ? horas.value : undefined,
+    modo: tieneModalidad.value ? modo.value : undefined,
+  })
 }
 
 const imagenLightbox = ref(null)
@@ -62,10 +103,10 @@ function copiarEnlace() {
         <div class="servicio-hero">
           <img :src="servicio.imagen_detalle_url || servicio.imagen_url" :alt="servicio.nombre_servicio" />
           <div class="servicio-hero-overlay">
-            <span class="badge badge-red" style="width:fit-content;">{{ servicio.tipo_servicio.replace('_', ' ') }}</span>
+            <span class="badge badge-red" style="width:fit-content;">{{ tipoLegible(servicio.tipo_servicio) }}</span>
             <h1 class="servicio-hero-title">{{ servicio.nombre_servicio }}</h1>
             <p class="servicio-hero-rating">
-              <i class="ri-star-fill" style="color:var(--accent);"></i> {{ servicio.rating }} ({{ servicio.num_resenas }} reseñas)
+              <i class="ri-star-fill" style="color:var(--accent);"></i> {{ servicio.rating }}
               &middot; {{ servicio.codigo_servicio }}
             </p>
           </div>
@@ -81,15 +122,19 @@ function copiarEnlace() {
                 <div class="servicio-quickfacts">
                   <div class="servicio-quickfact">
                     <div class="servicio-quickfact-icon"><i class="ri-time-line"></i></div>
-                    <div class="servicio-quickfact-text"><span>Duración</span><strong>{{ servicio.duracion_estimada_horas }} horas est.</strong></div>
+                    <div class="servicio-quickfact-text"><span>Respuesta</span><strong>Máx. 24 horas</strong></div>
                   </div>
                   <div class="servicio-quickfact">
                     <div class="servicio-quickfact-icon"><i class="ri-tools-line"></i></div>
-                    <div class="servicio-quickfact-text"><span>Materiales</span><strong>{{ servicio.incluye_materiales ? 'Incluidos' : 'No incluidos' }}</strong></div>
+                    <div class="servicio-quickfact-text">
+                      <span>Materiales</span>
+                      <strong v-if="tieneModalidad">{{ modo === 'todo_incluido' ? 'Los ponemos nosotros' : 'Los pones tú' }}</strong>
+                      <strong v-else>No incluidos</strong>
+                    </div>
                   </div>
                   <div class="servicio-quickfact">
                     <div class="servicio-quickfact-icon"><i class="ri-shield-check-line"></i></div>
-                    <div class="servicio-quickfact-text"><span>Garantía</span><strong>{{ servicio.garantia_meses }} meses</strong></div>
+                    <div class="servicio-quickfact-text"><span>Garantía</span><strong>{{ servicio.garantia_meses }} {{ servicio.garantia_meses === 1 ? 'mes' : 'meses' }}</strong></div>
                   </div>
                   <div class="servicio-quickfact">
                     <div class="servicio-quickfact-icon"><i class="ri-map-pin-line"></i></div>
@@ -103,8 +148,11 @@ function copiarEnlace() {
               <div class="admin-card-body">
                 <h2 class="font-main fw-800 mb-16" style="font-size:1.1rem;"><i class="ri-checkbox-multiple-line" style="color:var(--primary);"></i> ¿Qué incluye este servicio?</h2>
                 <div class="servicio-incluye-grid">
-                  <div v-for="item in servicio.que_incluye" :key="item" class="servicio-incluye-item">
-                    <i class="ri-checkbox-circle-fill"></i> {{ item }}
+                  <div v-for="item in queIncluye" :key="item.t" class="servicio-incluye-item">
+                    <i class="ri-checkbox-circle-fill"></i> {{ item.t }}
+                  </div>
+                  <div v-if="materialesLosPoneCliente" class="servicio-incluye-item servicio-incluye-item-off">
+                    <i class="ri-close-circle-line"></i> Los materiales los aportas tú
                   </div>
                 </div>
               </div>
@@ -154,7 +202,7 @@ function copiarEnlace() {
               <span v-else-if="servicio.precio_dia" class="sd-price-unit">/día</span>
             </div>
 
-            <template v-if="servicio.precio_hora || servicio.precio_dia">
+            <template v-if="seCobraPorTiempo">
               <div class="sd-horas-card">
                 <div class="sd-horas-card-icon"><i class="ri-time-line"></i></div>
                 <div class="sd-horas-card-body">
@@ -175,15 +223,17 @@ function copiarEnlace() {
               </div>
             </template>
 
-            <div class="cotiz-modo-toggle">
-              <button type="button" class="cotiz-modo-chip" :class="{ active: modo === 'todo_incluido' }" @click="modoElegido = 'todo_incluido'">
-                <i class="ri-checkbox-multiple-line"></i> Todo incluido
-              </button>
-              <button type="button" class="cotiz-modo-chip" :class="{ active: modo === 'solo_servicio' }" @click="modoElegido = 'solo_servicio'">
-                <i class="ri-hammer-line"></i> Solo servicio
-              </button>
-            </div>
-            <p class="cotiz-modo-warning" style="margin-bottom:16px;"><i class="ri-information-line"></i> {{ ADVERTENCIA_MODO[modo] }}</p>
+            <template v-if="tieneModalidad">
+              <div class="cotiz-modo-toggle">
+                <button type="button" class="cotiz-modo-chip" :class="{ active: modo === 'todo_incluido' }" @click="modoElegido = 'todo_incluido'">
+                  <i class="ri-checkbox-multiple-line"></i> Todo incluido
+                </button>
+                <button type="button" class="cotiz-modo-chip" :class="{ active: modo === 'solo_servicio' }" @click="modoElegido = 'solo_servicio'">
+                  <i class="ri-hammer-line"></i> Solo servicio
+                </button>
+              </div>
+              <p class="cotiz-modo-warning" style="margin-bottom:16px;"><i class="ri-information-line"></i> {{ HINT_MODO[modo] }}</p>
+            </template>
 
             <p class="text-muted" style="font-size:0.78rem;margin-bottom:20px;"><i class="ri-time-line"></i> {{ servicio.horario_atencion }}</p>
 
@@ -210,7 +260,7 @@ function copiarEnlace() {
                 <img :src="s.imagen_url" :alt="s.nombre_servicio" loading="lazy" />
               </RouterLink>
               <div class="service-card-body">
-                <div class="service-type">{{ s.tipo_servicio.replace('_', ' ') }}</div>
+                <div class="service-type">{{ tipoLegible(s.tipo_servicio) }}</div>
                 <h3 class="service-name">{{ s.nombre_servicio }}</h3>
                 <p class="service-desc">{{ s.descripcion }}</p>
                 <RouterLink :to="`/servicios/${s.id_servicio}`" class="btn btn-outline-red btn-sm btn-block">Ver Servicio</RouterLink>
@@ -252,6 +302,8 @@ function copiarEnlace() {
 .servicio-incluye-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
 .servicio-incluye-item { display: flex; align-items: flex-start; gap: 8px; font-size: 0.9rem; color: var(--text); }
 .servicio-incluye-item i { color: var(--success); margin-top: 2px; }
+.servicio-incluye-item-off { color: var(--text-muted); }
+.servicio-incluye-item-off i { color: var(--text-muted); }
 
 .servicio-pasos { position: relative; }
 .servicio-paso { display: flex; gap: 16px; padding-bottom: 24px; position: relative; }
