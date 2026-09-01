@@ -4,15 +4,18 @@ import com.acabados1a.backend.dto.CotizacionEstadoRequest;
 import com.acabados1a.backend.dto.CotizacionRequest;
 import com.acabados1a.backend.model.*;
 import com.acabados1a.backend.repository.*;
+import com.acabados1a.backend.util.ObservacionesUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -136,7 +139,41 @@ public class CotizacionService {
             if (request.getTotalEstimado() != null) cotizacion.setTotalEstimado(request.getTotalEstimado());
         }
 
-        return cotizacionRepository.save(cotizacion);
+        Cotizacion guardada = cotizacionRepository.save(cotizacion);
+
+        // Apenas el admin aprueba, el cliente recibe por correo el detalle (nota del asesor,
+        // servicios y productos por separado, total y anticipo del 50%) para poder entrar a pagar.
+        // Antes solo existía el recordatorio de vencimiento (5 días antes); la aprobación en sí no
+        // avisaba nada. @Async dentro de EmailService: no bloquea esta respuesta.
+        if (esAdmin && nuevoEstado == Cotizacion.Estado.aprobada) {
+            enviarCorreoAprobacion(guardada);
+        }
+
+        return guardada;
+    }
+
+    private void enviarCorreoAprobacion(Cotizacion cotizacion) {
+        List<EmailService.LineaResumen> servicios = new ArrayList<>();
+        for (CotizacionServicio cs : cotizacionServicioRepository.findByCotizacionIdCotizacion(cotizacion.getIdCotizacion())) {
+            Servicio s = cs.getServicio();
+            String detalle = EmailService.descripcionCantidadServicio(cs.getCantidad(), s.getPrecioHora() != null, s.getPrecioDia() != null);
+            servicios.add(new EmailService.LineaResumen(s.getNombreServicio(), detalle, cs.getPrecioEstimado()));
+        }
+        List<EmailService.LineaResumen> productos = new ArrayList<>();
+        for (CotizacionProducto cp : cotizacionProductoRepository.findByCotizacionIdCotizacion(cotizacion.getIdCotizacion())) {
+            BigDecimal montoLinea = cp.getPrecioUnitario().multiply(BigDecimal.valueOf(cp.getCantidad()));
+            productos.add(new EmailService.LineaResumen(cp.getProducto().getNombre(), "x" + cp.getCantidad(), montoLinea));
+        }
+
+        BigDecimal total = cotizacion.getTotalEstimado() != null ? cotizacion.getTotalEstimado() : BigDecimal.ZERO;
+        // Mismo cálculo que montoAnticipo() en el frontend (stores/cotizaciones.js): 50% redondeado
+        // al peso, para que el correo anuncie exactamente lo que el cliente verá que debe pagar.
+        BigDecimal anticipo = total.multiply(new BigDecimal("0.5")).setScale(0, RoundingMode.HALF_UP);
+        int validez = cotizacion.getValidezDias() != null ? cotizacion.getValidezDias() : 15;
+
+        emailService.enviarCotizacionAprobada(cotizacion.getUsuario().getEmail(), new EmailService.DatosCotizacionAprobada(
+            cotizacion.getNumeroCotizacion(), cotizacion.getRespuesta(), servicios, productos,
+            total, anticipo, validez, ObservacionesUtil.extraerFechaDeseada(cotizacion.getObservaciones())));
     }
 
     // Job diario: le avisa por correo al cliente cuando a una cotización aprobada le quedan

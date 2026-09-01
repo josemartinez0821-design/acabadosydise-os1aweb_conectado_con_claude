@@ -154,6 +154,9 @@ async function confirmarAnticipo() {
       subtotal: anticipo,
       total: anticipo,
       metodo_pago: metodoAnticipo.value,
+      // Un anticipo de servicio no envía nada. El backend ya asume 'recogida' si el campo falta,
+      // pero se manda explícito para dejar claro el "sin envío" y no depender del default.
+      metodo_envio: 'recogida',
       id_cotizacion: cot.id_cotizacion,
       notas_cliente: `Anticipo (${Math.round(PORCENTAJE_ANTICIPO * 100)}%) de la cotización ${cot.numero_cotizacion}`,
     })
@@ -166,6 +169,7 @@ async function confirmarAnticipo() {
   const fechaDeseadaIso = extraerFechaDeseada(cot.observaciones)
   anticipoConfirmado.value = { numero: cot.numero_cotizacion, monto: anticipo, fecha: fechaDeseadaIso ? formatDate(fechaDeseadaIso) : null }
   cotizacionAAnticipar.value = null
+  showToast('¡Anticipo confirmado! Te enviamos a tu correo el detalle del servicio y lo que queda pendiente.', 'success')
 }
 
 // El cliente también puede rechazar una cotización ya aprobada (ej. si cambió de planes o
@@ -451,7 +455,7 @@ async function enviarSolicitud() {
   fechaDeseada.value = ''
   aceptaTerminos.value = false
   enviando.value = false
-  showToast('¡Cotización enviada! Te responderemos en máximo 24 horas.', 'success')
+  showToast('¡Cotización enviada! La revisamos y te avisamos por correo con el precio y la fecha (máximo 24 horas).', 'success')
   tabActiva.value = 'mis-cotizaciones'
 }
 </script>

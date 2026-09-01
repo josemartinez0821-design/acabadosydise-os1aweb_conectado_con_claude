@@ -31,7 +31,10 @@ public class VentaRequest {
     @NotBlank(message = "El método de pago es obligatorio.")
     private String metodoPago;
 
-    @NotBlank(message = "El método de envío es obligatorio.")
+    // Opcional: el anticipo de una cotización de servicio no envía nada, así que el frontend no
+    // manda este campo. Cuando falta, VentaService.crear asume 'recogida' (el valor del enum que
+    // representa "sin envío"). Igual que con `items`, es mejor un default claro en el service que
+    // un 400 por un campo que para ese flujo no aplica.
     private String metodoEnvio;
 
     private Integer idCotizacion;

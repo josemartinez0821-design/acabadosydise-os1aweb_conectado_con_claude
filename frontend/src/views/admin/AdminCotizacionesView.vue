@@ -5,7 +5,7 @@
 // reactivo que ya usa `CotizacionesView.vue`, así que una solicitud nueva aparece aquí al instante.
 import { ref, computed } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'
-import { useCotizacionesStore } from '../../stores/cotizaciones'
+import { useCotizacionesStore, unidadServicio } from '../../stores/cotizaciones'
 import { useVentasStore } from '../../stores/ventas'
 import { useToast } from '../../composables/useToast'
 import { formatCOP, formatDate, formatDateTime, extraerFechaDeseada, extraerNotaCliente } from '../../composables/useFormat'
@@ -69,6 +69,18 @@ function ciudadCliente(usuario) {
 // fallback al perfil para cotizaciones creadas antes de que este campo existiera.
 function ubicacionSolicitud(cot) {
   return cot.ciudad ? `${cot.ciudad}, ${cot.departamento}` : ciudadCliente(cot.usuario)
+}
+
+// Cantidad pedida en un ítem de servicio, ya legible: "1 hora" / "3 horas" / "2 días".
+// Los servicios por proyecto no llevan cantidad, así que ahí no se muestra nada.
+function cantidadServicioTexto(s) {
+  const servicio = catalog.getServiceById(s.id_servicio)
+  if (!servicio) return null
+  const unidad = unidadServicio(servicio)
+  if (unidad === 'proyecto') return null
+  const n = Number(s.cantidad)
+  const base = unidad === 'hora' ? 'hora' : 'día'
+  return `${Number.isInteger(n) ? n : n.toFixed(1)} ${base}${n === 1 ? '' : 's'}`
 }
 
 // Misma regla real de 3 niveles que CotizacionesView.vue (cliente): Tesalia gratis, Paicol solo
@@ -207,10 +219,14 @@ function pedirMotivoRechazo() {
 }
 async function confirmarAprobar() {
   const cot = cotizacionActiva.value
+  if (!notaRespuesta.value.trim()) {
+    showToast('Escribe una nota para el cliente antes de aprobar.', 'danger')
+    return
+  }
   const nuevoTotal = Number(totalAjustado.value) || cot.total_estimado
   try {
-    await cotizStore.actualizarEstado(cot.id_cotizacion, 'aprobada', notaRespuesta.value.trim() || null, nuevoTotal)
-    showToast(`Cotización ${cot.numero_cotizacion} aprobada.`, 'success')
+    await cotizStore.actualizarEstado(cot.id_cotizacion, 'aprobada', notaRespuesta.value.trim(), nuevoTotal)
+    showToast(`Cotización ${cot.numero_cotizacion} aprobada. Le enviamos al cliente el detalle y tu nota por correo.`, 'success')
     cerrarModalCotizacion()
   } catch (e) {
     showToast(e.response?.data?.mensaje || 'No se pudo aprobar la cotización. Intenta de nuevo.', 'danger')
@@ -491,12 +507,16 @@ function seleccionarDia(dia) {
             <p class="cotiz-modal-nombre">{{ nombreCliente(cotizacionActiva.usuario) }}</p>
             <p><i class="ri-phone-line"></i> {{ telefonoCliente(cotizacionActiva.usuario) || 'Sin teléfono registrado' }}</p>
             <p><i class="ri-mail-line"></i> {{ emailCliente(cotizacionActiva.usuario) }}</p>
-            <p><i class="ri-map-pin-line"></i> {{ ciudadCliente(cotizacionActiva.usuario) }}</p>
             <div class="cotiz-card-contacto">
               <a v-if="telefonoCliente(cotizacionActiva.usuario)" :href="`tel:${telefonoCliente(cotizacionActiva.usuario)}`" class="cotiz-contacto-btn"><i class="ri-phone-line"></i> Llamar</a>
               <a v-if="linkWhatsapp(cotizacionActiva.usuario, cotizacionActiva)" :href="linkWhatsapp(cotizacionActiva.usuario, cotizacionActiva)" target="_blank" rel="noopener" class="cotiz-contacto-btn whatsapp"><i class="ri-whatsapp-line"></i> WhatsApp</a>
               <a :href="`mailto:${emailCliente(cotizacionActiva.usuario)}`" class="cotiz-contacto-btn"><i class="ri-mail-line"></i> Correo</a>
             </div>
+          </div>
+
+          <div class="cotiz-fecha-destacada cotiz-ubicacion-destacada">
+            <i class="ri-map-pin-2-fill"></i>
+            <div><span>Ubicación de la solicitud</span><strong>{{ ubicacionSolicitud(cotizacionActiva) }}</strong></div>
           </div>
 
           <div v-if="extraerFechaDeseada(cotizacionActiva.observaciones)" class="cotiz-fecha-destacada">
@@ -540,7 +560,7 @@ function seleccionarDia(dia) {
             <img :src="catalog.getServiceById(s.id_servicio)?.imagen_url" :alt="nombreServicio(s.id_servicio)" />
             <span>
               <span class="cotiz-item-kicker cotiz-item-kicker-servicio"><i class="ri-tools-line"></i> Servicio</span><br />
-              {{ nombreServicio(s.id_servicio) }}
+              {{ nombreServicio(s.id_servicio) }}<span v-if="cantidadServicioTexto(s)" class="cotiz-detail-item-meta">{{ cantidadServicioTexto(s) }}</span>
             </span>
             <span>{{ formatCOP(s.subtotal) }}</span>
           </div>
@@ -559,8 +579,8 @@ function seleccionarDia(dia) {
                 <i class="ri-error-warning-line"></i> Este precio es un estimado, no fijo — si el trabajo termina necesitando más materiales o tiempo del previsto, puede generar costos extra. Acláraselo al cliente por WhatsApp antes de confirmar.
               </p>
               <div class="form-group" style="margin-bottom:16px;">
-                <label class="form-label">Nota para el cliente (opcional)</label>
-                <textarea v-model="notaRespuesta" class="form-control" rows="2" placeholder="Ej: Confirmamos la fecha e incluye materiales."></textarea>
+                <label class="form-label required">Nota para el cliente</label>
+                <textarea v-model="notaRespuesta" class="form-control" rows="2" placeholder="Ej: Confirmamos la fecha e incluye materiales." required></textarea>
               </div>
               <div class="confirm-modal-actions">
                 <button class="btn btn-sm" style="background:var(--danger);color:white;" @click="pedirMotivoRechazo"><i class="ri-close-circle-line"></i> Rechazar</button>
@@ -720,6 +740,11 @@ function seleccionarDia(dia) {
    dato neutro como la fecha elegida. */
 .cotiz-zona-destacada { background: linear-gradient(135deg, rgba(243,156,18,0.1), rgba(243,156,18,0.03)); border-color: rgba(243,156,18,0.35); }
 .cotiz-zona-destacada > i { color: var(--warning); }
+
+/* Ubicación de la solicitud - misma tarjeta, en azul, para distinguirla de la fecha cuando van
+   apiladas y porque es el dato que define si el servicio se puede atender. */
+.cotiz-ubicacion-destacada { background: linear-gradient(135deg, rgba(41,128,185,0.1), rgba(41,128,185,0.03)); border-color: rgba(41,128,185,0.3); }
+.cotiz-ubicacion-destacada > i { color: #2980b9; }
 
 .cotiz-modal { text-align: left; }
 .cotiz-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }

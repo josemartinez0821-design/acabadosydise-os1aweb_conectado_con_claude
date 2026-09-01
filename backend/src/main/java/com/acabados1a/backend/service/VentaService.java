@@ -5,18 +5,18 @@ import com.acabados1a.backend.dto.VentaNotasRequest;
 import com.acabados1a.backend.dto.VentaRequest;
 import com.acabados1a.backend.model.*;
 import com.acabados1a.backend.repository.*;
+import com.acabados1a.backend.util.ObservacionesUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -36,6 +36,7 @@ public class VentaService {
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
     private final CotizacionRepository cotizacionRepository;
+    private final CotizacionServicioRepository cotizacionServicioRepository;
     private final EmailService emailService;
 
     public List<Venta> listarParaUsuario(String email, boolean esAdmin) {
@@ -62,11 +63,20 @@ public class VentaService {
             throw new IllegalArgumentException("El método de pago indicado no es válido.");
         }
 
+        // metodoEnvio es opcional: el anticipo de una cotización de servicio no envía nada y el
+        // frontend no lo manda. Si no viene, se asume 'recogida' (el valor del enum que representa
+        // "sin envío"). El null se filtra aparte porque MetodoEnvio.valueOf(null) lanzaría
+        // NullPointerException, no IllegalArgumentException, y se escaparía del catch.
         Venta.MetodoEnvio metodoEnvio;
-        try {
-            metodoEnvio = Venta.MetodoEnvio.valueOf(request.getMetodoEnvio());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("El método de envío indicado no es válido.");
+        String metodoEnvioRaw = request.getMetodoEnvio();
+        if (metodoEnvioRaw == null || metodoEnvioRaw.isBlank()) {
+            metodoEnvio = Venta.MetodoEnvio.recogida;
+        } else {
+            try {
+                metodoEnvio = Venta.MetodoEnvio.valueOf(metodoEnvioRaw);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("El método de envío indicado no es válido.");
+            }
         }
 
         // Contraentrega es para envío: el cliente paga al recoger el paquete en el local de la
@@ -157,17 +167,40 @@ public class VentaService {
         pago.setTransaccionId(metodoPago == Venta.MetodoPago.contraentrega ? null : "SIM-" + String.format("%06d", guardada.getIdVenta()));
         pagoRepository.save(pago);
 
-        NumberFormat formatoCOP = NumberFormat.getCurrencyInstance(new Locale("es", "CO"));
-        formatoCOP.setMaximumFractionDigits(0);
-        StringBuilder resumenProductos = new StringBuilder();
+        // Resumen para el correo de confirmación. Los productos salen de este pedido; los servicios,
+        // de la cotización asociada (si la hay). El anticipo del 50% de una cotización de solo
+        // servicios llega con items vacío -> el correo se arma en "modo anticipo" (encabezado y
+        // desglose propios) en vez de mostrar "Productos:" sin nada debajo como antes.
+        List<EmailService.LineaResumen> lineasProducto = new ArrayList<>();
         for (VentaRequest.Item item : items) {
             Producto producto = productosPorId.get(item.getIdProducto());
-            resumenProductos.append("- ").append(producto.getNombre()).append(" x").append(item.getCantidad())
-                .append(": ").append(formatoCOP.format(item.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()))))
-                .append("\n");
+            BigDecimal montoLinea = item.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()));
+            lineasProducto.add(new EmailService.LineaResumen(producto.getNombre(), "x" + item.getCantidad(), montoLinea));
         }
-        emailService.enviarConfirmacionPedido(dueño.getEmail(), guardada.getNumeroVenta(), resumenProductos.toString(),
-            formatoCOP.format(total), metodoPago == Venta.MetodoPago.contraentrega);
+
+        List<EmailService.LineaResumen> lineasServicio = new ArrayList<>();
+        String numeroCotizacion = null;
+        BigDecimal saldoPendiente = null;
+        String fechaDeseada = null;
+        boolean esAnticipoServicio = guardada.getCotizacion() != null && items.isEmpty();
+        if (guardada.getCotizacion() != null) {
+            Cotizacion cot = guardada.getCotizacion();
+            numeroCotizacion = cot.getNumeroCotizacion();
+            fechaDeseada = ObservacionesUtil.extraerFechaDeseada(cot.getObservaciones());
+            for (CotizacionServicio cs : cotizacionServicioRepository.findByCotizacionIdCotizacion(cot.getIdCotizacion())) {
+                Servicio s = cs.getServicio();
+                String detalle = EmailService.descripcionCantidadServicio(cs.getCantidad(), s.getPrecioHora() != null, s.getPrecioDia() != null);
+                lineasServicio.add(new EmailService.LineaResumen(s.getNombreServicio(), detalle, cs.getPrecioEstimado()));
+            }
+            if (esAnticipoServicio && cot.getTotalEstimado() != null) {
+                saldoPendiente = cot.getTotalEstimado().subtract(total).max(BigDecimal.ZERO);
+            }
+        }
+
+        emailService.enviarConfirmacionPedido(dueño.getEmail(), new EmailService.DatosConfirmacionPedido(
+            guardada.getNumeroVenta(), lineasProducto, lineasServicio, total,
+            metodoPago == Venta.MetodoPago.contraentrega, esAnticipoServicio,
+            numeroCotizacion, saldoPendiente, fechaDeseada));
 
         return guardada;
     }
