@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="Imagen del producto pendiente">
+  <rect width="400" height="400" fill="#f1f0ee"/>
+  <rect x="0" y="0" width="400" height="400" fill="none" stroke="#e0ddd8" stroke-width="2"/>
+  <g fill="none" stroke="#b9b3a8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="120" y="150" width="160" height="120" rx="10"/>
+    <path d="M120 235l45-45 35 30 45-55 35 35"/>
+  </g>
+  <circle cx="168" cy="188" r="12" fill="#b9b3a8"/>
+  <text x="200" y="315" text-anchor="middle" font-family="'Nunito', Arial, sans-serif" font-size="24" font-weight="700" fill="#8a8378">Sin imagen</text>
+  <text x="200" y="345" text-anchor="middle" font-family="'Nunito', Arial, sans-serif" font-size="15" fill="#a8a196">Acabados y Diseños 1A</text>
+</svg>

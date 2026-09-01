@@ -13,16 +13,21 @@ import { useAuthStore } from '../stores/auth'
 import { useToast } from '../composables/useToast'
 import { formatCOP } from '../composables/useFormat'
 
+import heroFachada from '../assets/hero-fachada.jpg'
+import heroInterior from '../assets/hero-interior.jpg'
+import heroPremium from '../assets/hero-premium.jpg'
+import heroHerramientas from '../assets/hero-herramientas.jpg'
+
 const catalog = useCatalogStore()
 const cart = useCartStore()
 const auth = useAuthStore()
 const { showToast } = useToast()
 
 const heroSlides = [
-  { img: 'https://images.pexels.com/photos/164558/pexels-photo-164558.jpeg?w=700&h=500&fit=crop', icon: 'ri-paint-bucket-line', caption: 'Pinturas de alta calidad' },
-  { img: 'https://images.pexels.com/photos/2760242/pexels-photo-2760242.jpeg?w=700&h=500&fit=crop', icon: 'ri-brush-line', caption: 'Acabados premium' },
-  { img: 'https://images.pexels.com/photos/209296/pexels-photo-209296.jpeg?w=700&h=500&fit=crop', icon: 'ri-home-gear-line', caption: 'Instalación profesional' },
-  { img: 'https://images.pexels.com/photos/211647/pexels-photo-211647.jpeg?w=700&h=500&fit=crop', icon: 'ri-tools-line', caption: 'Todo en herramientas' },
+  { img: heroFachada, icon: 'ri-paint-bucket-line', caption: 'Pinturas de alta calidad' },
+  { img: heroPremium, icon: 'ri-brush-line', caption: 'Acabados premium' },
+  { img: heroInterior, icon: 'ri-home-gear-line', caption: 'Instalación profesional' },
+  { img: heroHerramientas, icon: 'ri-tools-line', caption: 'Todo en herramientas' },
 ]
 
 const bannerItems = [

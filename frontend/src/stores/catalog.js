@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ServiciosEnriquecimiento } from '../data/serviciosEnriquecimiento'
 import api from '../services/api'
+import productoPlaceholder from '../assets/producto-placeholder.svg'
 
 // Las fotos de stock originales ya venían como URL completa (Unsplash) - pero las imágenes
 // subidas de verdad por el admin (ProductoService.subirImagen) guardan una ruta relativa del
@@ -10,7 +11,8 @@ import api from '../services/api'
 // al cargar los productos, en vez de en cada sitio del frontend que muestra una imagen.
 const URL_BASE_BACKEND = import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
 function resolverImagenUrl(url) {
-  if (!url || url.startsWith('http://') || url.startsWith('https://')) return url
+  if (!url) return productoPlaceholder // producto sin foto todavía — evita el <img> roto en catálogo/detalle
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
   return URL_BASE_BACKEND + url
 }
 
