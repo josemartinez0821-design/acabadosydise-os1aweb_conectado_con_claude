@@ -36,9 +36,14 @@ const variantesTamano = computed(() => (producto.value ? catalog.getVariantesTam
 
 // El mismo mecanismo de variantes (grupo_variante/tamano) sirve tanto para tamaños (pinturas)
 // como para colores (ej. Graniplast): si el color cambia entre hermanos, es un selector de color.
+// Excepción: si las etiquetas del selector traen una medida (galón, cuñete...), es de tamaño
+// aunque el `color` difiera entre variantes — ese `color` ahí es solo informativo (ej. esmalte
+// MAX Co.: "½ Galón" en 3 colores vs "½ Galón Aluminio").
+const RE_MEDIDA_TAMANO = /gal[oó]n|cu[ñn]ete|bolsa|litro|kilo|\bkg\b|cuarto|½|¼/i
 const esVarianteColor = computed(() => {
   const variantes = variantesTamano.value
   if (variantes.length < 2) return false
+  if (variantes.some((v) => RE_MEDIDA_TAMANO.test(v.tamano || ''))) return false
   return new Set(variantes.map((v) => v.color)).size > 1
 })
 
@@ -46,7 +51,7 @@ const COLOR_SWATCHES = {
   blanco: '#ffffff', beige: '#e8dcc4', terracota: '#c56a4a', gris: '#9a9a9a',
   'gris piedra': '#8d8d86', negro: '#1a1a1a', azul: '#5b8fc7', 'azul pastel': '#b8d4e8',
   verde: '#6b9b5e', 'verde menta': '#a8d5ba', rojo: '#b33a3a', amarillo: '#e0c14a',
-  crema: '#f0e6d2', transparente: '#e8e8e8', galvanizado: '#b0b0b0',
+  crema: '#f0e6d2', transparente: '#e8e8e8', galvanizado: '#b0b0b0', aluminio: '#c8ccce',
 }
 function colorSwatch(nombreColor) {
   return COLOR_SWATCHES[(nombreColor || '').toLowerCase()] || null
@@ -71,10 +76,26 @@ function onColorConfirmado(color) {
 }
 
 // Referencia visual: el envase se ve un poco más grande/pequeño según el tamaño elegido, para dar
-// una idea de proporción entre 1/4 galón y 5 galones (mismo mecanismo de variantes de tamaño).
-const ESCALA_POR_TAMANO = { '1/4 gal.': 0.82, '1 gal.': 1, '2.5 gal.': 1.14, '5 gal.': 1.28 }
+// una idea de proporción entre 1/4 galón y un cuñete (mismo mecanismo de variantes de tamaño).
+// Las llaves van en minúscula porque se comparan contra `tamano.toLowerCase()`.
+// Rango suave (0.82–1.13): con object-fit:contain el envase siempre se ve completo y solo
+// cambia de tamaño dentro del marco — un salto grande (1.3) recortaba el producto y se veía raro.
+const ESCALA_POR_TAMANO = {
+  '¼ galón': 0.82, '1/4 galón': 0.82,
+  '½ galón': 0.9, '1/2 galón': 0.9,
+  'galón': 1, '1 galón': 1,
+  '½ bolsa': 1.04, 'media bolsa': 1.04,
+  '½ cuñete': 1.06, 'medio cuñete': 1.06,
+  'bolsa': 1.12, 'bolsa 28 kg': 1.12, '1 bolsa': 1.12,
+  'cuñete': 1.13, 'cuñete 28 kg': 1.13, '1 cuñete': 1.13,
+}
+// El producto que se está viendo no trae `tamano` (eso vive en gruposVariante, no en la fila
+// del producto) — se toma de la variante correspondiente dentro del grupo.
+const varianteActual = computed(() =>
+  variantesTamano.value.find((v) => v.id_producto === producto.value?.id_producto),
+)
 const escalaImagen = computed(() => {
-  const tamano = (producto.value?.tamano || '').toLowerCase()
+  const tamano = (varianteActual.value?.tamano || '').toLowerCase()
   return ESCALA_POR_TAMANO[tamano] || 1
 })
 
@@ -139,8 +160,13 @@ const especificacionesCompletas = computed(() => {
 
 const relacionados = computed(() => {
   if (!producto.value) return []
-  return catalog.productos
-    .filter((p) => p.id_categoria === producto.value.id_categoria && p.id_producto !== producto.value.id_producto)
+  // Excluye toda la familia de variantes del producto actual (si no, "Relacionados" mostraría
+  // el mismo artículo en sus otros tamaños, que ya están en el selector de arriba) y usa
+  // productosCatalogo para no repetir las variantes ocultas.
+  const idsFamilia = new Set(variantesTamano.value.map((v) => v.id_producto))
+  idsFamilia.add(producto.value.id_producto)
+  return catalog.productosCatalogo
+    .filter((p) => p.id_categoria === producto.value.id_categoria && !idsFamilia.has(p.id_producto))
     .slice(0, 4)
 })
 
@@ -274,6 +300,7 @@ function toggleFaq(i) {
               <img
                 :src="galeria[imagenActiva]"
                 :alt="producto.nombre"
+                :class="{ 'es-variante-tamano': !esVarianteColor && variantesTamano.length > 1 }"
                 :style="!esVarianteColor && variantesTamano.length > 1 ? { transform: `scale(${escalaImagen})` } : {}"
               />
               <span v-if="promoActiva" class="badge badge-yellow detalle-oferta-badge">
@@ -389,6 +416,17 @@ function toggleFaq(i) {
                     <i class="ri-arrow-right-s-line"></i>
                   </div>
                 </button>
+                <div
+                  v-else-if="a.label === 'Color' && !esProductoPintura"
+                  class="detalle-attr detalle-attr-colores"
+                >
+                  <div class="detalle-attr-label"><i :class="a.icon"></i> Colores disponibles</div>
+                  <div class="detalle-attr-colores-list">
+                    <span v-for="c in a.value.split(',').map((s) => s.trim())" :key="c" class="detalle-color-pill">
+                      <span class="detalle-color-swatch" :style="{ background: colorSwatch(c) || '#ccc' }"></span>{{ c }}
+                    </span>
+                  </div>
+                </div>
                 <div v-else class="detalle-attr">
                   <div class="detalle-attr-label"><i :class="a.icon"></i> {{ a.label }}</div>
                   <div class="detalle-attr-value">{{ a.value }}</div>
@@ -608,6 +646,9 @@ function toggleFaq(i) {
 .detalle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; padding: 40px 0; }
 .detalle-galeria-principal { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; }
 .detalle-galeria-principal img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+/* Variantes de tamaño: el envase completo dentro de un marco blanco, para que al cambiar de
+   tamaño se vea entero y solo crezca/encoja — no recortado como con object-fit: cover. */
+.detalle-galeria-principal img.es-variante-tamano { object-fit: contain; padding: 10%; background: #fff; }
 .detalle-oferta-badge { position: absolute; top: 16px; left: 16px; }
 .detalle-galeria-thumbs { display: flex; gap: 12px; margin-top: 12px; }
 .detalle-thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--border); padding: 0; cursor: pointer; }
@@ -653,6 +694,10 @@ function toggleFaq(i) {
 .detalle-attr-label { font-size: 0.68rem; font-family: var(--font-main); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
 .detalle-attr-label i { color: var(--primary); }
 .detalle-attr-value { font-size: 0.9rem; font-weight: 600; color: var(--secondary); }
+.detalle-attr-colores { grid-column: 1 / -1; }
+.detalle-attr-colores-list { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.detalle-color-pill { display: inline-flex; align-items: center; font-size: 0.85rem; font-weight: 600; color: var(--secondary); }
+.detalle-color-pill .detalle-color-swatch { width: 14px; height: 14px; }
 
 .detalle-attr-color { width: 100%; text-align: left; cursor: pointer; transition: var(--transition); border: 1.5px solid transparent; }
 .detalle-attr-color:hover { border-color: var(--primary); background: rgba(192,57,43,0.04); }
