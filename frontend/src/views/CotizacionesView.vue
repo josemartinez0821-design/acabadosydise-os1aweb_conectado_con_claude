@@ -805,15 +805,21 @@ async function enviarSolicitud() {
                   <strong>{{ formatCOP(item.precio_estimado) }}</strong>
                 </div>
 
-                <div class="cotiz-modo-toggle">
-                  <button type="button" class="cotiz-modo-chip" :class="{ active: item.modo === 'todo_incluido' }" @click="item.modo = 'todo_incluido'">
-                    <i class="ri-checkbox-multiple-line"></i> Todo incluido
-                  </button>
-                  <button type="button" class="cotiz-modo-chip" :class="{ active: item.modo === 'solo_servicio' }" @click="item.modo = 'solo_servicio'">
-                    <i class="ri-hammer-line"></i> Solo servicio
-                  </button>
-                </div>
-                <p class="cotiz-modo-warning"><i class="ri-information-line"></i> {{ ADVERTENCIA_MODO[item.modo] }}</p>
+                <!-- Modalidad materiales/solo mano de obra: solo aplica a servicios donde el
+                     negocio pone los materiales (incluye_materiales). En asesorías, consultorías
+                     y mantenimientos no hay materiales que decidir — mismo criterio que
+                     DetalleServicioView. -->
+                <template v-if="item.servicio.incluye_materiales">
+                  <div class="cotiz-modo-toggle">
+                    <button type="button" class="cotiz-modo-chip" :class="{ active: item.modo === 'todo_incluido' }" @click="item.modo = 'todo_incluido'">
+                      <i class="ri-checkbox-multiple-line"></i> Todo incluido
+                    </button>
+                    <button type="button" class="cotiz-modo-chip" :class="{ active: item.modo === 'solo_servicio' }" @click="item.modo = 'solo_servicio'">
+                      <i class="ri-hammer-line"></i> Solo servicio
+                    </button>
+                  </div>
+                  <p class="cotiz-modo-warning"><i class="ri-information-line"></i> {{ ADVERTENCIA_MODO[item.modo] }}</p>
+                </template>
               </div>
 
               <div class="order-summary-row total" style="margin-top:14px;">
