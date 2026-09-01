@@ -93,6 +93,21 @@ class EmailServiceRenderTest {
     }
 
     @Test
+    void cotizacionRechazada_muestraMotivoYSobreviveSinEl() {
+        String conMotivo = email.plantillaCotizacionRechazadaHtml("COT-030", "El área excede la zona que atendemos.");
+        assertHtmlBienFormado(conMotivo);
+        assertTrue(conMotivo.contains("Cotización COT-030"));
+        assertTrue(conMotivo.contains(">Motivo<"));
+        assertTrue(conMotivo.contains("El área excede la zona que atendemos."));
+        assertTrue(conMotivo.contains("cotización nueva"));
+
+        String sinMotivo = email.plantillaCotizacionRechazadaHtml("COT-031", "   ");
+        assertHtmlBienFormado(sinMotivo);
+        assertFalse(sinMotivo.contains(">Motivo<"), "sin tarjeta de motivo cuando llega vacío");
+        assertTrue(email.plantillaCotizacionRechazadaTexto("COT-031", null).contains("no podemos continuar"));
+    }
+
+    @Test
     void descripcionCantidadServicio_cubreHoraDiaYProyecto() {
         assertEquals("8 horas", EmailService.descripcionCantidadServicio(new BigDecimal("8.00"), true, false));
         assertEquals("1 hora", EmailService.descripcionCantidadServicio(BigDecimal.ONE, true, false));

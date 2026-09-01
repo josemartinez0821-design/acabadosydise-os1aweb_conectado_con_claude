@@ -141,12 +141,15 @@ public class CotizacionService {
 
         Cotizacion guardada = cotizacionRepository.save(cotizacion);
 
-        // Apenas el admin aprueba, el cliente recibe por correo el detalle (nota del asesor,
-        // servicios y productos por separado, total y anticipo del 50%) para poder entrar a pagar.
-        // Antes solo existía el recordatorio de vencimiento (5 días antes); la aprobación en sí no
-        // avisaba nada. @Async dentro de EmailService: no bloquea esta respuesta.
+        // Apenas el admin aprueba o rechaza, el cliente recibe por correo el resultado. Antes solo
+        // existía el recordatorio de vencimiento (5 días antes); ni la aprobación ni el rechazo
+        // avisaban nada. Solo cuando lo hace el admin: si el propio cliente rechaza su cotización
+        // no tiene sentido enviarle un correo. @Async dentro de EmailService: no bloquea la respuesta.
         if (esAdmin && nuevoEstado == Cotizacion.Estado.aprobada) {
             enviarCorreoAprobacion(guardada);
+        } else if (esAdmin && nuevoEstado == Cotizacion.Estado.rechazada) {
+            emailService.enviarCotizacionRechazada(
+                guardada.getUsuario().getEmail(), guardada.getNumeroCotizacion(), guardada.getRespuesta());
         }
 
         return guardada;

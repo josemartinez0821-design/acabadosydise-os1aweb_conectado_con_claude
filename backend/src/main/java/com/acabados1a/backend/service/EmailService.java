@@ -470,6 +470,59 @@ public class EmailService {
         return html.toString();
     }
 
+    // Se dispara desde CotizacionService.actualizarEstado() cuando el admin (no el propio cliente)
+    // rechaza una cotización. El simétrico de enviarCotizacionAprobada: antes el cliente no se
+    // enteraba del rechazo salvo que entrara a su cuenta. El motivo lo escribe el admin y es
+    // obligatorio en el panel; aun así se maneja el caso vacío por si llega por API sin él.
+    @Async
+    public void enviarCotizacionRechazada(String destinatario, String numeroCotizacion, String motivo) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setTo(destinatario);
+            helper.setSubject("Sobre tu cotización " + numeroCotizacion + " - Acabados y Diseños 1A");
+            helper.setText(plantillaCotizacionRechazadaTexto(numeroCotizacion, motivo), plantillaCotizacionRechazadaHtml(numeroCotizacion, motivo));
+            helper.addInline("logoAcabados", new ClassPathResource("email/logo-acabados.png"));
+            mailSender.send(mensaje);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo enviar el correo de cotización rechazada.", e);
+        }
+    }
+
+    private boolean tieneTexto(String s) {
+        return s != null && !s.isBlank();
+    }
+
+    String plantillaCotizacionRechazadaTexto(String numeroCotizacion, String motivo) {
+        StringBuilder t = new StringBuilder();
+        t.append("Revisamos tu cotización ").append(numeroCotizacion).append(" y por ahora no podemos continuar con ella.\n\n");
+        if (tieneTexto(motivo)) t.append("Motivo: ").append(motivo.trim()).append("\n\n");
+        t.append("Puedes pedir una cotización nueva ajustando lo que necesites, o escríbenos por WhatsApp y con gusto te ayudamos a encontrar una opción.");
+        return t.toString();
+    }
+
+    String plantillaCotizacionRechazadaHtml(String numeroCotizacion, String motivo) {
+        StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
+        html.append("<tr><td style=\"padding:36px 32px 6px;text-align:center;\">")
+            .append("<h1 style=\"margin:0 0 14px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Sobre tu cotización</h1>")
+            .append("<p style=\"margin:0 0 6px;font-size:15px;color:#444444;line-height:1.6;\">Revisamos tu solicitud y por ahora no podemos continuar con ella.</p>")
+            .append("</td></tr>");
+        html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">").append(chip("Cotización " + numeroCotizacion)).append("</td></tr>");
+
+        if (tieneTexto(motivo)) {
+            html.append("<tr><td style=\"padding:20px 32px 4px;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border-radius:8px;\">")
+                .append("<tr><td style=\"padding:14px 16px;\">")
+                .append("<p style=\"margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C0392B;font-family:Arial,sans-serif;\">Motivo</p>")
+                .append("<p style=\"margin:0;font-size:14px;color:#5c1a1a;line-height:1.55;\">").append(escapar(motivo.trim())).append("</p>")
+                .append("</td></tr></table></td></tr>");
+        }
+
+        html.append(avisoAmbar("Puedes pedir una <strong>cotización nueva</strong> ajustando lo que necesites, o escríbenos por WhatsApp y con gusto te ayudamos a encontrar una opción."));
+        html.append(htmlFooter()).append(htmlCerrar());
+        return html.toString();
+    }
+
     // Se dispara desde ContactoService.enviar() - a diferencia de los otros correos (siempre
     // salen del negocio hacia un cliente), este entra: alguien llenó el formulario público de
     // Contacto y el negocio necesita verlo. setReplyTo() con el correo de quien escribió, así

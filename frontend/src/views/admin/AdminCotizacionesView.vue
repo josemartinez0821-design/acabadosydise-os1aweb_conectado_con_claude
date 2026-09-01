@@ -240,7 +240,7 @@ async function confirmarRechazar() {
   }
   try {
     await cotizStore.actualizarEstado(cot.id_cotizacion, 'rechazada', notaRespuesta.value.trim())
-    showToast(`Cotización ${cot.numero_cotizacion} rechazada.`, 'info')
+    showToast(`Cotización ${cot.numero_cotizacion} rechazada. Le enviamos el motivo al cliente por correo.`, 'info')
     cerrarModalCotizacion()
   } catch (e) {
     showToast(e.response?.data?.mensaje || 'No se pudo rechazar la cotización. Intenta de nuevo.', 'danger')
