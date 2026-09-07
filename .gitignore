@@ -1,2 +1,5 @@
 # Logs sueltos de sesiones de desarrollo/migración anteriores
 *.log
+
+# Configuración local del editor (VS Code) - no se comparte
+.vscode/

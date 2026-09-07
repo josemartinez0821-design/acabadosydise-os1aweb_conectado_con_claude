@@ -2,6 +2,7 @@ package com.acabados1a.backend.service;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -21,6 +22,14 @@ import java.util.Locale;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+
+    // Sin esto, JavaMail intenta adivinar el remitente preguntándole a la máquina su propio
+    // nombre de host (InetAddress.getLocalHost()) - en un PC recién formateado esa resolución de
+    // red suele fallar todavía, y el envío revienta con "can't determine local email address"
+    // aunque las credenciales SMTP sean correctas. Fijar el remitente explícito (mismo valor que
+    // spring.mail.username) hace que el envío no dependa de la configuración de red del equipo.
+    @Value("${spring.mail.username}")
+    private String remitente;
 
     private static final Locale ES_CO = new Locale("es", "CO");
 
@@ -83,6 +92,7 @@ public class EmailService {
             // puede terminar mostrando solo la parte de texto plano - es justo lo que reportó el
             // usuario ("se ve igual que antes").
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
             helper.setTo(destinatario);
             helper.setSubject("Verifica tu cuenta - Acabados y Diseños 1A");
             helper.setText(plantillaVerificacionTexto(codigo), plantillaVerificacionHtml(codigo));
@@ -193,6 +203,7 @@ public class EmailService {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
             helper.setTo(destinatario);
             String asunto = datos.esAnticipoServicio()
                 ? "Recibimos tu anticipo - " + datos.numeroVenta() + " - Acabados y Diseños 1A"
@@ -343,6 +354,7 @@ public class EmailService {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
             helper.setTo(destinatario);
             helper.setSubject("Tu cotización " + numeroCotizacion + " está por vencer - Acabados y Diseños 1A");
             helper.setText(plantillaRecordatorioTexto(numeroCotizacion, totalFormateado), plantillaRecordatorioHtml(numeroCotizacion, totalFormateado));
@@ -397,6 +409,7 @@ public class EmailService {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
             helper.setTo(destinatario);
             helper.setSubject("¡Tu cotización " + datos.numeroCotizacion() + " fue aprobada! - Acabados y Diseños 1A");
             helper.setText(plantillaCotizacionAprobadaTexto(datos), plantillaCotizacionAprobadaHtml(datos));
@@ -479,6 +492,7 @@ public class EmailService {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
             helper.setTo(destinatario);
             helper.setSubject("Sobre tu cotización " + numeroCotizacion + " - Acabados y Diseños 1A");
             helper.setText(plantillaCotizacionRechazadaTexto(numeroCotizacion, motivo), plantillaCotizacionRechazadaHtml(numeroCotizacion, motivo));
@@ -531,6 +545,7 @@ public class EmailService {
     public void enviarMensajeContacto(String destinatario, String motivo, String nombre, String telefono,
                                        String emailRemitente, String ciudad, String departamento, String mensaje) {
         SimpleMailMessage correo = new SimpleMailMessage();
+        correo.setFrom(remitente);
         correo.setTo(destinatario);
         correo.setReplyTo(emailRemitente);
         correo.setSubject("Nuevo mensaje de contacto (" + motivo + ") - " + nombre);
@@ -547,6 +562,7 @@ public class EmailService {
 
     private void enviar(String destinatario, String asunto, String cuerpo) {
         SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setFrom(remitente);
         mensaje.setTo(destinatario);
         mensaje.setSubject(asunto);
         mensaje.setText(cuerpo);
