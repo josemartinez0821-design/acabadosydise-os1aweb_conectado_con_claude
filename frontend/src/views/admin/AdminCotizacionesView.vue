@@ -389,7 +389,7 @@ function seleccionarDia(dia) {
               {{ cot.numero_cotizacion }}
               <span class="cotiz-tipo-tag" :class="tipoCotizacion(cot)">{{ TIPOS_COTIZACION.find(t => t.key === tipoCotizacion(cot)).label }}</span>
             </div>
-            <div class="cotiz-card-fecha">{{ formatDate(cot.fecha) }} &middot; {{ nombreCliente(cot.usuario) }}</div>
+            <div class="cotiz-card-fecha">{{ formatDateTime(cot.fecha) }} &middot; {{ nombreCliente(cot.usuario) }}</div>
             <div class="cotiz-card-contacto-info">
               <span><i class="ri-phone-line"></i> {{ telefonoCliente(cot.usuario) || 'Sin teléfono' }}</span>
               <span><i class="ri-mail-line"></i> {{ emailCliente(cot.usuario) }}</span>
@@ -494,7 +494,7 @@ function seleccionarDia(dia) {
           <div class="cotiz-modal-header">
             <div>
               <h3 class="confirm-modal-title" style="margin-bottom:2px;text-align:left;">{{ cotizacionActiva.numero_cotizacion }}</h3>
-              <span class="cotiz-modal-subfecha">Solicitada el {{ formatDate(cotizacionActiva.fecha) }}</span>
+              <span class="cotiz-modal-subfecha">Solicitada el {{ formatDateTime(cotizacionActiva.fecha) }}</span>
             </div>
             <span v-if="cotizStore.estaVencida(cotizacionActiva)" class="badge badge-gray"><i class="ri-time-line"></i> Vencida</span>
             <span v-else class="badge" :class="infoGrupo(cotizacionActiva.estado).badge">

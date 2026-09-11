@@ -28,6 +28,13 @@ public class ServicioController {
         return servicioRepository.findAll().stream().map(ServicioResponse::new).toList();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ServicioResponse> obtener(@PathVariable Integer id) {
+        return servicioRepository.findById(id)
+            .map(servicio -> ResponseEntity.ok(new ServicioResponse(servicio)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<?> crear(@Valid @RequestBody ServicioRequest request) {
         try {

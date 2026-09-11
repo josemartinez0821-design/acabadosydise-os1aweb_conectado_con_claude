@@ -29,6 +29,13 @@ public class ProductoController {
         return productoRepository.findAll().stream().map(ProductoResponse::new).toList();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductoResponse> obtener(@PathVariable Integer id) {
+        return productoRepository.findById(id)
+            .map(producto -> ResponseEntity.ok(new ProductoResponse(producto)))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<?> crear(@Valid @RequestBody ProductoRequest request) {
         try {
