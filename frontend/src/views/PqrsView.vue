@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
 import { usePqrsStore } from '../stores/pqrs'
 import { useToast } from '../composables/useToast'
+import { useValidationTooltip } from '../composables/useValidationTooltip'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
 import CotizarLoginModal from '../components/service/CotizarLoginModal.vue'
 
@@ -14,6 +15,13 @@ const router = useRouter()
 const catalog = useCatalogStore()
 const pqrsStore = usePqrsStore()
 const { showToast } = useToast()
+const { marcarError } = useValidationTooltip()
+
+// El selector de tipo es un grid de tarjetas clickeables, no un <select>/<input> real, así que no
+// hay forma de validarlo con `required` nativo - a diferencia de asunto/departamento/ciudad/
+// descripción (sí son campos reales con `required`, el navegador ya los bloquea antes de llegar
+// a radicar()), este check en radicar() sí es alcanzable y necesita su propio scroll+foco.
+const tipoGridEl = ref(null)
 
 // PQRS es información privada (no se precarga en App.vue) - se pide aquí, una sola vez, si hay
 // sesión iniciada. Mismo patrón que cotizaciones/ventas en PerfilView.vue.
@@ -103,7 +111,7 @@ function quitarArchivo() {
 
 async function radicar() {
   if (!form.value.tipo) {
-    showToast('Selecciona el tipo de solicitud.', 'danger')
+    marcarError(tipoGridEl.value, 'Selecciona el tipo de solicitud.')
     return
   }
   if (!form.value.asunto.trim() || !form.value.descripcion.trim()) {
@@ -223,7 +231,7 @@ async function radicar() {
 
             <!-- NUEVA PQRS -->
             <div v-if="tabActiva === 'nueva'">
-              <div class="pqrs-type-grid">
+              <div ref="tipoGridEl" class="pqrs-type-grid">
                 <div
                   v-for="(t, key) in pqrsStore.TIPOS"
                   :key="key"

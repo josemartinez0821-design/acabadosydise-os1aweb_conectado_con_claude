@@ -25,5 +25,18 @@ export function useValidationTooltip() {
     if (temporizador) clearTimeout(temporizador)
     tooltip.value = null
   }
-  return { tooltip, mostrarTooltip, ocultarTooltip }
+  // Para validaciones manuales (no HTML5 required/type) que sí tienen un campo
+  // concreto al que apuntar - ej. el selector de tipo de PQRS, o "las contraseñas
+  // no coinciden" en Registro. Espera a que termine el scroll suave antes de medir
+  // la posición del tooltip, si no, apuntaría a donde estaba el campo antes de
+  // moverse la pantalla.
+  function marcarError(el, texto) {
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => {
+      mostrarTooltip(el, texto)
+      el.focus({ preventScroll: true })
+    }, 350)
+  }
+  return { tooltip, mostrarTooltip, ocultarTooltip, marcarError }
 }

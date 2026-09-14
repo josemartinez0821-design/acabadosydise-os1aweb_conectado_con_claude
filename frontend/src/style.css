@@ -17,7 +17,8 @@
   --accent: #F39C12;
   --success: #27AE60;
   --warning: #F39C12;
-  --danger: #C0392B;
+  --danger: #DC2626;
+  --danger-dark: #B91C1C;
   --info: #2980B9;
   --white: #FFFFFF;
   --off-white: #F8F9FA;
@@ -387,8 +388,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 /* Campo con un valor duplicado (cédula/teléfono/correo ya registrados) — se resalta ahí mismo,
    sin esperar a enviar el formulario. */
-.form-control.input-duplicado { border-color: var(--danger); background: rgba(192,57,43,0.04); }
-.form-control.input-duplicado:focus { box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
+.form-control.input-duplicado { border-color: var(--danger); background: rgba(220,38,38,0.04); }
+.form-control.input-duplicado:focus { box-shadow: 0 0 0 3px rgba(220,38,38,0.15); }
 .form-error-msg {
   display: flex; align-items: flex-start; gap: 6px; margin-top: 7px;
   font-size: 0.8rem; font-weight: 700; color: var(--danger); line-height: 1.45;
@@ -742,11 +743,11 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 .auth-checkbox-row a { color: var(--primary); font-weight: 600; }
 .auth-field-hint { font-size: 0.76rem; color: var(--text-muted); margin-top: 5px; }
 
-.alert { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; line-height: 1.45; margin-bottom: 18px; border: 1px solid transparent; }
-.alert i { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
-.alert-danger { background: rgba(192,57,43,0.08); border-color: rgba(192,57,43,0.25); color: var(--danger); }
-.alert-warning { background: rgba(243,156,18,0.1); border-color: rgba(243,156,18,0.3); color: #9a6208; }
-.alert-success { background: rgba(39,174,96,0.08); border-color: rgba(39,174,96,0.25); color: var(--success); }
+.alert { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; line-height: 1.5; margin-bottom: 18px; border: 1px solid transparent; border-left-width: 4px; box-shadow: var(--shadow-sm); }
+.alert i { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+.alert-danger { background: #FEF2F2; border-color: rgba(220,38,38,0.18); border-left-color: var(--danger); color: #991B1B; }
+.alert-warning { background: #FFFBEB; border-color: rgba(243,156,18,0.25); border-left-color: var(--warning); color: #9a6208; }
+.alert-success { background: #F0FDF4; border-color: rgba(39,174,96,0.2); border-left-color: var(--success); color: #15803D; }
 .auth-form-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 32px; font-family: var(--font-main); font-weight: 900; font-size: 1.2rem; color: var(--secondary); }
 .auth-form-top { margin-bottom: 32px; text-align: center; }
 .auth-form-top h1 { font-family: var(--font-main); font-weight: 800; font-size: 1.7rem; color: var(--secondary); margin-bottom: 8px; }
@@ -1669,9 +1670,13 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 /* ── TOAST ────────────────────────────────────────────────── */
 #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99998; display: flex; flex-direction: column; gap: 10px; }
 .toast { background: var(--secondary); color: white; padding: 14px 20px; border-radius: var(--radius); box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 12px; min-width: 280px; border-left: 4px solid var(--primary); animation: toastIn 0.3s ease; font-size: 0.88rem; }
+.toast i { font-size: 1.1rem; flex-shrink: 0; }
 .toast.toast-success { border-color: var(--success); }
+.toast.toast-success i { color: var(--success); }
 .toast.toast-danger { border-color: var(--danger); }
+.toast.toast-danger i { color: #F87171; }
 .toast.toast-warning { border-color: var(--warning); }
+.toast.toast-warning i { color: var(--warning); }
 @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
 /* ── CENTER MESSAGE (bienvenida al iniciar sesión / despedida al cerrarla) ─── */
@@ -1719,7 +1724,7 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 .validation-tooltip {
   position: fixed; z-index: 100000; pointer-events: none;
   display: flex; align-items: flex-start; gap: 7px; max-width: 280px;
-  background: white; color: var(--danger); border: 1px solid rgba(192,57,43,0.25); border-left: 3px solid var(--danger);
+  background: white; color: #991B1B; border: 1px solid rgba(220,38,38,0.25); border-left: 3px solid var(--danger);
   padding: 9px 14px; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
   font-family: var(--font-main); font-weight: 700; font-size: 0.82rem; line-height: 1.4;
 }

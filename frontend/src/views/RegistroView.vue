@@ -4,6 +4,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useToast } from '../composables/useToast'
+import { useValidationTooltip } from '../composables/useValidationTooltip'
 import { DEPARTAMENTOS, MUNICIPIOS_POR_DEPARTAMENTO } from '../data/colombia'
 import api from '../services/api'
 import logoUrl from '../assets/logo.png'
@@ -50,6 +51,17 @@ const mostrarPassword = ref(false)
 const mostrarConfirmarPassword = ref(false)
 const error = ref('')
 const cargando = ref(false)
+const { marcarError } = useValidationTooltip()
+
+// Contraseña, confirmar contraseña y el checkbox de términos no tienen (o no pueden tener) un
+// equivalente de validación HTML5 nativa fuerte - password/confirmarPassword solo llevan
+// `required` (no detecta "débil" ni "no coincide"), y el checkbox no lleva `required` - por eso
+// estos tres checks de registrar() sí son alcanzables y necesitan su propio scroll+foco. El resto
+// de campos del formulario (nombre, documento, teléfono, ciudad, departamento) sí tienen
+// `required` real y el navegador los bloquea antes de que el submit llegue a esta función.
+const passwordEl = ref(null)
+const confirmarPasswordEl = ref(null)
+const terminosCheckboxEl = ref(null)
 
 // paso 1 = formulario, paso 2 = verificar el código que se manda al correo apenas se crea la
 // cuenta (misma cuenta ya queda creada en el paso 1, solo que sin poder iniciar sesión todavía).
@@ -197,15 +209,15 @@ async function registrar() {
     return
   }
   if (!passwordValida.value) {
-    error.value = 'La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número.'
+    marcarError(passwordEl.value, 'La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número.')
     return
   }
   if (form.value.password !== form.value.confirmarPassword) {
-    error.value = 'Las contraseñas no coinciden.'
+    marcarError(confirmarPasswordEl.value, 'Las contraseñas no coinciden.')
     return
   }
   if (!form.value.aceptaTerminos) {
-    error.value = 'Debes aceptar los términos y condiciones y la política de privacidad.'
+    marcarError(terminosCheckboxEl.value, 'Debes aceptar los términos y condiciones y la política de privacidad.')
     return
   }
 
@@ -245,7 +257,7 @@ async function verificarCodigo() {
   error.value = ''
   const codigo = codigoDigitos.value.join('')
   if (codigo.length < 6) {
-    error.value = 'Ingresa los 6 dígitos del código.'
+    marcarError(codigoInputs.value[0], 'Ingresa los 6 dígitos del código.')
     return
   }
 
@@ -406,6 +418,7 @@ async function reenviarCodigo() {
             <div class="input-group password-wrapper">
               <i class="ri-lock-2-line input-icon"></i>
               <input
+                ref="passwordEl"
                 v-model="form.password"
                 :type="mostrarPassword ? 'text' : 'password'"
                 class="form-control"
@@ -438,6 +451,7 @@ async function reenviarCodigo() {
             <div class="input-group password-wrapper">
               <i class="ri-lock-2-line input-icon"></i>
               <input
+                ref="confirmarPasswordEl"
                 v-model="form.confirmarPassword"
                 :type="mostrarConfirmarPassword ? 'text' : 'password'"
                 class="form-control"
@@ -454,7 +468,7 @@ async function reenviarCodigo() {
           </div>
 
           <div class="auth-checkbox-row">
-            <input id="acepta-terminos" v-model="form.aceptaTerminos" type="checkbox" />
+            <input id="acepta-terminos" ref="terminosCheckboxEl" v-model="form.aceptaTerminos" type="checkbox" />
             <label class="auth-checkbox-label" for="acepta-terminos">
               Acepto los <RouterLink to="/terminos-y-condiciones?from=registro">términos y condiciones</RouterLink>
               y la <RouterLink to="/politica-privacidad?from=registro">política de privacidad</RouterLink>.
