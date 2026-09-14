@@ -107,7 +107,7 @@ public class EmailService {
 
     // Mismo texto de siempre como respaldo para clientes de correo que no rendericen HTML - los
     // espacios entre dígitos son solo visuales en el HTML (letter-spacing), aquí van tal cual.
-    private String plantillaVerificacionTexto(String codigo) {
+    String plantillaVerificacionTexto(String codigo) {
         return "¡Bienvenido a Acabados y Diseños 1A!\n\n"
             + "Tu código de verificación es: " + codigo + "\n\n"
             + "Ingresa este código en la página de registro para activar tu cuenta. "
@@ -119,15 +119,12 @@ public class EmailService {
     // logo son los reales del proyecto (style.css: --primary #C0392B, --secondary #1A1A2E,
     // --accent #F39C12), mismo patrón de "chip blanco redondeado" que ya usa el logo en el navbar/
     // topbar del checkout (ver .checkout-logo en style.css) - no es una identidad nueva.
-    private String plantillaVerificacionHtml(String codigo) {
+    String plantillaVerificacionHtml(String codigo) {
         return htmlAbrir()
             + htmlHeader()
-            // Título + saludo
-            + "<tr><td style=\"padding:36px 32px 6px;text-align:center;\">"
-            + "<h1 style=\"margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Verifica tu cuenta</h1>"
-            + "<p style=\"margin:0 0 4px;font-size:15px;color:#444444;line-height:1.6;\">¡Hola! Gracias por registrarte en <strong>Acabados y Diseños 1A</strong>.</p>"
-            + "<p style=\"margin:0 0 8px;font-size:15px;color:#444444;line-height:1.6;\">Para completar la activación de tu cuenta, usa el siguiente código:</p>"
-            + "</td></tr>"
+            + tituloIntro("Verifica tu cuenta",
+                "¡Hola! Gracias por registrarte en <strong>Acabados y Diseños 1A</strong>.",
+                "Para completar la activación de tu cuenta, usa el siguiente código:")
             // Tarjeta del código
             + "<tr><td style=\"padding:20px 32px 4px;\">"
             + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border:1.5px solid #C0392B;border-radius:12px;\">"
@@ -139,13 +136,7 @@ public class EmailService {
             + "<tr><td style=\"padding:16px 32px 0;text-align:center;\">"
             + "<p style=\"margin:0;font-size:13px;color:#777777;\">Este código es válido durante <strong>15 minutos</strong>.</p>"
             + "</td></tr>"
-            // Aviso de seguridad
-            + "<tr><td style=\"padding:24px 32px 32px;\">"
-            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;\">"
-            + "<tr><td style=\"padding:14px 16px;font-size:13px;color:#8a5c06;line-height:1.5;\">"
-            + "Si no solicitaste este código, puedes ignorar este mensaje. No compartas este código con nadie."
-            + "</td></tr></table>"
-            + "</td></tr>"
+            + avisoSeguridad("Si no solicitaste este código, puedes ignorar este mensaje. No compartas este código con nadie.")
             + htmlFooter()
             + htmlCerrar();
     }
@@ -183,13 +174,67 @@ public class EmailService {
             + "</td></tr>";
     }
 
+    // Bloque de encabezado (h1 + párrafos de intro) compartido por todas las plantillas HTML -
+    // antes cada plantilla repetía este mismo layout copy-paste con pequeñas inconsistencias de
+    // espaciado entre una y otra. Centralizarlo acá hace que un ajuste de tipografía (como el
+    // tamaño del h1) quede en un solo lugar en vez de siete.
+    private String tituloIntro(String titulo, String... parrafos) {
+        StringBuilder html = new StringBuilder("<tr><td style=\"padding:38px 32px 6px;text-align:center;\">")
+            .append("<h1 style=\"margin:0 0 16px;font-size:24px;line-height:1.3;letter-spacing:-0.2px;color:#1A1A2E;font-weight:800;\">")
+            .append(titulo).append("</h1>");
+        for (int i = 0; i < parrafos.length; i++) {
+            String margenInferior = (i == parrafos.length - 1) ? "8px" : "4px";
+            html.append("<p style=\"margin:0 0 ").append(margenInferior).append(";font-size:15px;color:#444444;line-height:1.6;\">")
+                .append(parrafos[i]).append("</p>");
+        }
+        return html.append("</td></tr>").toString();
+    }
+
+    // Mismo layout que enviarCodigoVerificacion (tarjeta con el código grande + aviso de
+    // seguridad) - antes este era el único correo con código que seguía en texto plano puro,
+    // sin tarjeta ni logo, a diferencia de todos los demás.
     @Async
     public void enviarCodigoRecuperacion(String destinatario, String codigo) {
-        enviar(destinatario, "Recupera tu contraseña - Acabados y Diseños 1A",
-            "Recibimos una solicitud para restablecer tu contraseña.\n\n"
-                + "Tu código de verificación es: " + codigo + "\n\n"
-                + "Ingresa este código para continuar. El código vence en 15 minutos. "
-                + "Si no fuiste tú, puedes ignorar este correo.");
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
+            helper.setTo(destinatario);
+            helper.setSubject("Recupera tu contraseña - Acabados y Diseños 1A");
+            helper.setText(plantillaRecuperacionTexto(codigo), plantillaRecuperacionHtml(codigo));
+            helper.addInline("logoAcabados", new ClassPathResource("email/logo-acabados.png"));
+            mailSender.send(mensaje);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo enviar el correo de recuperación de contraseña.", e);
+        }
+    }
+
+    String plantillaRecuperacionTexto(String codigo) {
+        return "Recibimos una solicitud para restablecer tu contraseña en Acabados y Diseños 1A.\n\n"
+            + "Tu código de recuperación es: " + codigo + "\n\n"
+            + "Ingresa este código para continuar. El código vence en 15 minutos. "
+            + "Si no fuiste tú, puedes ignorar este correo y tu contraseña seguirá siendo la misma.";
+    }
+
+    String plantillaRecuperacionHtml(String codigo) {
+        return htmlAbrir()
+            + htmlHeader()
+            + tituloIntro("Restablece tu contraseña",
+                "Recibimos una solicitud para restablecer tu contraseña en <strong>Acabados y Diseños 1A</strong>.",
+                "Usa el siguiente código para continuar:")
+            + "<tr><td style=\"padding:20px 32px 4px;\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border:1.5px solid #C0392B;border-radius:12px;\">"
+            + "<tr><td style=\"padding:26px 16px;text-align:center;\">"
+            + "<p style=\"margin:0 0 12px;font-size:11px;font-weight:800;letter-spacing:2px;color:#C0392B;text-transform:uppercase;font-family:Arial,sans-serif;\">Código de recuperación</p>"
+            + "<p style=\"margin:0;font-size:42px;font-weight:800;letter-spacing:14px;color:#1A1A2E;font-family:'Nunito',Arial,sans-serif;\">" + codigo + "</p>"
+            + "</td></tr></table>"
+            + "</td></tr>"
+            + "<tr><td style=\"padding:16px 32px 0;text-align:center;\">"
+            + "<p style=\"margin:0;font-size:13px;color:#777777;\">Este código es válido durante <strong>15 minutos</strong>.</p>"
+            + "</td></tr>"
+            + avisoSeguridad("Si no solicitaste este cambio, ignora este mensaje y tu contraseña seguirá siendo la misma. No compartas este código con nadie.")
+            + htmlFooter()
+            + htmlCerrar();
     }
 
     // Se dispara desde VentaService.crear() apenas se registra el pedido - antes la pantalla de
@@ -258,10 +303,7 @@ public class EmailService {
             : "Confirmamos que recibimos tu pedido y ya lo estamos preparando.";
 
         StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
-        html.append("<tr><td style=\"padding:36px 32px 6px;text-align:center;\">")
-            .append("<h1 style=\"margin:0 0 14px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">").append(titulo).append("</h1>")
-            .append("<p style=\"margin:0 0 6px;font-size:15px;color:#444444;line-height:1.6;\">").append(intro).append("</p>")
-            .append("</td></tr>");
+        html.append(tituloIntro(titulo, intro));
 
         // Chip con el número de comprobante/pedido (+ cotización si es un anticipo)
         html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">")
@@ -312,17 +354,60 @@ public class EmailService {
     // transportadora, ver VentaEstadoRequest). numeroGuia null = pedido de recogida en tienda.
     @Async
     public void enviarNotificacionDespacho(String destinatario, String numeroVenta, String numeroGuia, String transportadora) {
-        if (numeroGuia != null && !numeroGuia.isBlank()) {
-            enviar(destinatario, "Tu pedido " + numeroVenta + " fue despachado - Acabados y Diseños 1A",
-                "¡Buenas noticias! Tu pedido " + numeroVenta + " ya fue entregado a la transportadora"
-                    + (transportadora != null && !transportadora.isBlank() ? " " + transportadora : "") + ".\n\n"
-                    + "Número de guía: " + numeroGuia + "\n\n"
-                    + "Puedes usar este número para hacer seguimiento directamente con la transportadora.");
-        } else {
-            enviar(destinatario, "Tu pedido " + numeroVenta + " fue entregado - Acabados y Diseños 1A",
-                "Confirmamos que tu pedido " + numeroVenta + " fue entregado en nuestra tienda.\n\n"
-                    + "¡Gracias por tu compra!");
+        boolean conGuia = numeroGuia != null && !numeroGuia.isBlank();
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
+            helper.setTo(destinatario);
+            helper.setSubject(conGuia
+                ? "Tu pedido " + numeroVenta + " fue despachado - Acabados y Diseños 1A"
+                : "Tu pedido " + numeroVenta + " fue entregado - Acabados y Diseños 1A");
+            helper.setText(plantillaDespachoTexto(numeroVenta, numeroGuia, transportadora),
+                plantillaDespachoHtml(numeroVenta, numeroGuia, transportadora));
+            helper.addInline("logoAcabados", new ClassPathResource("email/logo-acabados.png"));
+            mailSender.send(mensaje);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo enviar el correo de despacho.", e);
         }
+    }
+
+    String plantillaDespachoTexto(String numeroVenta, String numeroGuia, String transportadora) {
+        if (numeroGuia != null && !numeroGuia.isBlank()) {
+            return "¡Buenas noticias! Tu pedido " + numeroVenta + " ya fue entregado a la transportadora"
+                + (transportadora != null && !transportadora.isBlank() ? " " + transportadora : "") + ".\n\n"
+                + "Número de guía: " + numeroGuia + "\n\n"
+                + "Puedes usar este número para hacer seguimiento directamente con la transportadora.";
+        }
+        return "Confirmamos que tu pedido " + numeroVenta + " fue entregado en nuestra tienda.\n\n"
+            + "¡Gracias por tu compra!";
+    }
+
+    String plantillaDespachoHtml(String numeroVenta, String numeroGuia, String transportadora) {
+        boolean conGuia = numeroGuia != null && !numeroGuia.isBlank();
+        StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
+        if (conGuia) {
+            String transportadoraTxt = (transportadora != null && !transportadora.isBlank())
+                ? " <strong>" + escapar(transportadora) + "</strong>" : "";
+            html.append(tituloIntro("¡Tu pedido va en camino!",
+                "Tu pedido ya fue entregado a la transportadora" + transportadoraTxt + "."));
+        } else {
+            html.append(tituloIntro("¡Tu pedido fue entregado!",
+                "Confirmamos que tu pedido fue entregado en nuestra tienda. ¡Gracias por tu compra!"));
+        }
+        html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">").append(chip("Pedido " + numeroVenta)).append("</td></tr>");
+
+        if (conGuia) {
+            html.append("<tr><td style=\"padding:20px 32px 4px;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border:1.5px solid #C0392B;border-radius:12px;\">")
+                .append("<tr><td style=\"padding:22px 20px;text-align:center;\">")
+                .append("<p style=\"margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:2px;color:#C0392B;text-transform:uppercase;font-family:Arial,sans-serif;\">Número de guía</p>")
+                .append("<p style=\"margin:0;font-size:26px;font-weight:800;letter-spacing:1px;color:#1A1A2E;font-family:'Nunito',Arial,sans-serif;\">").append(escapar(numeroGuia)).append("</p>")
+                .append("</td></tr></table></td></tr>");
+            html.append(avisoAmbar("Puedes usar este número para hacer seguimiento directamente con la transportadora."));
+        }
+        html.append(htmlFooter()).append(htmlCerrar());
+        return html.toString();
     }
 
     // Se dispara desde VentaService.actualizarEstado() al cancelar un pedido en proceso o al
@@ -332,17 +417,41 @@ public class EmailService {
     // aparte (no hay pasarela de pago real conectada todavía).
     @Async
     public void enviarNotificacionCancelacion(String destinatario, String numeroVenta, boolean esDevolucion, boolean reembolsoPendiente) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+            helper.setFrom(remitente);
+            helper.setTo(destinatario);
+            helper.setSubject((esDevolucion ? "Devolución registrada" : "Pedido cancelado") + " - " + numeroVenta + " - Acabados y Diseños 1A");
+            helper.setText(plantillaCancelacionTexto(numeroVenta, esDevolucion, reembolsoPendiente),
+                plantillaCancelacionHtml(numeroVenta, esDevolucion, reembolsoPendiente));
+            helper.addInline("logoAcabados", new ClassPathResource("email/logo-acabados.png"));
+            mailSender.send(mensaje);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo enviar el correo de cancelación/devolución.", e);
+        }
+    }
+
+    String plantillaCancelacionTexto(String numeroVenta, boolean esDevolucion, boolean reembolsoPendiente) {
         String cuerpo = esDevolucion
             ? "Confirmamos que registramos la devolución de tu pedido " + numeroVenta + ".\n\n"
             : "Tu pedido " + numeroVenta + " fue cancelado.\n\n";
-        if (reembolsoPendiente) {
-            cuerpo += "Nuestro equipo se pondrá en contacto contigo para coordinar el reembolso.";
-        } else {
-            cuerpo += "No se realizó ningún cobro por este pedido.";
-        }
-        enviar(destinatario,
-            (esDevolucion ? "Devolución registrada" : "Pedido cancelado") + " - " + numeroVenta + " - Acabados y Diseños 1A",
-            cuerpo);
+        cuerpo += reembolsoPendiente
+            ? "Nuestro equipo se pondrá en contacto contigo para coordinar el reembolso."
+            : "No se realizó ningún cobro por este pedido.";
+        return cuerpo;
+    }
+
+    String plantillaCancelacionHtml(String numeroVenta, boolean esDevolucion, boolean reembolsoPendiente) {
+        StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
+        html.append(tituloIntro(esDevolucion ? "Devolución registrada" : "Pedido cancelado",
+            esDevolucion ? "Confirmamos que registramos la devolución de tu pedido." : "Tu pedido fue cancelado."));
+        html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">").append(chip("Pedido " + numeroVenta)).append("</td></tr>");
+        html.append(avisoAmbar(reembolsoPendiente
+            ? "Nuestro equipo se pondrá en contacto contigo para coordinar el reembolso."
+            : "No se realizó ningún cobro por este pedido."));
+        html.append(htmlFooter()).append(htmlCerrar());
+        return html.toString();
     }
 
     // Se dispara desde CotizacionService.enviarRecordatoriosVencimiento() (job diario) cuando a
@@ -365,21 +474,19 @@ public class EmailService {
         }
     }
 
-    private String plantillaRecordatorioTexto(String numeroCotizacion, String totalFormateado) {
+    String plantillaRecordatorioTexto(String numeroCotizacion, String totalFormateado) {
         return "¡Hola! Tu cotización " + numeroCotizacion + " por " + totalFormateado + " está por vencer.\n\n"
             + "Te quedan 5 días para confirmar y pagar antes de que pierda su validez. "
             + "Ingresa a tu cuenta en Acabados y Diseños 1A para revisarla y continuar.\n\n"
             + "Si tienes dudas, escríbenos por WhatsApp y con gusto te ayudamos.";
     }
 
-    private String plantillaRecordatorioHtml(String numeroCotizacion, String totalFormateado) {
+    String plantillaRecordatorioHtml(String numeroCotizacion, String totalFormateado) {
         return htmlAbrir()
             + htmlHeader()
-            + "<tr><td style=\"padding:36px 32px 6px;text-align:center;\">"
-            + "<h1 style=\"margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Tu cotización está por vencer</h1>"
-            + "<p style=\"margin:0 0 4px;font-size:15px;color:#444444;line-height:1.6;\">¡Hola! Queremos recordarte que tu cotización sigue esperando por ti.</p>"
-            + "<p style=\"margin:0 0 8px;font-size:15px;color:#444444;line-height:1.6;\">Te quedan <strong>5 días</strong> para confirmarla y pagarla antes de que pierda su validez.</p>"
-            + "</td></tr>"
+            + tituloIntro("Tu cotización está por vencer",
+                "¡Hola! Queremos recordarte que tu cotización sigue esperando por ti.",
+                "Te quedan <strong>5 días</strong> para confirmarla y pagarla antes de que pierda su validez.")
             // Tarjeta con el resumen de la cotización
             + "<tr><td style=\"padding:20px 32px 4px;\">"
             + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border:1.5px solid #C0392B;border-radius:12px;\">"
@@ -389,13 +496,7 @@ public class EmailService {
             + "<p style=\"margin:0;font-size:15px;color:#444444;\">Total estimado: <strong style=\"color:#1A1A2E;\">" + totalFormateado + "</strong></p>"
             + "</td></tr></table>"
             + "</td></tr>"
-            // Aviso de vencimiento (mismo tono ámbar que otros avisos del sitio)
-            + "<tr><td style=\"padding:24px 32px 32px;\">"
-            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;\">"
-            + "<tr><td style=\"padding:14px 16px;font-size:13px;color:#8a5c06;line-height:1.5;\">"
-            + "Después de esta fecha, la cotización dejará de estar disponible para pagar. Ingresa a tu cuenta en Acabados y Diseños 1A para revisarla, o escríbenos por WhatsApp si necesitas ayuda."
-            + "</td></tr></table>"
-            + "</td></tr>"
+            + avisoAmbar("Después de esta fecha, la cotización dejará de estar disponible para pagar. Ingresa a tu cuenta en Acabados y Diseños 1A para revisarla, o escríbenos por WhatsApp si necesitas ayuda.")
             + htmlFooter()
             + htmlCerrar();
     }
@@ -441,16 +542,14 @@ public class EmailService {
 
     String plantillaCotizacionAprobadaHtml(DatosCotizacionAprobada d) {
         StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
-        html.append("<tr><td style=\"padding:36px 32px 6px;text-align:center;\">")
-            .append("<h1 style=\"margin:0 0 14px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">¡Tu cotización fue aprobada!</h1>")
-            .append("<p style=\"margin:0 0 6px;font-size:15px;color:#444444;line-height:1.6;\">Revisamos lo que necesitas y ya tienes tu precio confirmado. Este es el detalle:</p>")
-            .append("</td></tr>");
+        html.append(tituloIntro("¡Tu cotización fue aprobada!",
+            "Revisamos lo que necesitas y ya tienes tu precio confirmado. Este es el detalle:"));
         html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">").append(chip("Cotización " + d.numeroCotizacion())).append("</td></tr>");
 
         // Nota del asesor (obligatoria al aprobar desde el panel) — tono ámbar, como otra info del sitio
         if (d.notaAsesor() != null && !d.notaAsesor().isBlank()) {
             html.append("<tr><td style=\"padding:20px 32px 4px;\">")
-                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;border-left:4px solid #F39C12;\">")
                 .append("<tr><td style=\"padding:14px 16px;\">")
                 .append("<p style=\"margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a5c06;font-family:Arial,sans-serif;\">Nota de tu asesor</p>")
                 .append("<p style=\"margin:0;font-size:14px;color:#5c4a1a;line-height:1.55;\">").append(escapar(d.notaAsesor().trim())).append("</p>")
@@ -517,15 +616,13 @@ public class EmailService {
 
     String plantillaCotizacionRechazadaHtml(String numeroCotizacion, String motivo) {
         StringBuilder html = new StringBuilder(htmlAbrir() + htmlHeader());
-        html.append("<tr><td style=\"padding:36px 32px 6px;text-align:center;\">")
-            .append("<h1 style=\"margin:0 0 14px;font-size:22px;line-height:1.3;color:#1A1A2E;font-weight:800;\">Sobre tu cotización</h1>")
-            .append("<p style=\"margin:0 0 6px;font-size:15px;color:#444444;line-height:1.6;\">Revisamos tu solicitud y por ahora no podemos continuar con ella.</p>")
-            .append("</td></tr>");
+        html.append(tituloIntro("Sobre tu cotización",
+            "Revisamos tu solicitud y por ahora no podemos continuar con ella."));
         html.append("<tr><td style=\"padding:6px 32px 0;text-align:center;\">").append(chip("Cotización " + numeroCotizacion)).append("</td></tr>");
 
         if (tieneTexto(motivo)) {
             html.append("<tr><td style=\"padding:20px 32px 4px;\">")
-                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border-radius:8px;\">")
+                .append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border-radius:8px;border-left:4px solid #C0392B;\">")
                 .append("<tr><td style=\"padding:14px 16px;\">")
                 .append("<p style=\"margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#C0392B;font-family:Arial,sans-serif;\">Motivo</p>")
                 .append("<p style=\"margin:0;font-size:14px;color:#5c1a1a;line-height:1.55;\">").append(escapar(motivo.trim())).append("</p>")
@@ -558,15 +655,6 @@ public class EmailService {
             + (ubicacion != null ? "Ubicación: " + ubicacion + "\n" : "")
             + "\nMensaje:\n" + mensaje);
         mailSender.send(correo);
-    }
-
-    private void enviar(String destinatario, String asunto, String cuerpo) {
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        mensaje.setFrom(remitente);
-        mensaje.setTo(destinatario);
-        mensaje.setSubject(asunto);
-        mensaje.setText(cuerpo);
-        mailSender.send(mensaje);
     }
 
     // ── Helpers compartidos por los correos HTML con resumen (cotización aprobada / confirmación) ──
@@ -641,10 +729,28 @@ public class EmailService {
         return t.toString();
     }
 
+    // Borde de acento a la izquierda + kicker en mayúsculas (en vez de la caja plana de antes) -
+    // mismo lenguaje visual que el rediseño de alertas del frontend, para que el aviso se lea
+    // como un recuadro aparte y no como un párrafo más pegado al resto del texto.
     private String avisoAmbar(String contenidoHtml) {
         return "<tr><td style=\"padding:24px 32px 32px;\">"
-            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;\">"
-            + "<tr><td style=\"padding:14px 16px;font-size:13px;color:#8a5c06;line-height:1.5;\">" + contenidoHtml + "</td></tr></table>"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBF4E4;border-radius:8px;border-left:4px solid #F39C12;\">"
+            + "<tr><td style=\"padding:14px 18px;font-size:13px;color:#8a5c06;line-height:1.55;\">"
+            + "<p style=\"margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#B26A00;font-family:Arial,sans-serif;\">Información</p>"
+            + contenidoHtml + "</td></tr></table>"
+            + "</td></tr>";
+    }
+
+    // Mismo tipo de caja que avisoAmbar() pero para avisos sobre códigos de un solo uso
+    // (verificación de cuenta, recuperación de contraseña) - el tono rojo + el kicker "Aviso de
+    // seguridad" la distingue a simple vista de un aviso informativo cualquiera (contactar por
+    // WhatsApp, días para pagar), sin usar ningún ícono/emoji: solo color, borde y tipografía.
+    private String avisoSeguridad(String contenidoHtml) {
+        return "<tr><td style=\"padding:24px 32px 32px;\">"
+            + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color:#FBEDEA;border-radius:8px;border-left:4px solid #C0392B;\">"
+            + "<tr><td style=\"padding:14px 18px;font-size:13px;color:#5c1a1a;line-height:1.55;\">"
+            + "<p style=\"margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#C0392B;font-family:Arial,sans-serif;\">Aviso de seguridad</p>"
+            + contenidoHtml + "</td></tr></table>"
             + "</td></tr>";
     }
 }

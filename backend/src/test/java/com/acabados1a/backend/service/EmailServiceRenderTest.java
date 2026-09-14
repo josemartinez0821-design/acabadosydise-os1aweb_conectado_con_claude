@@ -108,6 +108,51 @@ class EmailServiceRenderTest {
     }
 
     @Test
+    void verificacion_muestraElCodigoYElAvisoDeSeguridad() {
+        String html = email.plantillaVerificacionHtml("482913");
+        assertHtmlBienFormado(html);
+        assertTrue(html.contains("482913"));
+        assertTrue(html.contains("Aviso de seguridad"));
+        assertTrue(email.plantillaVerificacionTexto("482913").contains("482913"));
+    }
+
+    @Test
+    void recuperacion_muestraElCodigoYElAvisoDeSeguridad() {
+        String html = email.plantillaRecuperacionHtml("117204");
+        assertHtmlBienFormado(html);
+        assertTrue(html.contains("117204"));
+        assertTrue(html.contains("Restablece tu contraseña"));
+        assertTrue(html.contains("Aviso de seguridad"));
+        assertTrue(email.plantillaRecuperacionTexto("117204").contains("117204"));
+    }
+
+    @Test
+    void despacho_conGuiaMuestraNumeroYTransportadora_sinGuiaEsEntregaEnTienda() {
+        String conGuia = email.plantillaDespachoHtml("VEN-2026-050", "TR-998877", "Coordinadora");
+        assertHtmlBienFormado(conGuia);
+        assertTrue(conGuia.contains("TR-998877") && conGuia.contains("Coordinadora"));
+        assertTrue(conGuia.contains("Pedido VEN-2026-050"));
+
+        String sinGuia = email.plantillaDespachoHtml("VEN-2026-051", null, null);
+        assertHtmlBienFormado(sinGuia);
+        assertTrue(sinGuia.contains("¡Tu pedido fue entregado!"));
+        assertFalse(sinGuia.contains("Número de guía"));
+    }
+
+    @Test
+    void cancelacion_distingueDevolucionDeCancelacionYReembolsoPendiente() {
+        String cancelado = email.plantillaCancelacionHtml("VEN-2026-052", false, false);
+        assertHtmlBienFormado(cancelado);
+        assertTrue(cancelado.contains("Pedido cancelado"));
+        assertTrue(cancelado.contains("No se realizó ningún cobro"));
+
+        String devolucionConReembolso = email.plantillaCancelacionHtml("VEN-2026-053", true, true);
+        assertHtmlBienFormado(devolucionConReembolso);
+        assertTrue(devolucionConReembolso.contains("Devolución registrada"));
+        assertTrue(devolucionConReembolso.contains("coordinar el reembolso"));
+    }
+
+    @Test
     void descripcionCantidadServicio_cubreHoraDiaYProyecto() {
         assertEquals("8 horas", EmailService.descripcionCantidadServicio(new BigDecimal("8.00"), true, false));
         assertEquals("1 hora", EmailService.descripcionCantidadServicio(BigDecimal.ONE, true, false));
