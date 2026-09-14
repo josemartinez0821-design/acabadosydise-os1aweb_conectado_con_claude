@@ -348,22 +348,22 @@ function reintentar() {
                 </label>
                 <div v-if="metodoPago === 'tarjeta'" style="padding:0 20px 16px;">
                   <div class="form-group">
-                    <label class="form-label">Número de tarjeta</label>
-                    <input v-model="tarjeta.numero" class="form-control" placeholder="•••• •••• •••• 4582" maxlength="19" />
+                    <label class="form-label required">Número de tarjeta</label>
+                    <input v-model="tarjeta.numero" class="form-control" placeholder="•••• •••• •••• 4582" maxlength="19" inputmode="numeric" required />
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                     <div class="form-group">
-                      <label class="form-label">Vencimiento</label>
-                      <input v-model="tarjeta.vencimiento" class="form-control" placeholder="MM/YY" />
+                      <label class="form-label required">Vencimiento</label>
+                      <input v-model="tarjeta.vencimiento" class="form-control" placeholder="MM/YY" pattern="(0[1-9]|1[0-2])/[0-9]{2}" title="Formato MM/YY" required />
                     </div>
                     <div class="form-group">
-                      <label class="form-label">CVV</label>
-                      <input v-model="tarjeta.cvv" class="form-control" placeholder="***" maxlength="4" />
+                      <label class="form-label required">CVV</label>
+                      <input v-model="tarjeta.cvv" class="form-control" placeholder="***" maxlength="4" inputmode="numeric" pattern="[0-9]{3,4}" title="3 o 4 dígitos" required />
                     </div>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Nombre en la tarjeta</label>
-                    <input v-model="tarjeta.nombre" class="form-control" />
+                    <label class="form-label required">Nombre en la tarjeta</label>
+                    <input v-model="tarjeta.nombre" class="form-control" required />
                   </div>
                 </div>
 

@@ -24,6 +24,16 @@ public class InventarioController {
         return inventarioRepository.findAll();
     }
 
+    // Faltaba del todo: no había forma de consultar el inventario de UN solo producto sin pedir
+    // la lista completa (GET /api/inventario) y filtrar del lado del cliente. Mismo patrón de
+    // manejo 404 ya usado en Productos/Servicios (findById + notFound) tras el hallazgo H-1.
+    @GetMapping("/{idProducto}")
+    public ResponseEntity<Inventario> obtener(@PathVariable Integer idProducto) {
+        return inventarioRepository.findByIdProducto(idProducto)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{idProducto}/umbrales")
     public ResponseEntity<?> actualizarUmbrales(@PathVariable Integer idProducto, @RequestBody UmbralesRequest request) {
         try {
