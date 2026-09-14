@@ -115,12 +115,16 @@ public class VentaService {
             venta.setCotizacion(cotizacion);
         }
 
-        // numero_venta depende del id real (IDENTITY) - mismo truco de placeholder temporal +
-        // segundo save() que ya usan codigo_producto/numero_cotizacion.
+        // El placeholder es solo para pasar la validación not-null de Hibernate antes del INSERT -
+        // el trigger before_venta_insert lo reemplaza por el numero_venta real durante ese mismo
+        // INSERT. A diferencia de codigo_producto/numero_cotizacion (que sí necesitan un segundo
+        // save() en Java porque no tienen trigger), acá NO se vuelve a escribir: un segundo save()
+        // pisaría lo que el trigger ya generó con un valor calculado en Java, dejando el trigger sin
+        // ningún efecto real (hallazgo H-3). En vez de eso, se lee la columna real con una consulta
+        // nativa, porque el first-level cache de Hibernate no se entera de lo que cambió el trigger.
         venta.setNumeroVenta("TMP-" + UUID.randomUUID());
         Venta guardada = ventaRepository.save(venta);
-        guardada.setNumeroVenta("VEN-" + LocalDate.now().getYear() + "-" + String.format("%03d", guardada.getIdVenta()));
-        guardada = ventaRepository.save(guardada);
+        guardada.setNumeroVenta(ventaRepository.obtenerNumeroVentaReal(guardada.getIdVenta()));
 
         // Valida stock ANTES de insertar nada - acumulando por producto, porque el mismo producto
         // podría venir repartido en más de un ítem (un cliente API arbitrario podría mandar eso
