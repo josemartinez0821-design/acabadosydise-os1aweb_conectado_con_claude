@@ -4,18 +4,26 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useCartStore } from '../../stores/cart'
 import { usePqrsStore } from '../../stores/pqrs'
+import { useCotizacionesStore } from '../../stores/cotizaciones'
+import { useVentasStore } from '../../stores/ventas'
 import { useCenterMessage } from '../../composables/useCenterMessage'
 import logoUrl from '../../assets/logo.png'
 
 const auth = useAuthStore()
 const cart = useCartStore()
 const pqrsStore = usePqrsStore()
+const cotizStore = useCotizacionesStore()
+const ventasStore = useVentasStore()
 const router = useRouter()
 const { mostrarMensajeCentral } = useCenterMessage()
 
 // Punto rojo cuando el equipo respondió una PQRS y el cliente todavía no la ha visto (no hay
 // backend/correo real — ver stores/pqrs.js). Solo para clientes, el admin no radica PQRS propias.
 const pqrsNuevas = computed(() => (auth.isAuthenticated && !auth.isAdmin ? pqrsStore.contarRespuestasNuevas(auth.usuario.id_usuario) : 0))
+// Mismo patrón para cotizaciones que cambiaron de estado y pedidos que avanzaron - ver
+// stores/cotizaciones.js / stores/ventas.js.
+const cotizacionesNuevas = computed(() => (auth.isAuthenticated && !auth.isAdmin ? cotizStore.contarCambiosNuevos(auth.usuario.id_usuario) : 0))
+const pedidosNuevos = computed(() => (auth.isAuthenticated && !auth.isAdmin ? ventasStore.contarCambiosNuevos(auth.usuario.id_usuario) : 0))
 
 const scrolled = ref(false)
 const mobileOpen = ref(false)
@@ -86,15 +94,15 @@ function logout() {
             class="nav-user-avatar"
             :style="auth.usuario?.avatar ? { backgroundImage: `url(${auth.usuario.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}"
           >{{ auth.usuario?.avatar ? '' : (auth.usuario?.nombre?.[0] || '') + (auth.usuario?.apellido?.[0] || '') }}
-            <span class="nav-notif-dot" :class="{ show: pqrsNuevas }"></span>
+            <span class="nav-notif-dot" :class="{ show: pqrsNuevas || cotizacionesNuevas || pedidosNuevos }"></span>
           </div>
           <span class="nav-user-name">{{ auth.usuario?.nombre }}</span>
           <i class="ri-arrow-down-s-line" style="color:rgba(255,255,255,0.5);font-size:0.9rem;"></i>
           <div class="nav-dropdown">
             <RouterLink to="/perfil"><i class="ri-user-line"></i> Mi Perfil</RouterLink>
             <template v-if="!auth.isAdmin">
-              <RouterLink to="/pedidos"><i class="ri-shopping-bag-line"></i> Historial de Mis Pedidos</RouterLink>
-              <RouterLink to="/cotizaciones"><i class="ri-file-list-line"></i> Cotizaciones</RouterLink>
+              <RouterLink to="/pedidos"><i class="ri-shopping-bag-line"></i> Historial de Mis Pedidos <span v-if="pedidosNuevos" class="nav-dropdown-badge">{{ pedidosNuevos }}</span></RouterLink>
+              <RouterLink to="/cotizaciones"><i class="ri-file-list-line"></i> Cotizaciones <span v-if="cotizacionesNuevas" class="nav-dropdown-badge">{{ cotizacionesNuevas }}</span></RouterLink>
               <RouterLink to="/pqrs"><i class="ri-customer-service-line"></i> Mis PQRS <span v-if="pqrsNuevas" class="nav-dropdown-badge">{{ pqrsNuevas }}</span></RouterLink>
             </template>
             <RouterLink v-if="auth.isAdmin" to="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard Admin</RouterLink>
@@ -114,7 +122,7 @@ function logout() {
       <RouterLink to="/" @click="closeMobile"><i class="ri-home-line"></i> Inicio</RouterLink>
       <RouterLink to="/productos" @click="closeMobile"><i class="ri-store-line"></i> Productos</RouterLink>
       <RouterLink to="/servicios" @click="closeMobile"><i class="ri-tools-line"></i> Servicios</RouterLink>
-      <RouterLink to="/cotizaciones" @click="closeMobile"><i class="ri-file-list-line"></i> Cotizaciones</RouterLink>
+      <RouterLink to="/cotizaciones" @click="closeMobile"><i class="ri-file-list-line"></i> Cotizaciones <span v-if="cotizacionesNuevas" class="nav-dropdown-badge">{{ cotizacionesNuevas }}</span></RouterLink>
       <RouterLink to="/nosotros" @click="closeMobile"><i class="ri-team-line"></i> Nosotros</RouterLink>
       <RouterLink to="/pqrs" @click="closeMobile"><i class="ri-customer-service-line"></i> PQRS <span v-if="pqrsNuevas" class="nav-dropdown-badge">{{ pqrsNuevas }}</span></RouterLink>
       <RouterLink to="/contacto" @click="closeMobile"><i class="ri-map-pin-line"></i> Contacto</RouterLink>
@@ -122,7 +130,7 @@ function logout() {
       <RouterLink v-if="!auth.isAuthenticated" to="/login" @click="closeMobile"><i class="ri-user-line"></i> Iniciar Sesión</RouterLink>
       <template v-else>
         <RouterLink to="/perfil" @click="closeMobile"><i class="ri-user-3-line"></i> Mi Perfil</RouterLink>
-        <RouterLink v-if="!auth.isAdmin" to="/pedidos" @click="closeMobile"><i class="ri-shopping-bag-line"></i> Historial de Mis Pedidos</RouterLink>
+        <RouterLink v-if="!auth.isAdmin" to="/pedidos" @click="closeMobile"><i class="ri-shopping-bag-line"></i> Historial de Mis Pedidos <span v-if="pedidosNuevos" class="nav-dropdown-badge">{{ pedidosNuevos }}</span></RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin/dashboard" @click="closeMobile"><i class="ri-dashboard-line"></i> Dashboard Admin</RouterLink>
         <a href="#" @click.prevent="logout(); closeMobile()"><i class="ri-logout-box-line"></i> Cerrar Sesión</a>
       </template>

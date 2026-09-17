@@ -892,6 +892,9 @@ th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid var(--borde
 
 .cotiz-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; transition: var(--transition); }
 .cotiz-card:hover { box-shadow: var(--shadow); }
+/* Scroll + resalte temporal al llegar desde un aviso de notificación (PQRS respondida) - mismo
+   criterio visual que .pedido-grupo-resaltada en PedidosView.vue. */
+.cotiz-card-resaltada { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
 .cotiz-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .cotiz-card-numero { font-family: var(--font-main); font-weight: 800; font-size: 1.05rem; color: var(--secondary); }
 .cotiz-card-fecha { font-size: 0.8rem; color: var(--text-muted); }

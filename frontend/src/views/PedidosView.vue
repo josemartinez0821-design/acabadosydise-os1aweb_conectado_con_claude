@@ -2,7 +2,8 @@
 // RF13 - historial de compras del usuario -> tablas `ventas` + `detalle_ventas`
 // Solo productos: `detalle_ventas` únicamente referencia `id_producto` (no hay columna para
 // servicios), así que los servicios agendados siempre viven en Cotizaciones, nunca aquí.
-import { computed, onMounted } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
 import { useVentasStore, ESTADOS_VENTA, labelEstadoVenta } from '../stores/ventas'
@@ -11,10 +12,31 @@ import { formatCOP, formatDateTime } from '../composables/useFormat'
 const auth = useAuthStore()
 const catalog = useCatalogStore()
 const ventasStore = useVentasStore()
+const route = useRoute()
+const router = useRouter()
 
-onMounted(() => {
-  ventasStore.cargarVentas()
+onMounted(async () => {
+  await ventasStore.cargarVentas()
+  if (auth.usuario) ventasStore.marcarVentasVistas(auth.usuario.id_usuario)
 })
+
+// Desde el aviso de "tu pedido cambió de estado" - a diferencia de Cotizaciones, acá cada pedido
+// ya se muestra completo (no hay acordeón que expandir), así que alcanza con scroll + resalte
+// temporal sobre la tarjeta correspondiente.
+const pedidoResaltado = ref(null)
+watch(
+  () => route.query.verPedido,
+  async (id) => {
+    if (!id) return
+    pedidoResaltado.value = Number(id)
+    if (auth.usuario) ventasStore.marcarVentasVistas(auth.usuario.id_usuario)
+    router.replace({ path: '/pedidos' })
+    await nextTick()
+    document.getElementById(`pedido-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => { pedidoResaltado.value = null }, 4000)
+  },
+  { immediate: true }
+)
 
 // GET /api/ventas ya devuelve solo las ventas del usuario logueado (o todas si es admin, caso que
 // no aplica en esta vista pública) - no hace falta filtrar por id_usuario acá.
@@ -68,7 +90,13 @@ const totalProductos = computed(() =>
       </div>
 
       <div v-else class="pedidos-list">
-        <div v-for="p in misPedidos" :key="p.id_venta" class="pedido-grupo">
+        <div
+          v-for="p in misPedidos"
+          :id="`pedido-${p.id_venta}`"
+          :key="p.id_venta"
+          class="pedido-grupo"
+          :class="{ 'pedido-grupo-resaltado': p.id_venta === pedidoResaltado }"
+        >
           <div class="pedido-grupo-header">
             <div class="pedido-grupo-info">
               <span class="pedido-grupo-numero">{{ p.numero_venta }}</span>
@@ -119,7 +147,10 @@ const totalProductos = computed(() =>
 
 .pedido-grupo {
   background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  padding: 24px 24px 28px;
+  padding: 24px 24px 28px; transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.pedido-grupo-resaltado {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(192,57,43,0.15);
 }
 
 .pedido-grupo-header {

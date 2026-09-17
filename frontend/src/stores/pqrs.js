@@ -1,13 +1,31 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
+import { useAuthStore } from './auth'
+import { useToast } from '../composables/useToast'
 
 export const usePqrsStore = defineStore('pqrs', () => {
   const pqrs = ref([])
+  const auth = useAuthStore()
+  const { showToast } = useToast()
+  // Para no disparar el toast con la primera carga de la sesión (cosas ya viejas sin ver no son
+  // "nuevas", son solo lo que había desde antes) - solo avisa si YA hubo una carga previa y el
+  // número de respuestas sin ver subió desde entonces.
+  let huboCargaPrevia = false
 
   async function cargarPqrs() {
     const { data } = await api.get('/pqrs')
-    pqrs.value = data
+    if (!auth.isAdmin && auth.usuario) {
+      const antes = contarRespuestasNuevas(auth.usuario.id_usuario)
+      pqrs.value = data
+      const despues = contarRespuestasNuevas(auth.usuario.id_usuario)
+      if (huboCargaPrevia && despues > antes) {
+        showToast('Tienes una nueva respuesta en tus PQRS.', 'info')
+      }
+    } else {
+      pqrs.value = data
+    }
+    huboCargaPrevia = true
   }
 
   // El tipo usa su propia paleta ("badge-tipo-*", definida en style.css) en vez de reutilizar

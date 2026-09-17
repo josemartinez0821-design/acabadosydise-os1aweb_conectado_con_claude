@@ -1,7 +1,7 @@
 <script setup>
 // RF11 - PQRS: radicación (tipo/asunto/descripción) e historial con estado -> tabla `pqrs`. Requiere sesión.
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
 import { usePqrsStore } from '../stores/pqrs'
@@ -12,6 +12,7 @@ import CotizarLoginModal from '../components/service/CotizarLoginModal.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const catalog = useCatalogStore()
 const pqrsStore = usePqrsStore()
 const { showToast } = useToast()
@@ -44,6 +45,24 @@ const misPqrs = computed(() => (auth.usuario ? pqrsStore.getPqrsDeUsuario(auth.u
 watch(
   tabActiva,
   (v) => { if (v === 'historial' && auth.usuario) pqrsStore.marcarPqrsVistas(auth.usuario.id_usuario) },
+  { immediate: true }
+)
+
+// Desde el aviso de "tu PQRS fue respondida" - lleva directo a la solicitud puntual dentro del
+// historial (scroll + resalte, mismo mecanismo que PedidosView.vue - esta lista tampoco tiene
+// acordeón, cada PQRS ya se muestra completa).
+const pqrsResaltada = ref(null)
+watch(
+  () => route.query.verPqrs,
+  async (id) => {
+    if (!id) return
+    tabActiva.value = 'historial'
+    pqrsResaltada.value = Number(id)
+    router.replace({ path: '/pqrs' })
+    await nextTick()
+    document.getElementById(`pqrs-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => { pqrsResaltada.value = null }, 4000)
+  },
   { immediate: true }
 )
 
@@ -323,7 +342,13 @@ async function radicar() {
               </div>
 
               <div v-else>
-                <div v-for="p in misPqrs" :key="p.id_pqrs" class="cotiz-card">
+                <div
+                  v-for="p in misPqrs"
+                  :id="`pqrs-${p.id_pqrs}`"
+                  :key="p.id_pqrs"
+                  class="cotiz-card"
+                  :class="{ 'cotiz-card-resaltada': p.id_pqrs === pqrsResaltada }"
+                >
                   <div class="cotiz-card-header">
                     <div>
                       <div class="cotiz-card-numero">{{ p.numero_pqrs }}</div>

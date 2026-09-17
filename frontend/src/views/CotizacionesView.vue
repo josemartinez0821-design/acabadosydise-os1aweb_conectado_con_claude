@@ -60,6 +60,15 @@ const borradorInicial = cargarBorrador()
 
 const tabActiva = ref(borradorInicial?.tabActiva || 'mis-cotizaciones')
 
+// Al entrar a "Mis Cotizaciones" (por click en la pestaña o por el aviso de "cambió de estado"),
+// se marcan como vistas todas las que hoy están aprobadas/rechazadas - mismo criterio que
+// PqrsView.vue con su pestaña "historial".
+watch(
+  tabActiva,
+  (v) => { if (v === 'mis-cotizaciones' && auth.usuario) cotizStore.marcarCotizacionesVistas(auth.usuario.id_usuario) },
+  { immediate: true }
+)
+
 const busquedaCotizaciones = ref('')
 const filtroEstado = ref('')
 
@@ -375,6 +384,12 @@ watch(
         tabActiva.value = 'nueva'
         agregarProducto(producto, query.mayorista === '1')
       }
+    } else if (query.verCotizacion) {
+      // Desde el aviso de "tu cotización fue aprobada/rechazada" - lleva directo al historial con
+      // esa cotización ya abierta, en vez de la lista general que el cliente tendría que buscar.
+      tabActiva.value = 'mis-cotizaciones'
+      cotizacionExpandida.value = Number(query.verCotizacion)
+      if (auth.usuario) cotizStore.marcarCotizacionesVistas(auth.usuario.id_usuario)
     } else {
       return
     }

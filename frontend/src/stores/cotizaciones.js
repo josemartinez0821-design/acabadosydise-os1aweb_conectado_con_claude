@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '../services/api'
+import { useAuthStore } from './auth'
+import { useToast } from '../composables/useToast'
 
 // Un servicio se cobra por hora, por día o a precio fijo de proyecto — nunca más de uno a la vez.
 // Compartido entre DetalleServicioView.vue y CotizacionesView.vue para que el cálculo sea idéntico
@@ -37,9 +39,25 @@ export const ADVERTENCIA_MODO = {
 // falta guardarlos en arrays sueltos aparte como hacía el mock.
 export const useCotizacionesStore = defineStore('cotizaciones', () => {
   const cotizaciones = ref([])
+  const auth = useAuthStore()
+  const { showToast } = useToast()
+  // Mismo criterio que huboCargaPrevia en pqrs.js - no avisar de "cambios nuevos" que ya
+  // existían desde antes de la primera carga de la sesión.
+  let huboCargaPrevia = false
+
   async function cargarCotizaciones() {
     const { data } = await api.get('/cotizaciones')
-    cotizaciones.value = data
+    if (!auth.isAdmin && auth.usuario) {
+      const antes = contarCambiosNuevos(auth.usuario.id_usuario)
+      cotizaciones.value = data
+      const despues = contarCambiosNuevos(auth.usuario.id_usuario)
+      if (huboCargaPrevia && despues > antes) {
+        showToast('Una de tus cotizaciones cambió de estado — revísala.', 'info')
+      }
+    } else {
+      cotizaciones.value = data
+    }
+    huboCargaPrevia = true
   }
 
   // Colores con significado real, no decorativo: amarillo = todavía sin responder; azul = el admin
@@ -124,6 +142,33 @@ export const useCotizacionesStore = defineStore('cotizaciones', () => {
     return Math.ceil((limite - new Date()) / (1000 * 60 * 60 * 24))
   }
 
+  // ── Aviso de "cambió de estado" para el cliente ─────────────────────────────
+  // Mismo patrón que pqrs.js: localStorage guarda, por usuario, qué cotizaciones aprobadas o
+  // rechazadas ya vio. Cualquiera en esos dos estados que no esté en la lista cuenta como "nueva"
+  // y enciende el aviso en la barra de navegación.
+  const CLAVE_VISTOS = 'acabados1a_cotizaciones_vistos'
+  function cargarVistos() {
+    try { return JSON.parse(localStorage.getItem(CLAVE_VISTOS) || '{}') } catch { return {} }
+  }
+  const vistosPorUsuario = ref(cargarVistos())
+
+  function cotizacionesConCambioNuevo(id_usuario) {
+    const vistos = vistosPorUsuario.value[id_usuario] || []
+    return getCotizacionesDeUsuario(id_usuario)
+      .filter((c) => ['aprobada', 'rechazada'].includes(c.estado) && !vistos.includes(c.id_cotizacion))
+  }
+  function contarCambiosNuevos(id_usuario) {
+    return id_usuario ? cotizacionesConCambioNuevo(id_usuario).length : 0
+  }
+  // Se llama al abrir "Mis Cotizaciones" — marca como vistas TODAS las aprobadas/rechazadas que ya
+  // existen en ese momento, igual que marcarPqrsVistas.
+  function marcarCotizacionesVistas(id_usuario) {
+    const idsConCambio = getCotizacionesDeUsuario(id_usuario)
+      .filter((c) => ['aprobada', 'rechazada'].includes(c.estado)).map((c) => c.id_cotizacion)
+    vistosPorUsuario.value = { ...vistosPorUsuario.value, [id_usuario]: idsConCambio }
+    localStorage.setItem(CLAVE_VISTOS, JSON.stringify(vistosPorUsuario.value))
+  }
+
   return {
     cotizaciones,
     cargarCotizaciones,
@@ -134,5 +179,7 @@ export const useCotizacionesStore = defineStore('cotizaciones', () => {
     actualizarEstado,
     estaVencida,
     diasParaVencer,
+    contarCambiosNuevos,
+    marcarCotizacionesVistas,
   }
 })

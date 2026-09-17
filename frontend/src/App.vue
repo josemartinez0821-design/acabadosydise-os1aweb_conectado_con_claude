@@ -8,11 +8,27 @@ import SessionWarningModal from './components/layout/SessionWarningModal.vue'
 import CenterMessage from './components/layout/CenterMessage.vue'
 import ValidationTooltip from './components/layout/ValidationTooltip.vue'
 import { useCatalogStore } from './stores/catalog'
+import { useAuthStore } from './stores/auth'
+import { useCotizacionesStore } from './stores/cotizaciones'
+import { useVentasStore } from './stores/ventas'
+import { usePqrsStore } from './stores/pqrs'
 import { useInactivityLogout } from './composables/useInactivityLogout'
 import { useValidationTooltip } from './composables/useValidationTooltip'
 
 const catalog = useCatalogStore()
+const auth = useAuthStore()
+const cotizStore = useCotizacionesStore()
+const ventasStore = useVentasStore()
+const pqrsStore = usePqrsStore()
 const route = useRoute()
+
+// Sondeo cada 60s para que el cliente vea el aviso de "cotización aprobada"/"pedido despachado"/
+// "PQRS respondida" en cualquier página del sitio, no solo cuando ya está parado en la lista
+// correspondiente - la detección de "cambió mientras estabas navegando" vive dentro de cada
+// cargarX() (ver stores/cotizaciones.js, ventas.js, pqrs.js). Nunca corre para admin: ese tiene
+// su propio sondeo en AdminLayout.vue con sus propios contadores.
+const INTERVALO_SONDEO_MS = 60000
+let intervaloSondeoCliente = null
 
 useInactivityLogout().iniciar()
 
@@ -72,10 +88,22 @@ onMounted(() => {
   catalog.cargarServicios()
   catalog.cargarImpuestos()
   catalog.cargarConfiguracion()
+
+  if (auth.isAuthenticated && !auth.isAdmin) {
+    cotizStore.cargarCotizaciones()
+    ventasStore.cargarVentas()
+    pqrsStore.cargarPqrs()
+    intervaloSondeoCliente = setInterval(() => {
+      cotizStore.cargarCotizaciones()
+      ventasStore.cargarVentas()
+      pqrsStore.cargarPqrs()
+    }, INTERVALO_SONDEO_MS)
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   document.removeEventListener('invalid', onCampoInvalido, true)
+  if (intervaloSondeoCliente) clearInterval(intervaloSondeoCliente)
 })
 </script>
 

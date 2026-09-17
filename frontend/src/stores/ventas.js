@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import api from '../services/api'
 import { useCatalogStore } from './catalog'
+import { useAuthStore } from './auth'
+import { useToast } from '../composables/useToast'
 
 // Metadata de los 9 estados reales de `ventas.estado`, usada por los badges de AdminVentasView.
 // La UI del admin solo pone dos de estos a mano (pendiente al crear la venta = "En proceso",
@@ -33,10 +35,24 @@ export function labelEstadoVenta(venta) {
 
 export const useVentasStore = defineStore('ventas', () => {
   const ventas = ref([])
+  const auth = useAuthStore()
+  const { showToast } = useToast()
+  // Mismo criterio que huboCargaPrevia en pqrs.js/cotizaciones.js.
+  let huboCargaPrevia = false
 
   async function cargarVentas() {
     const { data } = await api.get('/ventas')
-    ventas.value = data
+    if (!auth.isAdmin && auth.usuario) {
+      const antes = contarCambiosNuevos(auth.usuario.id_usuario)
+      ventas.value = data
+      const despues = contarCambiosNuevos(auth.usuario.id_usuario)
+      if (huboCargaPrevia && despues > antes) {
+        showToast('Uno de tus pedidos cambió de estado — revísalo.', 'info')
+      }
+    } else {
+      ventas.value = data
+    }
+    huboCargaPrevia = true
   }
 
   // `detalleVentas`/`pagos` planos se derivan de `ventas` (el backend ya los anida por venta) —
@@ -90,6 +106,33 @@ export const useVentasStore = defineStore('ventas', () => {
     return data
   }
 
+  // ── Aviso de "cambió de estado" para el cliente ─────────────────────────────
+  // Mismo patrón que pqrs.js/cotizaciones.js. `ventas.value` para un cliente ya viene filtrado
+  // por el backend (solo las suyas), así que acá no hace falta un getPorUsuario aparte - el
+  // id_usuario solo se usa como llave del localStorage, no para filtrar datos.
+  // Estados "notify-worthy": los únicos 3 que algún flujo real del sitio de verdad asigna hoy
+  // (ver comentario de ESTADOS_VENTA arriba) - confirmado/preparando/despacho/enviado/garantia
+  // existen en el ENUM pero ningún botón del admin los pone todavía.
+  const ESTADOS_NOTIFICABLES = ['entregado', 'cancelado', 'devuelto']
+  const CLAVE_VISTOS = 'acabados1a_ventas_vistos'
+  function cargarVistos() {
+    try { return JSON.parse(localStorage.getItem(CLAVE_VISTOS) || '{}') } catch { return {} }
+  }
+  const vistosPorUsuario = ref(cargarVistos())
+
+  function ventasConCambioNuevo(id_usuario) {
+    const vistos = vistosPorUsuario.value[id_usuario] || []
+    return ventas.value.filter((v) => ESTADOS_NOTIFICABLES.includes(v.estado) && !vistos.includes(v.id_venta))
+  }
+  function contarCambiosNuevos(id_usuario) {
+    return id_usuario ? ventasConCambioNuevo(id_usuario).length : 0
+  }
+  function marcarVentasVistas(id_usuario) {
+    const idsConCambio = ventas.value.filter((v) => ESTADOS_NOTIFICABLES.includes(v.estado)).map((v) => v.id_venta)
+    vistosPorUsuario.value = { ...vistosPorUsuario.value, [id_usuario]: idsConCambio }
+    localStorage.setItem(CLAVE_VISTOS, JSON.stringify(vistosPorUsuario.value))
+  }
+
   return {
     ventas,
     detalleVentas,
@@ -99,5 +142,7 @@ export const useVentasStore = defineStore('ventas', () => {
     getPagosDeVenta,
     actualizarEstadoVenta,
     actualizarNotasVenta,
+    contarCambiosNuevos,
+    marcarVentasVistas,
   }
 })
