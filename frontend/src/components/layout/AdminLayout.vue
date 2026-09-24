@@ -45,8 +45,8 @@ const pqrsPendientes = computed(() => pqrsStore.pqrs.filter((p) => ['abierto', '
 
 // Los 3 contadores nuevos de la campana del topbar - cotizaciones y ventas sin procesar, y
 // productos con poco stock. Nada de esto se guarda en ningún lado nuevo: son los mismos arrays
-// que ya carga este componente (cotizStore/ventasStore/pqrsStore) más el inventario que ya carga
-// App.vue para todo el sitio, solo contados de otra forma.
+// que ya carga este componente (cotizStore/ventasStore/pqrsStore) más el inventario, solo
+// contados de otra forma.
 const cotizacionesPendientes = computed(() => cotizStore.cotizaciones.filter((c) => c.estado === 'pendiente').length)
 const ventasPendientes = computed(() => ventasStore.ventas.filter((v) => v.estado === 'pendiente').length)
 // Mismo umbral que ya usa Inventario para marcar "Stock bajo" (catalog.js) - no el *2 más laxo
@@ -65,6 +65,10 @@ onMounted(() => {
   cotizStore.cargarCotizaciones()
   ventasStore.cargarVentas()
   pqrsStore.cargarPqrs()
+  // App.vue ya lo cargó al abrir el sitio, pero si en ese momento no había sesión de admin llegó
+  // la versión pública (sin stock_minimo/máximo ni ubicación, hallazgo A-2) - se vuelve a pedir
+  // aquí para que el panel siempre tenga la vista completa.
+  catalog.cargarInventario()
   intervaloSondeo = setInterval(() => {
     cotizStore.cargarCotizaciones()
     ventasStore.cargarVentas()
@@ -89,6 +93,8 @@ const FRASES_DESPEDIDA = [
 function cerrarSesion() {
   const nombre = auth.usuario?.nombre?.split(' ')[0] || ''
   auth.logout()
+  // Sin sesión, vuelve a quedar en memoria solo la versión pública del inventario.
+  catalog.cargarInventario()
   mostrarMensajeCentral(FRASES_DESPEDIDA[Math.floor(Math.random() * FRASES_DESPEDIDA.length)](nombre), {
     icono: 'ri-shield-check-line',
     tipo: 'despedida',
