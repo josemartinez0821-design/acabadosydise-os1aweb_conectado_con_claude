@@ -152,7 +152,8 @@ export const useCatalogStore = defineStore('catalog', () => {
     const inv = inventario.value.find((i) => i.id_producto === id_producto)
     if (!inv) return { label: 'Sin inventario', class: 'stock-out' }
     if (inv.cantidad_disponible === 0) return { label: 'Agotado', class: 'stock-out' }
-    if (inv.cantidad_disponible <= inv.stock_minimo) return { label: 'Stock bajo', class: 'stock-low' }
+    // stock_bajo lo calcula el backend: al público ya no le llega stock_minimo (hallazgo A-2).
+    if (inv.stock_bajo) return { label: 'Stock bajo', class: 'stock-low' }
     return { label: 'Disponible', class: 'stock-in' }
   }
 

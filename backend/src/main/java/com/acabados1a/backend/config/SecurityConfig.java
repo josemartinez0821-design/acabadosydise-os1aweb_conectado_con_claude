@@ -70,8 +70,11 @@ public class SecurityConfig {
                 // Reseñas: el GET se queda permitAll (dato público de catálogo, como productos) -
                 // solo publicar una reseña nueva requiere estar logueado.
                 .requestMatchers(HttpMethod.POST, "/api/resenas").authenticated()
-                // Inventario: GET sigue permitAll (catálogo público lo necesita para stock), pero
-                // registrar movimientos manuales y tocar umbrales es solo-admin.
+                // Inventario: GET es público a propósito (el catálogo lo necesita para stock) - regla
+                // explícita en vez de caer en el anyRequest() de abajo (hallazgo A-2). El controlador
+                // solo devuelve los campos internos de bodega si quien pide es admin. Registrar
+                // movimientos manuales y tocar umbrales es solo-admin.
+                .requestMatchers(HttpMethod.GET, "/api/inventario", "/api/inventario/*").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/inventario/*/umbrales").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/movimientos-inventario").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/movimientos-inventario").hasRole("ADMIN")
