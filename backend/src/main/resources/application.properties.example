@@ -27,6 +27,11 @@ spring.servlet.multipart.max-request-size=8MB
 jwt.secret=CAMBIAR_POR_UN_SECRETO_PROPIO_BASE64_DE_AL_MENOS_64_BYTES
 jwt.expiracion-horas=24
 
+# Llave del HMAC con que se guarda el código de verificación/recuperación de contraseña (en la BD
+# nunca queda el código en claro). Generar una propia, distinta de jwt.secret:
+# openssl rand -base64 48. Si se omite, el backend usa jwt.secret.
+codigo-verificacion.secret=CAMBIAR_POR_UNA_LLAVE_PROPIA
+
 # Envío de correos (verificación de registro, recuperar contraseña) vía Gmail SMTP - la contraseña
 # es una "contraseña de aplicación" de Google (Cuenta de Google > Seguridad > Verificación en 2
 # pasos > Contraseñas de aplicaciones), nunca la contraseña real de la cuenta.

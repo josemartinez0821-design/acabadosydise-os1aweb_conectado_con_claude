@@ -34,6 +34,7 @@ public class AuthService {
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final CodigoVerificacionHasher codigoHasher;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public Usuario registrar(RegistroRequest request) {
@@ -68,9 +69,9 @@ public class AuthService {
         // El hashing: la contraseña que escribió el usuario nunca se guarda, solo su hash BCrypt.
         usuario.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        asignarNuevoCodigo(usuario);
+        String codigo = asignarNuevoCodigo(usuario);
         Usuario guardado = usuarioRepository.save(usuario);
-        emailService.enviarCodigoVerificacion(guardado.getEmail(), guardado.getCodigoVerificacion());
+        emailService.enviarCodigoVerificacion(guardado.getEmail(), codigo);
         return guardado;
     }
 
@@ -121,9 +122,9 @@ public class AuthService {
         if (Boolean.TRUE.equals(usuario.getEmailVerificado())) {
             throw new IllegalArgumentException("Esta cuenta ya está verificada.");
         }
-        asignarNuevoCodigo(usuario);
+        String codigo = asignarNuevoCodigo(usuario);
         usuarioRepository.save(usuario);
-        emailService.enviarCodigoVerificacion(usuario.getEmail(), usuario.getCodigoVerificacion());
+        emailService.enviarCodigoVerificacion(usuario.getEmail(), codigo);
     }
 
     public void solicitarRecuperacion(String email) {
@@ -132,9 +133,9 @@ public class AuthService {
         // revela lo mismo con existsByEmail().
         Usuario usuario = usuarioRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("Este correo no está registrado."));
-        asignarNuevoCodigo(usuario);
+        String codigo = asignarNuevoCodigo(usuario);
         usuarioRepository.save(usuario);
-        emailService.enviarCodigoRecuperacion(usuario.getEmail(), usuario.getCodigoVerificacion());
+        emailService.enviarCodigoRecuperacion(usuario.getEmail(), codigo);
     }
 
     public void verificarCodigoRecuperacion(String email, String codigo) {
@@ -163,8 +164,7 @@ public class AuthService {
         if (intentos >= MAX_INTENTOS_CODIGO) {
             throw new IllegalArgumentException("Superaste el número de intentos permitidos. Solicita un código nuevo.");
         }
-        if (usuario.getCodigoVerificacion() == null || usuario.getCodigoExpiracion() == null
-            || !usuario.getCodigoVerificacion().equals(codigo)) {
+        if (usuario.getCodigoExpiracion() == null || !codigoHasher.coincide(codigo, usuario.getCodigoVerificacion())) {
             usuario.setIntentosCodigo(intentos + 1);
             usuarioRepository.save(usuario);
             throw new IllegalArgumentException("El código ingresado no es válido.");
@@ -174,10 +174,14 @@ public class AuthService {
         }
     }
 
-    private void asignarNuevoCodigo(Usuario usuario) {
-        usuario.setCodigoVerificacion(String.format("%06d", secureRandom.nextInt(1_000_000)));
+    // Devuelve el código en claro solo para mandarlo por correo; en la entidad (y por tanto en la
+    // BD) queda únicamente su HMAC - ver CodigoVerificacionHasher (hallazgo A-1).
+    private String asignarNuevoCodigo(Usuario usuario) {
+        String codigo = String.format("%06d", secureRandom.nextInt(1_000_000));
+        usuario.setCodigoVerificacion(codigoHasher.hash(codigo));
         usuario.setCodigoExpiracion(LocalDateTime.now().plusMinutes(VIGENCIA_CODIGO_MINUTOS));
         usuario.setIntentosCodigo(0);
+        return codigo;
     }
 
     private void limpiarCodigo(Usuario usuario) {
