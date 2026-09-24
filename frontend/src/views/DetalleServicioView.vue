@@ -1,5 +1,5 @@
 <script setup>
-// RF09 - detalle de servicio: qué incluye, cómo funciona, galería con lightbox, cotización (requiere sesión)
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - detalle de servicio: qué incluye, cómo funciona, galería con lightbox, cotización (requiere sesión)
 import { ref, computed } from 'vue'
 import { useCatalogStore } from '../stores/catalog'
 import { unidadServicio, tarifaServicio } from '../stores/cotizaciones'

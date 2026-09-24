@@ -1,5 +1,5 @@
 <script setup>
-// RF13 - página principal, replicando github-frontend/index.html sobre el sistema de diseño portado
+// RF22 - página principal (promociones del mes), replicando github-frontend/index.html sobre el sistema de diseño portado
 import { ref, computed, onMounted, reactive } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Pagination, Autoplay } from 'swiper/modules'

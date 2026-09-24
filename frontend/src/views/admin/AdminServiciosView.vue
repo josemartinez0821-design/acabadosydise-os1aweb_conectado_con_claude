@@ -1,5 +1,5 @@
 <script setup>
-// RF09/RF10 - CRUD de servicios -> tabla `servicios`. Calca AdminProductosView.vue, sin la parte
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - CRUD de servicios -> tabla `servicios`. Calca AdminProductosView.vue, sin la parte
 // de inventario/stock (los servicios no manejan existencias).
 import { ref, computed, watch } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'

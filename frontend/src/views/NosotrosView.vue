@@ -1,5 +1,5 @@
 <script setup>
-// RF13 (extensión) - página "Nosotros": historia, misión/visión, galería del local y valores.
+// RNF10/RNF11 - página "Nosotros" ("Quiénes somos"): historia, misión/visión, galería del local y valores.
 // Nota: las fotos de la galería son de stock (mismo criterio que el resto del sitio) mientras
 // no se cuente con fotografías reales del local/equipo. Basta con reemplazar las URLs del array
 // `galeria` de abajo cuando se tengan.

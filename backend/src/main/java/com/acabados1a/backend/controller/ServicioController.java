@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// RF09/RF10 - catálogo de servicios. listar() no pasa por ServicioService (un findAll() no tiene
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - catálogo de servicios. listar() no pasa por ServicioService (un findAll() no tiene
 // lógica que orquestar); crear/actualizar/eliminar sí, por eso delegan.
 @RestController
 @RequestMapping("/api/servicios")

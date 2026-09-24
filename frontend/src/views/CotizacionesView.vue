@@ -1,5 +1,5 @@
 <script setup>
-// RF08 - cotizaciones: solicitar (productos y/o servicios) e historial con estado -> tablas
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - cotizaciones: solicitar (productos y/o servicios) e historial con estado -> tablas
 // `cotizaciones`, `cotizacion_productos`, `cotizacion_servicios`
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'

@@ -1,5 +1,6 @@
 <script setup>
-// RF10 - formulario de contacto, canales, mapa de ubicación y datos de la empresa (RNF11)
+// RF20 - teléfono de contacto; el formulario es una ampliación sin RF oficial. Canales, mapa de
+// ubicación y datos de la empresa (RNF11)
 import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
