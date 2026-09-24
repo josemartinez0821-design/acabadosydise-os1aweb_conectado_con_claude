@@ -83,6 +83,7 @@ public class Usuario {
     @Column(name = "email_verificado")
     private Boolean emailVerificado;
 
+    // Guarda el HMAC del código, nunca el código en claro (hallazgo A-1) - ver CodigoVerificacionHasher.
     @Column(name = "codigo_verificacion", length = 10)
     private String codigoVerificacion;
 
