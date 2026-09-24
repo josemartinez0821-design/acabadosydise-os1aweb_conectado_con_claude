@@ -44,40 +44,15 @@ public class VentaService {
         return esAdmin ? ventaRepository.findAll() : ventaRepository.findByUsuarioIdUsuario(actor.getIdUsuario());
     }
 
+    // Coordina el alta de una venta; cada paso vive en su propio método (hallazgo NC-01 de la
+    // auditoría cruzada: antes todo esto era un solo método de ~165 líneas). El orden importa:
+    // primero TODAS las validaciones (dueño, métodos de pago/envío, cotización y stock) y recién
+    // después las escrituras, para que un pedido inválido no alcance a insertar nada.
     public Venta crear(String email, boolean esAdmin, VentaRequest request) {
         Usuario actor = resolverUsuario(email);
-
-        // Solo un admin puede registrar la venta a nombre de otro cliente (pedido manual por
-        // teléfono/WhatsApp) - cualquier otro usuario siempre compra a nombre de sí mismo, sin
-        // importar qué id_usuario venga en el body.
-        Usuario dueño = actor;
-        if (esAdmin && request.getIdUsuario() != null) {
-            dueño = usuarioRepository.findById(request.getIdUsuario())
-                .orElseThrow(() -> new IllegalArgumentException("El cliente indicado no existe."));
-        }
-
-        Venta.MetodoPago metodoPago;
-        try {
-            metodoPago = Venta.MetodoPago.valueOf(request.getMetodoPago());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("El método de pago indicado no es válido.");
-        }
-
-        // metodoEnvio es opcional: el anticipo de una cotización de servicio no envía nada y el
-        // frontend no lo manda. Si no viene, se asume 'recogida' (el valor del enum que representa
-        // "sin envío"). El null se filtra aparte porque MetodoEnvio.valueOf(null) lanzaría
-        // NullPointerException, no IllegalArgumentException, y se escaparía del catch.
-        Venta.MetodoEnvio metodoEnvio;
-        String metodoEnvioRaw = request.getMetodoEnvio();
-        if (metodoEnvioRaw == null || metodoEnvioRaw.isBlank()) {
-            metodoEnvio = Venta.MetodoEnvio.recogida;
-        } else {
-            try {
-                metodoEnvio = Venta.MetodoEnvio.valueOf(metodoEnvioRaw);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("El método de envío indicado no es válido.");
-            }
-        }
+        Usuario dueño = resolverDueñoVenta(actor, esAdmin, request.getIdUsuario());
+        Venta.MetodoPago metodoPago = validarMetodoPago(request.getMetodoPago());
+        Venta.MetodoEnvio metodoEnvio = resolverMetodoEnvio(request.getMetodoEnvio());
 
         // Contraentrega es para envío: el cliente paga al recoger el paquete en el local de la
         // transportadora, no en nuestra tienda (recogida en tienda ya es gratis y sin este paso).
@@ -86,49 +61,72 @@ public class VentaService {
         }
 
         List<VentaRequest.Item> items = request.getItems() != null ? request.getItems() : List.of();
+        BigDecimal subtotal = request.getSubtotal() != null ? request.getSubtotal() : calcularSubtotal(items);
+        BigDecimal total = request.getTotal() != null ? request.getTotal() : subtotal;
+        Cotizacion cotizacion = resolverCotizacion(request.getIdCotizacion(), actor, esAdmin);
+        Map<Integer, Producto> productosPorId = validarStock(items);
 
-        BigDecimal subtotalCalculado = items.stream()
+        Venta guardada = guardarCabecera(dueño, metodoPago, metodoEnvio, subtotal, total, request.getNotasCliente(), cotizacion);
+        crearDetallesVenta(guardada, items, productosPorId);
+        crearPago(guardada);
+        enviarConfirmacion(dueño, guardada, items, productosPorId);
+        return guardada;
+    }
+
+    // Solo un admin puede registrar la venta a nombre de otro cliente (pedido manual por
+    // teléfono/WhatsApp) - cualquier otro usuario siempre compra a nombre de sí mismo, sin
+    // importar qué id_usuario venga en el body.
+    private Usuario resolverDueñoVenta(Usuario actor, boolean esAdmin, Integer idUsuarioSolicitado) {
+        if (!esAdmin || idUsuarioSolicitado == null) return actor;
+        return usuarioRepository.findById(idUsuarioSolicitado)
+            .orElseThrow(() -> new IllegalArgumentException("El cliente indicado no existe."));
+    }
+
+    private Venta.MetodoPago validarMetodoPago(String metodoPago) {
+        try {
+            return Venta.MetodoPago.valueOf(metodoPago);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El método de pago indicado no es válido.");
+        }
+    }
+
+    // metodoEnvio es opcional: el anticipo de una cotización de servicio no envía nada y el
+    // frontend no lo manda. Si no viene, se asume 'recogida' (el valor del enum que representa
+    // "sin envío"). El null se filtra aparte porque MetodoEnvio.valueOf(null) lanzaría
+    // NullPointerException, no IllegalArgumentException, y se escaparía del catch.
+    private Venta.MetodoEnvio resolverMetodoEnvio(String metodoEnvio) {
+        if (metodoEnvio == null || metodoEnvio.isBlank()) return Venta.MetodoEnvio.recogida;
+        try {
+            return Venta.MetodoEnvio.valueOf(metodoEnvio);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El método de envío indicado no es válido.");
+        }
+    }
+
+    private BigDecimal calcularSubtotal(List<VentaRequest.Item> items) {
+        return items.stream()
             .map(i -> i.getPrecioVenta().multiply(BigDecimal.valueOf(i.getCantidad())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal subtotal = request.getSubtotal() != null ? request.getSubtotal() : subtotalCalculado;
-        BigDecimal total = request.getTotal() != null ? request.getTotal() : subtotal;
+    }
 
-        Venta venta = new Venta();
-        venta.setUsuario(dueño);
-        venta.setSubtotal(subtotal);
-        venta.setDescuento(BigDecimal.ZERO);
-        venta.setIvaTotal(BigDecimal.ZERO);
-        venta.setTotal(total);
-        venta.setEstado(Venta.Estado.pendiente);
-        venta.setMetodoPago(metodoPago);
-        venta.setMetodoEnvio(metodoEnvio);
-        venta.setNotasCliente(request.getNotasCliente());
-
-        if (request.getIdCotizacion() != null) {
-            Cotizacion cotizacion = cotizacionRepository.findById(request.getIdCotizacion())
-                .orElseThrow(() -> new IllegalArgumentException("La cotización indicada no existe."));
-            // Un cliente no puede asociar su venta a una cotización ajena (solo la suya) - el
-            // admin sí puede, para registrar el anticipo de cualquier cliente a mano.
-            if (!esAdmin && !cotizacion.getUsuario().getIdUsuario().equals(actor.getIdUsuario())) {
-                throw new IllegalArgumentException("No tienes permiso para asociar esa cotización a la venta.");
-            }
-            venta.setCotizacion(cotizacion);
+    // Un cliente no puede asociar su venta a una cotización ajena (solo la suya) - el admin sí
+    // puede, para registrar el anticipo de cualquier cliente a mano.
+    private Cotizacion resolverCotizacion(Integer idCotizacion, Usuario actor, boolean esAdmin) {
+        if (idCotizacion == null) return null;
+        Cotizacion cotizacion = cotizacionRepository.findById(idCotizacion)
+            .orElseThrow(() -> new IllegalArgumentException("La cotización indicada no existe."));
+        if (!esAdmin && !cotizacion.getUsuario().getIdUsuario().equals(actor.getIdUsuario())) {
+            throw new IllegalArgumentException("No tienes permiso para asociar esa cotización a la venta.");
         }
+        return cotizacion;
+    }
 
-        // El placeholder es solo para pasar la validación not-null de Hibernate antes del INSERT -
-        // el trigger before_venta_insert lo reemplaza por el numero_venta real durante ese mismo
-        // INSERT. A diferencia de codigo_producto/numero_cotizacion (que sí necesitan un segundo
-        // save() en Java porque no tienen trigger), acá NO se vuelve a escribir: un segundo save()
-        // pisaría lo que el trigger ya generó con un valor calculado en Java, dejando el trigger sin
-        // ningún efecto real (hallazgo H-3). En vez de eso, se lee la columna real con una consulta
-        // nativa, porque el first-level cache de Hibernate no se entera de lo que cambió el trigger.
-        venta.setNumeroVenta("TMP-" + UUID.randomUUID());
-        Venta guardada = ventaRepository.save(venta);
-        guardada.setNumeroVenta(ventaRepository.obtenerNumeroVentaReal(guardada.getIdVenta()));
-
-        // Valida stock ANTES de insertar nada - acumulando por producto, porque el mismo producto
-        // podría venir repartido en más de un ítem (un cliente API arbitrario podría mandar eso
-        // aunque la UI ya los fusiona en uno solo antes de enviar).
+    // Valida stock ANTES de insertar nada - acumulando por producto, porque el mismo producto
+    // podría venir repartido en más de un ítem (un cliente API arbitrario podría mandar eso
+    // aunque la UI ya los fusiona en uno solo antes de enviar). Antes de NC-01 esto corría después
+    // de insertar la cabecera: el rollback la deshacía, pero el INSERT (y su id) ya se había gastado.
+    // Devuelve los productos ya cargados para no volver a buscarlos en el detalle y el correo.
+    private Map<Integer, Producto> validarStock(List<VentaRequest.Item> items) {
         Map<Integer, Integer> cantidadPorProducto = new LinkedHashMap<>();
         for (VentaRequest.Item item : items) {
             cantidadPorProducto.merge(item.getIdProducto(), item.getCantidad(), Integer::sum);
@@ -145,68 +143,104 @@ public class VentaService {
             }
             productosPorId.put(entry.getKey(), producto);
         }
+        return productosPorId;
+    }
 
-        // El descuento de stock + el registro en movimientos_inventario NO se hacen aquí en Java -
-        // ya existe un trigger real en la BD (`after_venta_detalle_insert`, ver el .sql de schema)
-        // que se dispara solo con este INSERT y hace exactamente eso. Duplicarlo acá restaba el
-        // stock dos veces (confirmado probando contra la BD real). Cancelar/devolver sí necesita
-        // lógica en Java (reponerStock más abajo) porque no existe un trigger simétrico para eso.
+    // El numero_venta NO se genera en Java: el placeholder es solo para pasar la validación
+    // not-null de Hibernate antes del INSERT, y el trigger before_venta_insert lo reemplaza por el
+    // real durante ese mismo INSERT. A diferencia de codigo_producto/numero_cotizacion (que sí
+    // necesitan un segundo save() en Java porque no tienen trigger), acá NO se vuelve a escribir:
+    // un segundo save() pisaría lo que el trigger ya generó con un valor calculado en Java, dejando
+    // el trigger sin ningún efecto real (hallazgo H-3). En vez de eso, se lee la columna real con
+    // una consulta nativa, porque el first-level cache de Hibernate no se entera de lo que cambió
+    // el trigger.
+    private Venta guardarCabecera(Usuario dueño, Venta.MetodoPago metodoPago, Venta.MetodoEnvio metodoEnvio,
+                                  BigDecimal subtotal, BigDecimal total, String notasCliente, Cotizacion cotizacion) {
+        Venta venta = new Venta();
+        venta.setUsuario(dueño);
+        venta.setSubtotal(subtotal);
+        venta.setDescuento(BigDecimal.ZERO);
+        venta.setIvaTotal(BigDecimal.ZERO);
+        venta.setTotal(total);
+        venta.setEstado(Venta.Estado.pendiente);
+        venta.setMetodoPago(metodoPago);
+        venta.setMetodoEnvio(metodoEnvio);
+        venta.setNotasCliente(notasCliente);
+        venta.setCotizacion(cotizacion);
+        venta.setNumeroVenta("TMP-" + UUID.randomUUID());
+
+        Venta guardada = ventaRepository.save(venta);
+        guardada.setNumeroVenta(ventaRepository.obtenerNumeroVentaReal(guardada.getIdVenta()));
+        return guardada;
+    }
+
+    // El descuento de stock + el registro en movimientos_inventario NO se hacen aquí en Java -
+    // ya existe un trigger real en la BD (`after_venta_detalle_insert`, ver el .sql de schema)
+    // que se dispara solo con este INSERT y hace exactamente eso. Duplicarlo acá restaba el
+    // stock dos veces (confirmado probando contra la BD real). Cancelar/devolver sí necesita
+    // lógica en Java (reponerStock más abajo) porque no existe un trigger simétrico para eso.
+    private void crearDetallesVenta(Venta venta, List<VentaRequest.Item> items, Map<Integer, Producto> productosPorId) {
         for (VentaRequest.Item item : items) {
             DetalleVenta detalle = new DetalleVenta();
-            detalle.setVenta(guardada);
+            detalle.setVenta(venta);
             detalle.setProducto(productosPorId.get(item.getIdProducto()));
             detalle.setCantidad(item.getCantidad());
             detalle.setPrecioUnitario(item.getPrecioVenta());
             detalleVentaRepository.save(detalle);
         }
+    }
 
-        // Los métodos que sí se cobran "en línea" (simulados) quedan completado de una vez, como
-        // siempre. Contraentrega no se cobra hasta que el cliente recoge el pedido y paga en
-        // persona - queda pendiente hasta que VentaService.actualizarEstado() lo complete solo.
+    // Los métodos que sí se cobran "en línea" (simulados) quedan completado de una vez, como
+    // siempre. Contraentrega no se cobra hasta que el cliente recoge el pedido y paga en
+    // persona - queda pendiente hasta que VentaService.actualizarEstado() lo complete solo.
+    private void crearPago(Venta venta) {
+        boolean contraentrega = venta.getMetodoPago() == Venta.MetodoPago.contraentrega;
         Pago pago = new Pago();
-        pago.setVenta(guardada);
-        pago.setMetodoPago(metodoPago);
-        pago.setValor(total);
-        pago.setEstado(metodoPago == Venta.MetodoPago.contraentrega ? Pago.Estado.pendiente : Pago.Estado.completado);
-        pago.setTransaccionId(metodoPago == Venta.MetodoPago.contraentrega ? null : "SIM-" + String.format("%06d", guardada.getIdVenta()));
+        pago.setVenta(venta);
+        pago.setMetodoPago(venta.getMetodoPago());
+        pago.setValor(venta.getTotal());
+        pago.setEstado(contraentrega ? Pago.Estado.pendiente : Pago.Estado.completado);
+        pago.setTransaccionId(contraentrega ? null : "SIM-" + String.format("%06d", venta.getIdVenta()));
         pagoRepository.save(pago);
+    }
 
-        // Resumen para el correo de confirmación. Los productos salen de este pedido; los servicios,
-        // de la cotización asociada (si la hay). El anticipo del 50% de una cotización de solo
-        // servicios llega con items vacío -> el correo se arma en "modo anticipo" (encabezado y
-        // desglose propios) en vez de mostrar "Productos:" sin nada debajo como antes.
-        List<EmailService.LineaResumen> lineasProducto = new ArrayList<>();
+    // Resumen para el correo de confirmación. Los productos salen de este pedido; los servicios,
+    // de la cotización asociada (si la hay). El anticipo del 50% de una cotización de solo
+    // servicios llega con items vacío -> el correo se arma en "modo anticipo" (encabezado y
+    // desglose propios) en vez de mostrar "Productos:" sin nada debajo como antes.
+    private void enviarConfirmacion(Usuario dueño, Venta venta, List<VentaRequest.Item> items, Map<Integer, Producto> productosPorId) {
+        Cotizacion cot = venta.getCotizacion();
+        boolean esAnticipoServicio = cot != null && items.isEmpty();
+        BigDecimal saldoPendiente = esAnticipoServicio && cot.getTotalEstimado() != null
+            ? cot.getTotalEstimado().subtract(venta.getTotal()).max(BigDecimal.ZERO)
+            : null;
+
+        emailService.enviarConfirmacionPedido(dueño.getEmail(), new EmailService.DatosConfirmacionPedido(
+            venta.getNumeroVenta(), lineasProducto(items, productosPorId), lineasServicio(cot), venta.getTotal(),
+            venta.getMetodoPago() == Venta.MetodoPago.contraentrega, esAnticipoServicio,
+            cot != null ? cot.getNumeroCotizacion() : null, saldoPendiente,
+            cot != null ? ObservacionesUtil.extraerFechaDeseada(cot.getObservaciones()) : null));
+    }
+
+    private List<EmailService.LineaResumen> lineasProducto(List<VentaRequest.Item> items, Map<Integer, Producto> productosPorId) {
+        List<EmailService.LineaResumen> lineas = new ArrayList<>();
         for (VentaRequest.Item item : items) {
             Producto producto = productosPorId.get(item.getIdProducto());
             BigDecimal montoLinea = item.getPrecioVenta().multiply(BigDecimal.valueOf(item.getCantidad()));
-            lineasProducto.add(new EmailService.LineaResumen(producto.getNombre(), "x" + item.getCantidad(), montoLinea));
+            lineas.add(new EmailService.LineaResumen(producto.getNombre(), "x" + item.getCantidad(), montoLinea));
         }
+        return lineas;
+    }
 
-        List<EmailService.LineaResumen> lineasServicio = new ArrayList<>();
-        String numeroCotizacion = null;
-        BigDecimal saldoPendiente = null;
-        String fechaDeseada = null;
-        boolean esAnticipoServicio = guardada.getCotizacion() != null && items.isEmpty();
-        if (guardada.getCotizacion() != null) {
-            Cotizacion cot = guardada.getCotizacion();
-            numeroCotizacion = cot.getNumeroCotizacion();
-            fechaDeseada = ObservacionesUtil.extraerFechaDeseada(cot.getObservaciones());
-            for (CotizacionServicio cs : cotizacionServicioRepository.findByCotizacionIdCotizacion(cot.getIdCotizacion())) {
-                Servicio s = cs.getServicio();
-                String detalle = EmailService.descripcionCantidadServicio(cs.getCantidad(), s.getPrecioHora() != null, s.getPrecioDia() != null);
-                lineasServicio.add(new EmailService.LineaResumen(s.getNombreServicio(), detalle, cs.getPrecioEstimado()));
-            }
-            if (esAnticipoServicio && cot.getTotalEstimado() != null) {
-                saldoPendiente = cot.getTotalEstimado().subtract(total).max(BigDecimal.ZERO);
-            }
+    private List<EmailService.LineaResumen> lineasServicio(Cotizacion cotizacion) {
+        List<EmailService.LineaResumen> lineas = new ArrayList<>();
+        if (cotizacion == null) return lineas;
+        for (CotizacionServicio cs : cotizacionServicioRepository.findByCotizacionIdCotizacion(cotizacion.getIdCotizacion())) {
+            Servicio s = cs.getServicio();
+            String detalle = EmailService.descripcionCantidadServicio(cs.getCantidad(), s.getPrecioHora() != null, s.getPrecioDia() != null);
+            lineas.add(new EmailService.LineaResumen(s.getNombreServicio(), detalle, cs.getPrecioEstimado()));
         }
-
-        emailService.enviarConfirmacionPedido(dueño.getEmail(), new EmailService.DatosConfirmacionPedido(
-            guardada.getNumeroVenta(), lineasProducto, lineasServicio, total,
-            metodoPago == Venta.MetodoPago.contraentrega, esAnticipoServicio,
-            numeroCotizacion, saldoPendiente, fechaDeseada));
-
-        return guardada;
+        return lineas;
     }
 
     // Solo lo llama un admin (forzado en SecurityConfig) - marcar despachado/entregado, o
