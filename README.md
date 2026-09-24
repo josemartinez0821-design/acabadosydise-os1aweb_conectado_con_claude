@@ -53,3 +53,30 @@ npm run dev
 ```
 
 Por defecto apunta a `http://localhost:8080/api` (ver `frontend/.env`).
+
+## Flujo de trabajo con ramas
+
+Desde la auditoría cruzada (24/09/2026), ningún cambio va directo a `main`. Cada cambio se hace en
+una rama corta que sale de `main` y vuelve con un merge sin fast-forward (`--no-ff`), para que el
+historial muestre qué commits pertenecen a cada cambio.
+
+| Prefijo | Para qué | Ejemplo |
+|---|---|---|
+| `fix/` | Corregir un defecto o un hallazgo | `fix/inventario-dto` |
+| `refactor/` | Cambio interno que no altera el comportamiento | `refactor/venta-service-crear` |
+| `feature/` | Funcionalidad nueva | `feature/pasarela-wompi` |
+| `docs/` | Documentación | `docs/matriz-trazabilidad` |
+
+```bash
+git checkout main
+git pull
+git checkout -b fix/nombre-corto
+# ...commits del cambio...
+git checkout main
+git merge --no-ff fix/nombre-corto
+git push origin main fix/nombre-corto
+```
+
+Las ramas se dejan publicadas en GitHub (pestaña *Branches*) como evidencia del cambio. Si el cambio
+necesita revisión del otro integrante antes de integrarse, se abre un Pull Request en GitHub en lugar
+del merge local. Para ver el historial con sus ramas: `git log --oneline --graph`.
