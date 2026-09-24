@@ -28,6 +28,9 @@ backend/    Spring Boot 4 (Java 21) + MariaDB
 - Autenticación con verificación de correo y recuperación de contraseña (JWT, roles Administrador/Cliente)
 - Panel de administración: dashboard, productos, servicios, inventario, ventas, cotizaciones, PQRS, reportes
 
+La relación de cada requisito funcional con su código y sus casos de prueba está en
+[`docs/MATRIZ_TRAZABILIDAD.md`](docs/MATRIZ_TRAZABILIDAD.md).
+
 ## Cómo correr el proyecto
 
 ### Backend
