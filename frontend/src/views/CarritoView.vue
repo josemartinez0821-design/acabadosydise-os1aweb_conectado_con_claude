@@ -1,5 +1,5 @@
 <script setup>
-// RF07 - carrito: ítems, cantidades, resumen de compra, proceder al pago
+// RF08/RF09 - carrito: ítems, cantidades, resumen de compra, proceder al pago
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Swiper, SwiperSlide } from 'swiper/vue'

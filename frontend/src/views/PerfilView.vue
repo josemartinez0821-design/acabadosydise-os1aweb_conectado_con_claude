@@ -1,5 +1,5 @@
 <script setup>
-// RF04 - gestión del perfil de usuario -> tabla `usuarios`
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - gestión del perfil de usuario -> tabla `usuarios`
 // RF13 - historial de compras del usuario -> tabla `ventas`
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'

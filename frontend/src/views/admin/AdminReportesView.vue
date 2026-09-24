@@ -1,7 +1,7 @@
 <script setup>
 // RF19 - reportes gráficos de ventas, productos más vendidos y promociones -> vista
-// `vista_productos_mas_vendidos`. Todo real sobre MockData (catalog.js/ventas.js), sin backend
-// todavía. Exportación real: PNG/PDF son una captura visual del reporte (html2canvas + jsPDF, ver
+// `vista_productos_mas_vendidos`. Datos reales del backend (stores/ventas.js -> GET /api/ventas y
+// stores/catalog.js). Exportación real: PNG/PDF son una captura visual del reporte (html2canvas + jsPDF, ver
 // useReporteExport.js) y Word arma un documento de datos editable (docx), sin la gráfica.
 import { ref, computed } from 'vue'
 import { useCatalogStore } from '../../stores/catalog'

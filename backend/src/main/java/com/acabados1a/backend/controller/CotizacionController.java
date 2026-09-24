@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// RF08 - cotizaciones. A diferencia de productos/servicios, no hay ningún GET permitAll aquí:
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - cotizaciones. A diferencia de productos/servicios, no hay ningún GET permitAll aquí:
 // es información privada por usuario (cliente ve solo las suyas, admin las ve todas) - por eso
 // cada método recibe Authentication y resuelve el permiso puntual, no algo que SecurityConfig
 // pueda decidir solo con el rol.

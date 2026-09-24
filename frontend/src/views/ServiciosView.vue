@@ -1,5 +1,5 @@
 <script setup>
-// RF09 - catálogo de servicios: sidebar de categorías, búsqueda/orden, tarjetas y cotización (requiere sesión)
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - catálogo de servicios: sidebar de categorías, búsqueda/orden, tarjetas y cotización (requiere sesión)
 import { ref, computed } from 'vue'
 import { useCatalogStore } from '../stores/catalog'
 import { formatCOP } from '../composables/useFormat'

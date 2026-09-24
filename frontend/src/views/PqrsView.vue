@@ -1,5 +1,5 @@
 <script setup>
-// RF11 - PQRS: radicación (tipo/asunto/descripción) e historial con estado -> tabla `pqrs`. Requiere sesión.
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - PQRS: radicación (tipo/asunto/descripción) e historial con estado -> tabla `pqrs`. Requiere sesión.
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'

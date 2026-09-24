@@ -1,5 +1,5 @@
 <script setup>
-// RF02/RF03 - recuperación de contraseña: correo -> código de verificación -> nueva contraseña
+// Sin RF oficial (ampliación del alcance, ver docs/MATRIZ_TRAZABILIDAD.md) - recuperación de contraseña: correo -> código de verificación -> nueva contraseña
 import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '../composables/useToast'

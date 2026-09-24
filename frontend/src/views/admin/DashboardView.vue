@@ -1,5 +1,5 @@
 <script setup>
-// RF12 - panel de administración: métricas clave, ventas (día/mes), stock bajo, productos más
+// RF15 - panel de administración: métricas clave, ventas (día/mes), stock bajo, productos más
 // vendidos, actividad reciente. Ventas/cotizaciones/PQRS ya vienen del backend real.
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../../stores/auth'
