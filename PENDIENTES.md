@@ -7,10 +7,9 @@
 Puntos 3 y 4 de "Productos esperados" ya tienen sus secciones con capturas reales
 (código fuente, módulos funcionales, entorno de pruebas y registro de pruebas).
 
-- [ ] Punto 4 — **Validación del cumplimiento de los requerimientos establecidos**
-      (tabla RF01–RF14: módulo que lo cumple, cómo se validó, resultado).
-- [ ] Punto 4 — **Aplicativo web listo para su uso por parte de la empresa**
-      (estado final + brechas: pago simulado y sin hosting público).
+- [x] Punto 4 — **Validación del cumplimiento de los requerimientos establecidos**
+      (24/09/2026: RF01–RF23 y RNF01–RNF12 → 22 cumplen, 9 parcialmente, 4 no).
+- [x] Punto 4 — se da por completo con las secciones actuales (decisión del 24/09/2026).
 - [ ] *(Opcional)* Poner al día las secciones antiguas que todavía describen el diseño
       original (Angular, MySQL/XAMPP, 20 tablas; el glosario menciona "Angular y MySQL").
 
@@ -36,6 +35,12 @@ Puntos 3 y 4 de "Productos esperados" ya tienen sus secciones con capturas reale
 
 ## 4. Backlog del producto
 
+- [ ] **Defecto:** el botón "Compartir en Facebook" del detalle de producto
+      (`DetalleProductoView.vue`) abre `facebook.com/sharer/sharer.php` sin el parámetro
+      `?u=`, así que no comparte el enlace del producto.
+- [ ] En el motor WebKit (Safari) los títulos con Montserrat se ven con letra delgada.
+      Confirmarlo en un Safari real (Mac/iPhone) antes de corregir.
+- [ ] Probar el sitio en Firefox (en este PC Windows bloqueó el navegador de pruebas).
 - [ ] Pasarela de pago real (Wompi) — bloqueado por el cliente; hoy el pago es simulado.
 - [ ] Panel de administración para editar la configuración de la empresa (hoy solo por BD).
 - [ ] Tabla `auditoria`: existe pero no se usa.
